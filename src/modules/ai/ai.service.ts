@@ -192,7 +192,9 @@ export class AiService {
             : [];
         const filtered = requested.filter((id) => typeof id === 'number' && allowed.has(id));
         const limit = dto.maxQuestions ?? 5;
-        const finalIds = filtered.length ? filtered.slice(0, limit) : candidates.slice(0, limit).map((q) => q.id);
+        const finalIds = filtered.length
+            ? filtered.slice(0, limit)
+            : candidates.slice(0, limit).map((q) => q.id);
         const finalQuestions = candidates.filter((q) => finalIds.includes(q.id));
 
         return {
@@ -240,7 +242,12 @@ export class AiService {
     }
 
     private async getCandidateQuestions(
-        session: { id: string; testVersionId: number; currentPhase: PhaseType; currentSection: SectionType | null },
+        session: {
+            id: string;
+            testVersionId: number;
+            currentPhase: PhaseType;
+            currentSection: SectionType | null;
+        },
         section?: SectionType,
         maxQuestions = 5,
     ): Promise<CandidateQuestion[]> {

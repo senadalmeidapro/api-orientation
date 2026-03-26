@@ -24,18 +24,13 @@ export class QuestionsController {
 
     @Roles('admin', 'editor')
     @Post('phase1')
-    async createPhase1(
-        @Body() dto: CreatePhase1QuestionDto,
-    ) {
+    async createPhase1(@Body() dto: CreatePhase1QuestionDto) {
         return this.service.createPhase1Question(dto);
     }
 
     @Roles('admin', 'editor')
     @Patch('phase1/:id')
-    async updatePhase1(
-        @Param('id') id: string,
-        @Body() dto: UpdatePhase1QuestionDto,
-    ) {
+    async updatePhase1(@Param('id') id: string, @Body() dto: UpdatePhase1QuestionDto) {
         return this.service.updatePhase1Question(Number(id), dto);
     }
 
@@ -48,18 +43,13 @@ export class QuestionsController {
 
     @Roles('admin', 'editor')
     @Post('phase2')
-    async createPhase2(
-        @Body() dto: CreatePhase2QuestionDto,
-    ) {
+    async createPhase2(@Body() dto: CreatePhase2QuestionDto) {
         return this.service.createPhase2Question(dto);
     }
 
     @Roles('admin', 'editor')
     @Patch('phase2/:id')
-    async updatePhase2(
-        @Param('id') id: string,
-        @Body() dto: UpdatePhase2QuestionDto,
-    ) {
+    async updatePhase2(@Param('id') id: string, @Body() dto: UpdatePhase2QuestionDto) {
         return this.service.updatePhase2Question(Number(id), dto);
     }
 }
