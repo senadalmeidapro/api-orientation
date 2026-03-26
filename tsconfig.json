@@ -1,0 +1,47 @@
+{
+    "compilerOptions": {
+        /* Modules et compatibilité Node */
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "target": "ESNEXT",
+        "noEmitOnError": true,
+        "esModuleInterop": true,
+        "noImplicitOverride": true,
+        "resolvePackageJsonExports": true,
+        "allowSyntheticDefaultImports": true,
+        /* Décorateurs et métadonnées (NestJS) */
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        /* Sortie du build */
+        "outDir": "./dist",
+        "declaration": true,
+        "sourceMap": true,
+        "incremental": true,
+        /* Contrôle strict du typage */
+        "strict": true,
+        "strictNullChecks": true,
+        "forceConsistentCasingInFileNames": true,
+        "noImplicitAny": false,
+        "strictBindCallApply": false,
+        "noFallthroughCasesInSwitch": true,
+        /* Optimisations */
+        "isolatedModules": true,
+        "removeComments": true,
+        "skipLibCheck": true,
+        "types": [
+            "node"
+        ],
+        "typeRoots": [
+            "./node_modules/@types",
+            "./src/common/types"
+        ]
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "**/*.spec.ts"
+    ]
+}
