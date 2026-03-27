@@ -109,7 +109,7 @@ export class AiService {
         };
 
         const instructions =
-            'Tu es un conseiller d\'orientation RIASEC. Reponds en francais, clair, concret, et personnalise.';
+            "Tu es un conseiller d'orientation RIASEC. Reponds en francais, clair, concret, et personnalise.";
         const input = JSON.stringify({
             task: 'Resume le profil et propose des recommandations et prochaines actions.',
             context,
@@ -162,7 +162,7 @@ export class AiService {
         };
 
         const instructions =
-            'Tu es un coach d\'orientation. Choisis les meilleures questions suivantes pour affiner le profil.';
+            "Tu es un coach d'orientation. Choisis les meilleures questions suivantes pour affiner le profil.";
         const input = JSON.stringify({
             task: 'Selectionner les prochaines questions et donner un message clair.',
             session: {

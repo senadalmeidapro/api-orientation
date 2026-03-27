@@ -41,7 +41,7 @@ export class QuestionsService {
             include: {
                 translations: languageId
                     ? {
-                        where: { languageId },
+                        where: {languageId},
                         take: 1,
                     }
                     : false,
@@ -72,7 +72,7 @@ export class QuestionsService {
             include: {
                 translations: languageId
                     ? {
-                        where: { languageId },
+                        where: {languageId},
                         take: 1,
                     }
                     : false,

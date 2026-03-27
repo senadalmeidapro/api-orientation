@@ -40,7 +40,7 @@ export class InstitutionsService {
         const include = dto.lang
             ? {
                 translations: {
-                    where: { language: { code: dto.lang } },
+                    where: {language: {code: dto.lang}},
                     take: 1,
                 },
             }
@@ -64,7 +64,7 @@ export class InstitutionsService {
         const include = lang
             ? {
                 translations: {
-                    where: { language: { code: lang } },
+                    where: {language: {code: lang}},
                     take: 1,
                 },
             }

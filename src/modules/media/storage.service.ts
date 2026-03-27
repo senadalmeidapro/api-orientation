@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import {PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
