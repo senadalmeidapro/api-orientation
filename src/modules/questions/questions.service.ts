@@ -1,24 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetPhase1QuestionsDto } from './dto/get-phase1-questions.dto';
 import { GetPhase2QuestionsDto } from './dto/get-phase2-questions.dto';
-import { PhaseType } from '@prisma/client';
+import { Phase2Type, PhaseType, RiasecType } from '@prisma/client';
+import { resolveSessionAndAssessment } from '../../common/utils/assessment.util';
+
+const DEFAULT_DEPTH = 5;
 
 @Injectable()
 export class QuestionsService {
     constructor(private readonly prisma: PrismaService) {}
-
-    private async resolveSession(sessionToken: string, phase: PhaseType) {
-        const session = await this.prisma.testSession.findUnique({
-            where: { sessionToken },
-            select: { id: true, testVersionId: true, currentPhase: true },
-        });
-        if (!session) throw new NotFoundException('Session introuvable');
-        if (session.currentPhase !== phase) {
-            throw new BadRequestException('Phase courante invalide pour cette requete');
-        }
-        return session;
-    }
 
     private async resolveLanguageId(code?: string) {
         if (!code) return null;
@@ -26,12 +17,54 @@ export class QuestionsService {
         return lang?.id ?? null;
     }
 
+    private emptyScores(): Record<RiasecType, number> {
+        return { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+    }
+
+    private applyDepthFilter<
+        T extends { id: number; riasecTypeId: RiasecType; displayOrder: number },
+    >(
+        questions: T[],
+        answered: Set<number>,
+        answeredCounts: Record<RiasecType, number>,
+        depth: number,
+    ) {
+        const remaining: Record<RiasecType, number> = this.emptyScores();
+        for (const key of Object.keys(remaining) as RiasecType[]) {
+            remaining[key] = Math.max(0, depth - (answeredCounts[key] ?? 0));
+        }
+
+        const selected: T[] = [];
+        for (const question of questions) {
+            if (answered.has(question.id)) continue;
+            const count = remaining[question.riasecTypeId] ?? 0;
+            if (count <= 0) continue;
+            selected.push(question);
+            remaining[question.riasecTypeId] = count - 1;
+        }
+        return selected.sort((a, b) => a.displayOrder - b.displayOrder);
+    }
+
     async getPhase1Questions(dto: GetPhase1QuestionsDto) {
-        const session = await this.resolveSession(dto.sessionToken, PhaseType.PHASE_1);
+        const { assessment } = await resolveSessionAndAssessment(this.prisma, dto.sessionToken, {
+            assessmentId: dto.assessmentId,
+            phase: PhaseType.PHASE_1,
+            requireInProgress: true,
+        });
         const languageId = await this.resolveLanguageId(dto.lang);
 
+        const responses = await this.prisma.phase1Response.findMany({
+            where: { assessmentId: assessment.id },
+            select: { questionId: true, question: { select: { riasecTypeId: true } } },
+        });
+        const answeredIds = new Set(responses.map((r) => r.questionId));
+        const answeredCounts = this.emptyScores();
+        for (const response of responses) {
+            answeredCounts[response.question.riasecTypeId] += 1;
+        }
+
         const questions = await this.prisma.phase1Question.findMany({
-            where: { isActive: true, testVersionId: session.testVersionId },
+            where: { isActive: true, testVersionId: assessment.testVersionId },
             orderBy: { displayOrder: 'asc' },
             include: {
                 translations: languageId
@@ -43,7 +76,10 @@ export class QuestionsService {
             },
         });
 
-        return questions.map((q) => {
+        const depth = assessment.depth ?? DEFAULT_DEPTH;
+        const filtered = this.applyDepthFilter(questions, answeredIds, answeredCounts, depth);
+
+        return filtered.map((q) => {
             const t = q.translations?.[0];
             return {
                 id: q.id,
@@ -58,14 +94,33 @@ export class QuestionsService {
     }
 
     async getPhase2Questions(dto: GetPhase2QuestionsDto) {
-        const session = await this.resolveSession(dto.sessionToken, PhaseType.PHASE_2);
+        const { assessment } = await resolveSessionAndAssessment(this.prisma, dto.sessionToken, {
+            assessmentId: dto.assessmentId,
+            phase: PhaseType.PHASE_2,
+            requireInProgress: true,
+        });
+
+        const targetSection = dto.section ?? assessment.currentSection ?? Phase2Type.OCCUPATIONS;
+        if (assessment.currentSection && assessment.currentSection !== targetSection) {
+            throw new BadRequestException('Section courante invalide pour cette requete');
+        }
         const languageId = await this.resolveLanguageId(dto.lang);
+
+        const responses = await this.prisma.phase2Response.findMany({
+            where: { assessmentId: assessment.id, phase2Type: targetSection },
+            select: { questionId: true, question: { select: { riasecTypeId: true } } },
+        });
+        const answeredIds = new Set(responses.map((r) => r.questionId));
+        const answeredCounts = this.emptyScores();
+        for (const response of responses) {
+            answeredCounts[response.question.riasecTypeId] += 1;
+        }
 
         const questions = await this.prisma.phase2Question.findMany({
             where: {
                 isActive: true,
-                testVersionId: session.testVersionId,
-                sectionType: dto.section,
+                testVersionId: assessment.testVersionId,
+                phase2Type: targetSection,
             },
             orderBy: { displayOrder: 'asc' },
             include: {
@@ -78,12 +133,15 @@ export class QuestionsService {
             },
         });
 
-        return questions.map((q) => {
+        const depth = assessment.depth ?? DEFAULT_DEPTH;
+        const filtered = this.applyDepthFilter(questions, answeredIds, answeredCounts, depth);
+
+        return filtered.map((q) => {
             const t = q.translations?.[0];
             return {
                 id: q.id,
                 riasecType: q.riasecTypeId,
-                sectionType: q.sectionType,
+                sectionType: q.phase2Type,
                 text: t?.questionText ?? q.questionText,
                 subtext: t?.questionSubtext ?? q.questionSubtext,
                 mediaUrl: q.mediaUrl,

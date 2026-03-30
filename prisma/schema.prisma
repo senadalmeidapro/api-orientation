@@ -7,7 +7,7 @@ datasource db {
 }
 
 // =====================================================
-// TYPES DE BASE ET ÉNUMÉRATIONS
+// ENUMS
 // =====================================================
 
 enum RiasecType {
@@ -19,13 +19,26 @@ enum RiasecType {
   C // Conventionnel
 }
 
+enum AssessmentType {
+  PHASE1
+  PHASE2_OCCUPATIONS
+  PHASE2_APTITUDES
+  PHASE2_PERSONALITY
+  FULL
+}
+
+enum AssessmentStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
 enum PhaseType {
   PHASE_1
   PHASE_2
-  PHASE_3
 }
 
-enum SectionType {
+enum Phase2Type {
   OCCUPATIONS
   APTITUDES
   PERSONALITY
@@ -98,6 +111,25 @@ enum OutcomeStatus {
 }
 
 // =====================================================
+// UTILISATEURS
+// =====================================================
+
+model User {
+  id          String  @id @default(cuid())
+  email       String? @unique
+  displayName String?
+  profile     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// =====================================================
 // VERSIONING & LOCALISATION
 // =====================================================
 
@@ -113,7 +145,7 @@ model TestVersion {
 
   phase1Questions Phase1Question[]
   phase2Questions Phase2Question[]
-  sessions        TestSession[]
+  assessments     Assessment[]
 
   @@index([isActive])
   @@map("test_versions")
@@ -121,7 +153,7 @@ model TestVersion {
 
 model Language {
   id         Int     @id @default(autoincrement())
-  code       String  @unique // fr, fon, yoruba, etc.
+  code       String  @unique
   name       String
   nativeName String?
   isActive   Boolean @default(true)
@@ -140,79 +172,106 @@ model Language {
 }
 
 // =====================================================
-// SESSIONS DE TEST
+// SESSIONS (CONTAINER UTILISATEUR)
 // =====================================================
 
-// Session de test (anonyme, isolée)
-model TestSession {
-  id            String      @id @default(uuid())
-  testVersionId Int
-  testVersion   TestVersion @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
+model Session {
+  id Int @id @default(autoincrement())
 
-  // Identifiants
+  userId String?
+  user   User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  profile Json?
+
   sessionToken String  @unique
   shareToken   String? @unique // Pour partage public
 
-  // Progression
-  currentPhase     PhaseType    @default(PHASE_1)
-  currentStepIndex Int          @default(0)
-  currentSection   SectionType? // Pour phase 2
+  startedAt      DateTime @default(now())
+  lastActivityAt DateTime @updatedAt
 
-  // Timestamps
-  startedAt         DateTime  @default(now())
-  lastActivityAt    DateTime  @updatedAt
-  completedAt       DateTime?
-  phase1CompletedAt DateTime?
-  phase2CompletedAt DateTime?
-  phase3CompletedAt DateTime?
+  // Gamification (niveau global de l'utilisateur)
+  totalXp Int @default(0)
+  level   Int @default(1)
 
-  // État
-  isAbandoned          Boolean @default(false)
-  completionPercentage Int     @default(0)
+  assessments Assessment[]
+  badges      SessionBadge[]
+  xpHistory   XPHistory[]
+
+  @@index([sessionToken])
+  @@index([shareToken])
+  @@index([userId])
+  @@map("sessions")
+}
+
+// =====================================================
+// INSTANCE D'UN TEST (ASSESSMENT)
+// =====================================================
+
+model Assessment {
+  id String @id @default(uuid())
+
+  sessionId Int
+  session   Session @relation(fields: [sessionId], references: [id])
+
+  testVersionId Int
+  testVersion   TestVersion @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
+
+  type   AssessmentType
+  depth  Int // Nombre de questions par axe RIASEC (ex: 10 = profond, 5 = moyen, 3 = léger)
+  status AssessmentStatus @default(IN_PROGRESS)
+
+  // Progression (pour les tests FULL ou multi-phases)
+  currentPhase     PhaseType @default(PHASE_1) // PHASE_1, PHASE_2
+  currentSection   Phase2Type? // OCCUPATIONS, APTITUDES, PERSONALITY (phase2 uniquement)
+  currentStepIndex Int         @default(0)
+
+  // État adaptatif (stocke l'estimation du profil RIASEC en temps réel)
+  adaptiveState Json? // { "probabilities": { "R": 0.3, "I": 0.2, ... }, "askedQuestions": [...] }
+
+  startedAt      DateTime  @default(now())
+  lastActivityAt DateTime  @updatedAt
+  completedAt    DateTime?
+
+  // Métriques
+  completionPercentage Int @default(0)
 
   // Relations
   phase1Responses Phase1Response[]
   phase2Responses Phase2Response[]
-  result          SessionResult?
+  result          AssessmentResult?
   treasureMap     TreasureMap?
-  feedbacks       SessionFeedback[]
-  sessionBadges   SessionBadge[]
-  xpEvents        SessionXP[]
-  sessionLevel    SessionLevel?
-  outcomes        SessionOutcome[]
-  interactions    SessionInteraction[]
+  feedbacks       AssessmentFeedback[]
+  outcomes        AssessmentOutcome[]
+  interactions    AssessmentInteraction[]
+  xpHistory       XPHistory[]
 
+  @@index([sessionId])
   @@index([testVersionId])
-  @@index([sessionToken])
-  @@index([shareToken])
+  @@index([type])
+  @@index([status])
   @@index([startedAt])
-  @@index([isAbandoned])
-  @@index([completionPercentage])
-  @@map("test_sessions")
+  @@map("assessments")
 }
 
 // =====================================================
 // QUESTIONS ET RÉPONSES
 // =====================================================
 
-// Types RIASEC (R, I, A, S, E, C)
 model RiasecTypeModel {
-  id           RiasecType @id // 'R', 'I', 'A', 'S', 'E', 'C'
-  name         String // 'Réaliste', 'Investigateur', etc.
+  id           RiasecType @id
+  name         String
   slogan       String?
-  description  String? // Description longue
-  colorHex     String? // Code couleur pour UI
-  iconUrl      String? // URL de l'icône
+  description  String?
+  colorHex     String?
+  iconUrl      String?
   displayOrder Int        @default(0)
 
-  // Relations
   phase1Questions Phase1Question[]
   phase2Questions Phase2Question[]
 
   @@map("riasec_types")
 }
 
-// Questions de la Phase 1 (Amorce)
 model Phase1Question {
   id            Int             @id @default(autoincrement())
   riasecTypeId  RiasecType
@@ -221,30 +280,25 @@ model Phase1Question {
   testVersion   TestVersion     @relation(fields: [testVersionId], references: [id], onDelete: Cascade)
 
   questionText    String  @db.Text
-  questionShort   String? // Version courte pour mobile
-  illustrationUrl String? // Image ou icône associée
+  questionShort   String?
+  illustrationUrl String?
   displayOrder    Int     @default(0)
   isActive        Boolean @default(true)
 
-  // Gamification
-  pointsValue Int @default(10) // Points gagnés en répondant
+  pointsValue Int @default(10)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   responses    Phase1Response[]
   translations Phase1QuestionTranslation[]
 
   @@unique([testVersionId, displayOrder])
   @@index([riasecTypeId])
   @@index([testVersionId])
-  @@index([displayOrder])
-  @@index([isActive])
   @@map("phase1_questions")
 }
 
-// Questions de la Phase 2 (Approfondissement)
 model Phase2Question {
   id            Int             @id @default(autoincrement())
   riasecTypeId  RiasecType
@@ -252,37 +306,32 @@ model Phase2Question {
   testVersionId Int
   testVersion   TestVersion     @relation(fields: [testVersionId], references: [id], onDelete: Cascade)
 
-  sectionType     SectionType // 'OCCUPATIONS', 'APTITUDES', 'PERSONALITY'
-  questionText    String      @db.Text
-  questionSubtext String? // Sous-titre ou indication
-  mediaUrl        String? // Image ou vidéo courte
-  displayOrder    Int         @default(0)
-  isActive        Boolean     @default(true)
+  phase2Type      Phase2Type
+  questionText    String     @db.Text
+  questionSubtext String?
+  mediaUrl        String?
+  displayOrder    Int        @default(0)
+  isActive        Boolean    @default(true)
 
-  // Pour les aptitudes (échelle 1-3)
   minValue    Int?  @default(1)
   maxValue    Int?  @default(3)
   valueLabels Json? // { "1": "Faible 😕", "2": "Moyen 😐", "3": "Fort 😊" }
 
-  // Gamification
   pointsValue Int @default(15)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   responses    Phase2Response[]
   translations Phase2QuestionTranslation[]
 
-  @@unique([testVersionId, sectionType, displayOrder])
+  @@unique([testVersionId, phase2Type, displayOrder])
   @@index([riasecTypeId])
   @@index([testVersionId])
-  @@index([sectionType])
-  @@index([isActive])
+  @@index([phase2Type])
   @@map("phase2_questions")
 }
 
-// Traductions des questions Phase 1
 model Phase1QuestionTranslation {
   id         Int            @id @default(autoincrement())
   questionId Int
@@ -302,7 +351,6 @@ model Phase1QuestionTranslation {
   @@map("phase1_question_translations")
 }
 
-// Traductions des questions Phase 2
 model Phase2QuestionTranslation {
   id         Int            @id @default(autoincrement())
   questionId Int
@@ -322,134 +370,121 @@ model Phase2QuestionTranslation {
   @@map("phase2_question_translations")
 }
 
-// Options de réponse pour les échelles d'aptitude
 model AptitudeResponseOption {
   id        Int     @id @default(autoincrement())
-  value     Int     @unique // 1, 2, 3
-  label     Label // 'Faible', 'Moyen', 'Fort'
-  emoji     String? // '😕', '😐', '😊'
-  colorCode String? // '#FF4444', '#FFA500', '#4CAF50'
+  value     Int     @unique
+  label     Label
+  emoji     String?
+  colorCode String?
 
   @@map("aptitude_response_options")
 }
 
-// Réponses de la Phase 1
 model Phase1Response {
-  id         Int            @id @default(autoincrement())
-  sessionId  String
-  session    TestSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  questionId Int
-  question   Phase1Question @relation(fields: [questionId], references: [id])
+  id           String         @id @default(uuid())
+  assessmentId String
+  assessment   Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId   Int
+  question     Phase1Question @relation(fields: [questionId], references: [id])
 
-  responseValue  Int // 0 pour non, 1 pour oui
-  responseTimeMs Int? // Temps de réponse (ms)
+  responseValue  Int // 0 = non, 1 = oui
+  responseTimeMs Int?
 
   createdAt DateTime @default(now())
 
-  @@unique([sessionId, questionId])
-  @@index([sessionId])
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId])
   @@index([questionId])
-  @@index([createdAt])
   @@map("phase1_responses")
 }
 
-// Réponses de la Phase 2
 model Phase2Response {
-  id         Int            @id @default(autoincrement())
-  sessionId  String
-  session    TestSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  questionId Int
-  question   Phase2Question @relation(fields: [questionId], references: [id])
+  id           String         @id @default(uuid())
+  assessmentId String
+  assessment   Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId   Int
+  question     Phase2Question @relation(fields: [questionId], references: [id])
+  phase2Type   Phase2Type
 
-  responseValue  Int // Pour occupations: 0/1; aptitudes: 1-3; personality: 0/1
-  responseTimeMs Int? // Temps de réponse
+  responseValue  Int // 0/1 pour occupations/personnalité, 1-3 pour aptitudes
+  responseTimeMs Int?
 
   createdAt DateTime @default(now())
 
-  @@unique([sessionId, questionId])
-  @@index([sessionId])
+  @@unique([assessmentId, questionId])
+  @@index([assessmentId])
   @@index([questionId])
-  @@index([createdAt])
   @@map("phase2_responses")
 }
 
 // =====================================================
-// RÉSULTATS ET CALCULS
+// RÉSULTATS D'UN ASSESSMENT
 // =====================================================
 
-// Résultats calculés du test
-model SessionResult {
-  id        Int         @id @default(autoincrement())
-  sessionId String      @unique
-  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+model AssessmentResult {
+  id           String     @id @default(uuid())
+  assessmentId String     @unique
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   // Codes
-  phase1Code        String @db.Char(3) // Ex: "RIA"
-  phase2Code        String @db.Char(3) // Ex: "RIS"
-  subjectiveRanking Json? // Classement subjectif des cartes EPCR
+  phase1Code        String? @db.Char(3) // Ex: "RIA" (si phase1 incluse)
+  phase2Code        String? @db.Char(3) // Ex: "RIS" (si phase2 incluse)
+  subjectiveRanking Json? // Classement subjectif (cartes EPCR)
 
   // Scores bruts
-  phase1Scores  Json // { "R": 5, "I": 3, "A": 8, "S": 2, "E": 1, "C": 0 }
-  phase2Scores  Json // { "R": 15, "I": 22, "A": 18, "S": 10, "E": 5, "C": 8 }
-  sectionScores Json // Scores détaillés par section
+  phase1Scores  Json? // { "R": 5, "I": 3, ... }
+  phase2Scores  Json? // { "R": 15, "I": 22, ... }
+  sectionScores Json? // Détails par section (occupations, aptitudes, personnalité)
 
   // Indicateurs de qualité
-  consistencyScore     Float // 1, 2, ou 3
-  consistencyLevel     ConsistencyLevel
-  differentiationScore Float // Calculé selon formule Vrignaud
-  profileStrength      ProfileStrength
+  consistencyScore     Float?
+  consistencyLevel     ConsistencyLevel?
+  differentiationScore Float?
+  profileStrength      ProfileStrength?
 
-  // Interprétations
-  insights  Json? // Liste d'insights personnalisés
-  strengths String[] // Forces identifiées
+  // Interprétations (générées par l'IA)
+  insights   Json? // Liste d'insights personnalisés
+  strengths  String[] // Forces identifiées
+  weaknesses String[] // Faiblesses identifiées (pour conseils)
 
-  // Métadonnées
   createdAt    DateTime  @default(now())
   lastViewedAt DateTime?
   viewCount    Int       @default(0)
 
   // Relations
-  careerRecommendations SessionCareerRecommendation[]
+  careerRecommendations AssessmentCareerRecommendation[]
 
-  @@index([sessionId])
+  @@index([assessmentId])
   @@index([phase2Code])
   @@index([consistencyLevel])
-  @@index([profileStrength])
-  @@index([createdAt])
-  @@map("session_results")
+  @@map("assessment_results")
 }
 
 // =====================================================
 // MÉTIERS ET RECOMMANDATIONS
 // =====================================================
 
-// Métiers (base de données locale)
 model Career {
   id          Int     @id @default(autoincrement())
   name        String  @unique
   description String  @db.Text
-  summary     String? // Description courte (pour cartes)
+  summary     String?
 
-  // Codes RIASEC associés (ex: ['R', 'I'])
-  riasecCodes RiasecType[] // Stocké comme tableau PostgreSQL
+  riasecCodes RiasecType[] // Codes RIASEC associés
 
-  // Contexte béninois
   localDemand    Int? // 1-5 (demande au Bénin)
-  formationLevel String? // 'CAP', 'BAC', 'BTS', 'Licence', 'EMN', etc.
-  salaryRangeMin Int? // En FCFA
-  salaryRangeMax Int? // En FCFA
-  careerPath     String? // Évolution de carrière possible
+  formationLevel String? // 'CAP', 'BAC', 'BTS', etc.
+  salaryRangeMin Int?
+  salaryRangeMax Int?
+  careerPath     String?
 
-  // Médias
   iconUrl  String?
   imageUrl String?
   videoUrl String?
 
-  // Classification
-  category CareerCategory? // 'NUMERIQUE', 'AGRICULTURE', 'ARTISANAT', 'SANTE', 'EDUCATION', 'COMMERCE', 'ADMINISTRATION'
-  tags     String[] // Tags de recherche
+  category CareerCategory?
+  tags     String[]
 
-  // Métadonnées
   isFeatured Boolean @default(false)
   isActive   Boolean @default(true)
   viewCount  Int     @default(0)
@@ -458,21 +493,17 @@ model Career {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
-  recommendations SessionCareerRecommendation[]
+  recommendations AssessmentCareerRecommendation[]
   institutions    CareerInstitution[]
   resources       CareerResource[]
   translations    CareerTranslation[]
-  outcomes        SessionOutcome[]
+  outcomes        AssessmentOutcome[]
 
   @@index([category])
   @@index([isFeatured])
-  @@index([localDemand])
-  @@index([riasecCodes])
   @@map("careers")
 }
 
-// Relation métiers <-> établissements
 model CareerInstitution {
   careerId      Int
   career        Career              @relation(fields: [careerId], references: [id], onDelete: Cascade)
@@ -487,7 +518,6 @@ model CareerInstitution {
   @@map("career_institutions")
 }
 
-// Relation métiers <-> ressources
 model CareerResource {
   careerId   Int
   career     Career   @relation(fields: [careerId], references: [id], onDelete: Cascade)
@@ -501,7 +531,6 @@ model CareerResource {
   @@map("career_resources")
 }
 
-// Traductions des métiers
 model CareerTranslation {
   id         Int      @id @default(autoincrement())
   careerId   Int
@@ -522,72 +551,64 @@ model CareerTranslation {
   @@map("career_translations")
 }
 
-// Recommandations personnalisées pour un utilisateur
-model SessionCareerRecommendation {
-  id       Int           @id @default(autoincrement())
-  resultId Int
-  result   SessionResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+model AssessmentCareerRecommendation {
+  id       String           @id @default(uuid())
+  resultId String
+  result   AssessmentResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
   careerId Int
-  career   Career        @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  career   Career           @relation(fields: [careerId], references: [id], onDelete: Cascade)
 
-  matchScore   Int // Pourcentage de matching (0-100)
-  rankPosition Int // Position dans le classement
+  matchScore   Int // 0-100
+  rankPosition Int
 
   viewedAt      DateTime?
   savedForLater Boolean   @default(false)
 
   createdAt DateTime @default(now())
 
-  feedbacks SessionFeedback[]
+  feedbacks AssessmentFeedback[]
 
   @@unique([resultId, careerId])
   @@index([resultId])
   @@index([careerId])
   @@index([matchScore])
-  @@index([rankPosition])
-  @@map("session_career_recommendations")
+  @@map("assessment_career_recommendations")
 }
 
 // =====================================================
-// GAMIFICATION (BADGES ET RÉCOMPENSES)
+// GAMIFICATION (AU NIVEAU SESSION)
 // =====================================================
 
-// Définitions des badges
 model Badge {
   id          Int     @id @default(autoincrement())
-  code        String  @unique // 'EXPLORATEUR', 'BATISSEUR', etc.
+  code        String  @unique
   name        String
   description String  @db.Text
-  iconUrl     String? // URL de l'icône
-  emoji       String? // Fallback emoji
+  iconUrl     String?
+  emoji       String?
 
   rarity      BadgeRarity @default(COMMON)
-  pointsValue Int         @default(50) // Points d'expérience
+  pointsValue Int         @default(50)
 
-  // Condition de déblocage (JSON)
   unlockCondition Json? // { "type": "phase_completion", "phase": 1 }
 
-  // Statistiques
-  unlockCount Int @default(0) // Nombre de fois débloqué
+  unlockCount Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   sessionBadges SessionBadge[]
 
   @@index([rarity])
-  @@index([unlockCount])
   @@map("badges")
 }
 
-// Badges débloqués par les utilisateurs
 model SessionBadge {
-  id        Int         @id @default(autoincrement())
-  sessionId String
-  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  sessionId Int
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   badgeId   Int
-  badge     Badge       @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badge     Badge   @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   unlockedAt     DateTime @default(now())
   sharedOnSocial Boolean  @default(false)
@@ -595,57 +616,39 @@ model SessionBadge {
   @@unique([sessionId, badgeId])
   @@index([sessionId])
   @@index([badgeId])
-  @@index([unlockedAt])
   @@map("session_badges")
 }
 
-// Historique des points d'expérience
-model SessionXP {
-  id        Int         @id @default(autoincrement())
-  sessionId String
-  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+model XPHistory {
+  id        String  @id @default(uuid())
+  sessionId Int
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
-  amount Int
-  reason String?
+  amount       Int
+  reason       String? // "test_completed", "badge_earned", etc.
+  assessmentId String? // optionnel, lien vers l'évaluation qui a rapporté ces XP
+  assessment   Assessment? @relation(fields: [assessmentId], references: [id])
 
   createdAt DateTime @default(now())
 
   @@index([sessionId])
   @@index([createdAt])
-  @@map("session_xp")
-}
-
-// Niveau actuel de la session
-model SessionLevel {
-  id        Int         @id @default(autoincrement())
-  sessionId String      @unique
-  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  level     Int         @default(1)
-  currentXp Int         @default(0)
-  totalXp   Int         @default(0)
-
-  updatedAt DateTime @updatedAt
-
-  @@index([level])
-  @@map("session_levels")
+  @@map("xp_history")
 }
 
 // =====================================================
-// CARTE AU TRÉSOR (RÉSULTAT FINAL PERSONNALISÉ)
+// CARTE AU TRÉSOR
 // =====================================================
 
-// Carte au Trésor générée
 model TreasureMap {
-  id        Int         @id @default(autoincrement())
-  sessionId String      @unique
-  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid())
+  assessmentId String     @unique
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
-  // Données de la carte (JSON complet)
-  mapData    Json // Stockage de tous les éléments visuels
-  pdfUrl     String? // URL du PDF généré
-  shareToken String  @unique // Pour partage public
+  mapData    Json
+  pdfUrl     String?
+  shareToken String  @unique
 
-  // Statistiques
   viewCount     Int @default(0)
   downloadCount Int @default(0)
 
@@ -653,22 +656,21 @@ model TreasureMap {
   lastViewedAt DateTime?
 
   @@index([shareToken])
-  @@index([createdAt])
   @@map("treasure_maps")
 }
 
 // =====================================================
-// FEEDBACK ET OUTCOMES
+// FEEDBACK & OUTCOMES (AU NIVEAU ASSESSMENT)
 // =====================================================
 
-model SessionFeedback {
-  id Int @id @default(autoincrement())
+model AssessmentFeedback {
+  id String @id @default(uuid())
 
-  sessionId String
-  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
-  recommendationId Int?
-  recommendation   SessionCareerRecommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+  recommendationId String?
+  recommendation   AssessmentCareerRecommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
 
   type  FeedbackType
   value Float
@@ -677,18 +679,17 @@ model SessionFeedback {
 
   createdAt DateTime @default(now())
 
-  @@index([sessionId])
+  @@index([assessmentId])
   @@index([recommendationId])
   @@index([type])
-  @@index([createdAt])
-  @@map("session_feedbacks")
+  @@map("assessment_feedbacks")
 }
 
-model SessionOutcome {
-  id Int @id @default(autoincrement())
+model AssessmentOutcome {
+  id String @id @default(uuid())
 
-  sessionId String
-  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   careerId Int
   career   Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
@@ -700,57 +701,51 @@ model SessionOutcome {
 
   createdAt DateTime @default(now())
 
-  @@index([sessionId])
+  @@index([assessmentId])
   @@index([careerId])
   @@index([status])
-  @@index([createdAt])
-  @@map("session_outcomes")
+  @@map("assessment_outcomes")
 }
 
 // =====================================================
-// ADAPTIVE RECOMMENDATIONS
+// INTERACTIONS POUR ADAPTATION
 // =====================================================
 
-model SessionInteraction {
-  id         BigInt                @id @default(autoincrement())
-  sessionId  String
-  session    TestSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  type       InteractionEventType
-  entityType InteractionEntityType
-  entityId   Int
-  value      Float?
-  metadata   Json?
-  createdAt  DateTime              @default(now())
+model AssessmentInteraction {
+  id           BigInt                @id @default(autoincrement())
+  assessmentId String
+  assessment   Assessment            @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  type         InteractionEventType
+  entityType   InteractionEntityType
+  entityId     Int
+  value        Float?
+  metadata     Json?
+  createdAt    DateTime              @default(now())
 
-  @@index([sessionId])
+  @@index([assessmentId])
   @@index([type])
   @@index([entityType])
-  @@index([entityId])
   @@index([createdAt])
-  @@map("session_interactions")
+  @@map("assessment_interactions")
 }
 
 // =====================================================
-// CONTENU ÉDUCATIF ET RESSOURCES
+// CONTENU ÉDUCATIF ET FORMATIONS
 // =====================================================
 
-// Articles, vidéos, ressources sur les métiers
 model Resource {
   id          Int    @id @default(autoincrement())
   title       String
   description String @db.Text
-  content     String @db.Text // HTML ou Markdown
+  content     String @db.Text
   contentType String // 'ARTICLE', 'VIDEO', 'PDF', 'LINK'
 
-  // Médias
   thumbnailUrl String?
-  mediaUrl     String? // URL de la vidéo/PDF
+  mediaUrl     String?
 
-  // Classification
-  category String? // 'METIER', 'FORMATION', 'ORIENTATION', 'CONSEIL'
+  category String?
   tags     String[]
 
-  // Métadonnées
   author      String?
   viewCount   Int       @default(0)
   isPublished Boolean   @default(false)
@@ -759,17 +754,14 @@ model Resource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   relatedCareers CareerResource[]
   translations   ResourceTranslation[]
 
   @@index([category])
   @@index([isPublished])
-  @@index([publishedAt])
   @@map("resources")
 }
 
-// Traductions des ressources
 model ResourceTranslation {
   id         Int      @id @default(autoincrement())
   resourceId Int
@@ -790,50 +782,38 @@ model ResourceTranslation {
   @@map("resource_translations")
 }
 
-// =====================================================
-// FORMATIONS ET ÉTABLISSEMENTS
-// =====================================================
-
-// Établissements de formation au Bénin
 model TrainingInstitution {
   id          Int     @id @default(autoincrement())
   name        String
-  acronym     String? // EMN, ENEAM, IFRI, etc.
+  acronym     String?
   description String? @db.Text
 
   type String? // 'UNIVERSITE', 'ECOLE', 'CENTRE', 'LYCEE_TECHNIQUE'
 
-  // Localisation
-  department String? // Département du Bénin
+  department String?
   city       String?
   address    String?
 
-  // Contact
   phone   String?
   email   String?
   website String?
 
-  // Offre de formation
-  programs Json? // Liste des formations proposées
+  programs Json?
 
-  // Métadonnées
   logoUrl  String?
   isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relations
   careers      CareerInstitution[]
   translations TrainingInstitutionTranslation[]
 
   @@index([department])
   @@index([city])
-  @@index([type])
   @@map("training_institutions")
 }
 
-// Traductions des établissements de formation
 model TrainingInstitutionTranslation {
   id            Int                 @id @default(autoincrement())
   institutionId Int

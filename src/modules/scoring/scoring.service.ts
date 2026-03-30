@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ConsistencyLevel, ProfileStrength, RiasecType, SectionType } from '@prisma/client';
+import { ConsistencyLevel, Phase2Type, ProfileStrength, RiasecType } from '@prisma/client';
 
 const RIASEC_ORDER: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
 
@@ -29,31 +29,57 @@ export class ScoringService {
         return normalized;
     }
 
-    async computeScores(sessionId: string) {
-        const session = await this.prisma.testSession.findUnique({
-            where: { id: sessionId },
+    async computeScores(
+        assessmentId: string,
+        options?: {
+            phase1AssessmentId?: string | null;
+            phase2Types?: Phase2Type[];
+        },
+    ) {
+        const assessment = await this.prisma.assessment.findUnique({
+            where: { id: assessmentId },
             select: { testVersionId: true },
         });
-        if (!session) throw new NotFoundException('Session introuvable');
+        if (!assessment) throw new NotFoundException('Assessment introuvable');
+
+        const hasPhase1Override =
+            options !== undefined &&
+            Object.prototype.hasOwnProperty.call(options, 'phase1AssessmentId');
+        const phase1AssessmentId = hasPhase1Override
+            ? (options?.phase1AssessmentId ?? null)
+            : assessmentId;
+        const hasPhase2Filter = options?.phase2Types !== undefined;
+        const phase2Types = hasPhase2Filter
+            ? (options?.phase2Types ?? [])
+            : [Phase2Type.OCCUPATIONS, Phase2Type.APTITUDES, Phase2Type.PERSONALITY];
 
         const phase1Questions = await this.prisma.phase1Question.findMany({
-            where: { isActive: true, testVersionId: session.testVersionId },
+            where: { isActive: true, testVersionId: assessment.testVersionId },
             select: { riasecTypeId: true },
         });
 
         const phase2Questions = await this.prisma.phase2Question.findMany({
-            where: { isActive: true, testVersionId: session.testVersionId },
-            select: { riasecTypeId: true, sectionType: true, maxValue: true },
+            where: {
+                isActive: true,
+                testVersionId: assessment.testVersionId,
+                ...(hasPhase2Filter ? { phase2Type: { in: phase2Types } } : {}),
+            },
+            select: { riasecTypeId: true, phase2Type: true, maxValue: true },
         });
 
-        const phase1 = await this.prisma.phase1Response.findMany({
-            where: { sessionId },
-            include: { question: { select: { riasecTypeId: true } } },
-        });
+        const phase1 = phase1AssessmentId
+            ? await this.prisma.phase1Response.findMany({
+                  where: { assessmentId: phase1AssessmentId },
+                  include: { question: { select: { riasecTypeId: true } } },
+              })
+            : [];
 
         const phase2 = await this.prisma.phase2Response.findMany({
-            where: { sessionId },
-            include: { question: { select: { riasecTypeId: true, sectionType: true } } },
+            where: {
+                assessmentId,
+                ...(hasPhase2Filter ? { phase2Type: { in: phase2Types } } : {}),
+            },
+            include: { question: { select: { riasecTypeId: true, phase2Type: true } } },
         });
 
         const phase1Scores = this.makeEmptyScores();
@@ -63,7 +89,7 @@ export class ScoringService {
         }
 
         const phase2Scores = this.makeEmptyScores();
-        const sectionScoresRaw: Record<SectionType, Record<RiasecType, number>> = {
+        const sectionScoresRaw: Record<Phase2Type, Record<RiasecType, number>> = {
             OCCUPATIONS: this.makeEmptyScores(),
             APTITUDES: this.makeEmptyScores(),
             PERSONALITY: this.makeEmptyScores(),
@@ -71,25 +97,25 @@ export class ScoringService {
 
         for (const r of phase2) {
             const key = r.question.riasecTypeId;
-            const section = r.question.sectionType;
+            const section = r.question.phase2Type;
             phase2Scores[key] += r.responseValue;
             sectionScoresRaw[section][key] += r.responseValue;
         }
 
         const maxPhase2 = this.makeEmptyScores();
-        const maxBySection: Record<SectionType, Record<RiasecType, number>> = {
+        const maxBySection: Record<Phase2Type, Record<RiasecType, number>> = {
             OCCUPATIONS: this.makeEmptyScores(),
             APTITUDES: this.makeEmptyScores(),
             PERSONALITY: this.makeEmptyScores(),
         };
         for (const q of phase2Questions) {
-            const maxVal = q.sectionType === SectionType.APTITUDES ? (q.maxValue ?? 3) : 1;
+            const maxVal = q.phase2Type === Phase2Type.APTITUDES ? (q.maxValue ?? 3) : 1;
             maxPhase2[q.riasecTypeId] += maxVal;
-            maxBySection[q.sectionType][q.riasecTypeId] += maxVal;
+            maxBySection[q.phase2Type][q.riasecTypeId] += maxVal;
         }
 
         const phase2NormalizedScores = this.normalizeScores(phase2Scores, maxPhase2);
-        const sectionScoresNormalized: Record<SectionType, Record<RiasecType, number>> = {
+        const sectionScoresNormalized: Record<Phase2Type, Record<RiasecType, number>> = {
             OCCUPATIONS: this.normalizeScores(
                 sectionScoresRaw.OCCUPATIONS,
                 maxBySection.OCCUPATIONS,
@@ -101,18 +127,23 @@ export class ScoringService {
             ),
         };
 
-        const phase1Code = this.sortCodes(phase1Scores).slice(0, 3).join('');
-        const phase2Code = this.sortCodes(phase2Scores).slice(0, 3).join('');
+        const hasPhase1 = phase1.length > 0;
+        const hasPhase2 = phase2.length > 0;
+        const phase1Code = hasPhase1 ? this.sortCodes(phase1Scores).slice(0, 3).join('') : null;
+        const phase2Code = hasPhase2 ? this.sortCodes(phase2Scores).slice(0, 3).join('') : null;
 
-        const overlap = phase1Code.split('').filter((c) => phase2Code.includes(c)).length;
-
-        const consistencyScore = overlap >= 2 ? 3 : overlap === 1 ? 2 : 1;
-        const consistencyLevel =
-            consistencyScore === 3
-                ? ConsistencyLevel.FORTE
-                : consistencyScore === 2
-                  ? ConsistencyLevel.MOYENNE
-                  : ConsistencyLevel.FAIBLE;
+        let consistencyScore: number | null = null;
+        let consistencyLevel: ConsistencyLevel | null = null;
+        if (phase1Code && phase2Code) {
+            const overlap = phase1Code.split('').filter((c) => phase2Code.includes(c)).length;
+            consistencyScore = overlap >= 2 ? 3 : overlap === 1 ? 2 : 1;
+            consistencyLevel =
+                consistencyScore === 3
+                    ? ConsistencyLevel.FORTE
+                    : consistencyScore === 2
+                      ? ConsistencyLevel.MOYENNE
+                      : ConsistencyLevel.FAIBLE;
+        }
 
         const normalizedValues = this.sortCodes(phase2NormalizedScores).map(
             (k) => phase2NormalizedScores[k],

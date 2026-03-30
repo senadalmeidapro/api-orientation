@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PhaseType, SectionType } from '@prisma/client';
+import { AssessmentStatus, Phase2Type, PhaseType, RiasecType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecommendationsService } from '../recommendations/recommendations.service';
 import { ResultsService } from '../results/results.service';
 import { AiClient, JsonSchemaFormat } from './ai.client';
 import { AiCoachDto, AiSummaryDto } from './dto';
+import { resolveSessionAndAssessment } from '../../common/utils/assessment.util';
 
 const RIASEC_CODES = ['R', 'I', 'A', 'S', 'E', 'C'] as const;
 
@@ -14,8 +15,10 @@ type CandidateQuestion = {
     id: number;
     text: string;
     riasecType: string;
-    sectionType?: SectionType;
+    sectionType?: Phase2Type;
 };
+
+const DEFAULT_DEPTH = 5;
 
 @Injectable()
 export class AiService {
@@ -27,29 +30,55 @@ export class AiService {
     ) {}
 
     async summary(dto: AiSummaryDto) {
-        const session = await this.prisma.testSession.findUnique({
+        const session = await this.prisma.session.findUnique({
             where: { sessionToken: dto.sessionToken },
+            include: { user: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        let result = await this.prisma.sessionResult.findUnique({
-            where: { sessionId: session.id },
+        const assessment = dto.assessmentId
+            ? await this.prisma.assessment.findFirst({
+                  where: { id: dto.assessmentId, sessionId: session.id },
+              })
+            : await this.prisma.assessment.findFirst({
+                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completedAt: 'desc' },
+              });
+        if (!assessment) throw new NotFoundException('Aucun test disponible pour cette session');
+
+        let result = await this.prisma.assessmentResult.findUnique({
+            where: { assessmentId: assessment.id },
         });
         if (!result) {
-            if (!session.phase1CompletedAt || !session.phase2CompletedAt) {
+            if (assessment.status !== AssessmentStatus.COMPLETED) {
                 throw new BadRequestException('Resultat indisponible, test non termine');
             }
-            result = await this.resultsService.compute({ sessionToken: dto.sessionToken });
+            result = await this.resultsService.compute({
+                sessionToken: dto.sessionToken,
+                assessmentId: assessment.id,
+            });
         }
 
-        const recommendations = await this.ensureRecommendations(dto.sessionToken, dto.limit ?? 6);
-        const behavior = await this.computeBehaviorMetrics(session.id, session.currentPhase);
+        const recommendations = await this.ensureRecommendations(
+            dto.sessionToken,
+            assessment.id,
+            dto.limit ?? 6,
+        );
+        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
+        const profile = this.mergeProfiles(session.profile, session.user?.profile);
 
         const context = {
             session: {
-                currentPhase: session.currentPhase,
-                completionPercentage: session.completionPercentage,
-                startedAt: session.startedAt,
+                id: session.id,
+                profile,
+            },
+            assessment: {
+                id: assessment.id,
+                type: assessment.type,
+                currentPhase: assessment.currentPhase,
+                currentSection: assessment.currentSection,
+                completionPercentage: assessment.completionPercentage,
+                startedAt: assessment.startedAt,
             },
             result: {
                 phase1Code: result.phase1Code,
@@ -126,17 +155,34 @@ export class AiService {
     }
 
     async coach(dto: AiCoachDto) {
-        const session = await this.prisma.testSession.findUnique({
-            where: { sessionToken: dto.sessionToken },
-        });
-        if (!session) throw new NotFoundException('Session introuvable');
+        const { session, assessment } = await resolveSessionAndAssessment(
+            this.prisma,
+            dto.sessionToken,
+            {
+                assessmentId: dto.assessmentId,
+                requireInProgress: true,
+            },
+        );
 
-        const partialScores = await this.computePartialScores(session.id, session.currentPhase);
-        const behavior = await this.computeBehaviorMetrics(session.id, session.currentPhase);
-        const candidates = await this.getCandidateQuestions(session, dto.section, dto.maxQuestions);
+        if (dto.section && assessment.currentSection && dto.section !== assessment.currentSection) {
+            throw new BadRequestException('Section courante invalide pour cette requete');
+        }
+
+        const partialScores = await this.computePartialScores(
+            assessment.id,
+            assessment.currentPhase,
+            dto.section,
+        );
+        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
+        const candidates = await this.getCandidateQuestions(
+            assessment,
+            dto.section,
+            dto.maxQuestions,
+        );
         if (!candidates.length) {
             throw new BadRequestException('Aucune question disponible');
         }
+        const profile = this.mergeProfiles(session.profile, session.user?.profile);
         const recommendations: Array<{
             name: string;
             category: string | null;
@@ -170,11 +216,12 @@ export class AiService {
             "Tu es un coach d'orientation. Choisis les meilleures questions suivantes pour affiner le profil.";
         const input = JSON.stringify({
             task: 'Selectionner les prochaines questions et donner un message clair.',
-            session: {
-                currentPhase: session.currentPhase,
-                currentSection: session.currentSection,
-                completionPercentage: session.completionPercentage,
+            assessment: {
+                currentPhase: assessment.currentPhase,
+                currentSection: assessment.currentSection,
+                completionPercentage: assessment.completionPercentage,
             },
+            profile,
             partialScores,
             behavior,
             recommendations,
@@ -214,6 +261,40 @@ export class AiService {
         return { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
     }
 
+    private buildCountsFromResponses(
+        responses: Array<{ question: { riasecTypeId: RiasecType } }>,
+    ): Record<RiasecType, number> {
+        const counts = this.emptyScores();
+        for (const response of responses) {
+            counts[response.question.riasecTypeId] += 1;
+        }
+        return counts;
+    }
+
+    private applyDepthFilter<
+        T extends { id: number; riasecTypeId: RiasecType; displayOrder: number },
+    >(
+        questions: T[],
+        answered: Set<number>,
+        answeredCounts: Record<RiasecType, number>,
+        depth: number,
+    ) {
+        const remaining = this.emptyScores();
+        for (const key of Object.keys(remaining) as RiasecType[]) {
+            remaining[key] = Math.max(0, depth - (answeredCounts[key] ?? 0));
+        }
+
+        const selected: T[] = [];
+        for (const question of questions) {
+            if (answered.has(question.id)) continue;
+            const count = remaining[question.riasecTypeId] ?? 0;
+            if (count <= 0) continue;
+            selected.push(question);
+            remaining[question.riasecTypeId] = count - 1;
+        }
+        return selected.sort((a, b) => a.displayOrder - b.displayOrder);
+    }
+
     private addScore(scores: RiasecScores, code: string | null, value: number) {
         if (!code) return;
         if ((RIASEC_CODES as readonly string[]).includes(code)) {
@@ -221,13 +302,17 @@ export class AiService {
         }
     }
 
-    private async computePartialScores(sessionId: string, phase: PhaseType) {
+    private async computePartialScores(
+        assessmentId: string,
+        phase: PhaseType,
+        section?: Phase2Type,
+    ) {
         const phase1Scores = this.emptyScores();
         const phase2Scores = this.emptyScores();
 
         if (phase === PhaseType.PHASE_1) {
             const responses = await this.prisma.phase1Response.findMany({
-                where: { sessionId },
+                where: { assessmentId },
                 select: { responseValue: true, question: { select: { riasecTypeId: true } } },
             });
             for (const response of responses) {
@@ -235,7 +320,10 @@ export class AiService {
             }
         } else if (phase === PhaseType.PHASE_2) {
             const responses = await this.prisma.phase2Response.findMany({
-                where: { sessionId },
+                where: {
+                    assessmentId,
+                    ...(section ? { phase2Type: section } : {}),
+                },
                 select: { responseValue: true, question: { select: { riasecTypeId: true } } },
             });
             for (const response of responses) {
@@ -249,16 +337,16 @@ export class AiService {
         };
     }
 
-    private async computeBehaviorMetrics(sessionId: string, phase: PhaseType) {
+    private async computeBehaviorMetrics(assessmentId: string, phase: PhaseType) {
         let responses: Array<{ responseTimeMs: number | null }> = [];
         if (phase === PhaseType.PHASE_1) {
             responses = await this.prisma.phase1Response.findMany({
-                where: { sessionId, responseTimeMs: { not: null } },
+                where: { assessmentId, responseTimeMs: { not: null } },
                 select: { responseTimeMs: true },
             });
         } else if (phase === PhaseType.PHASE_2) {
             responses = await this.prisma.phase2Response.findMany({
-                where: { sessionId, responseTimeMs: { not: null } },
+                where: { assessmentId, responseTimeMs: { not: null } },
                 select: { responseTimeMs: true },
             });
         }
@@ -282,73 +370,85 @@ export class AiService {
     }
 
     private async getCandidateQuestions(
-        session: {
+        assessment: {
             id: string;
             testVersionId: number;
             currentPhase: PhaseType;
-            currentSection: SectionType | null;
+            currentSection: Phase2Type | null;
+            depth: number;
         },
-        section?: SectionType,
+        section?: Phase2Type,
         maxQuestions = 5,
     ): Promise<CandidateQuestion[]> {
         const poolSize = Math.max(10, maxQuestions * 2);
-        if (session.currentPhase === PhaseType.PHASE_1) {
+        const depth = assessment.depth ?? DEFAULT_DEPTH;
+        if (assessment.currentPhase === PhaseType.PHASE_1) {
             const answered = await this.prisma.phase1Response.findMany({
-                where: { sessionId: session.id },
-                select: { questionId: true },
+                where: { assessmentId: assessment.id },
+                select: { questionId: true, question: { select: { riasecTypeId: true } } },
             });
             const answeredSet = new Set(answered.map((r) => r.questionId));
+            const answeredCounts = this.buildCountsFromResponses(answered);
             const questions = await this.prisma.phase1Question.findMany({
-                where: { isActive: true, testVersionId: session.testVersionId },
+                where: { isActive: true, testVersionId: assessment.testVersionId },
                 orderBy: { displayOrder: 'asc' },
-                select: { id: true, riasecTypeId: true, questionText: true },
+                select: { id: true, riasecTypeId: true, questionText: true, displayOrder: true },
             });
-            return questions
-                .filter((q) => !answeredSet.has(q.id))
+            return this.applyDepthFilter(questions, answeredSet, answeredCounts, depth)
                 .slice(0, poolSize)
                 .map((q) => ({ id: q.id, text: q.questionText, riasecType: q.riasecTypeId }));
         }
 
-        const targetSection = section ?? session.currentSection ?? SectionType.OCCUPATIONS;
+        const targetSection = section ?? assessment.currentSection ?? Phase2Type.OCCUPATIONS;
         const answered = await this.prisma.phase2Response.findMany({
-            where: { sessionId: session.id },
-            select: { questionId: true },
+            where: { assessmentId: assessment.id, phase2Type: targetSection },
+            select: { questionId: true, question: { select: { riasecTypeId: true } } },
         });
         const answeredSet = new Set(answered.map((r) => r.questionId));
+        const answeredCounts = this.buildCountsFromResponses(answered);
         const questions = await this.prisma.phase2Question.findMany({
             where: {
                 isActive: true,
-                testVersionId: session.testVersionId,
-                sectionType: targetSection,
+                testVersionId: assessment.testVersionId,
+                phase2Type: targetSection,
             },
             orderBy: { displayOrder: 'asc' },
-            select: { id: true, riasecTypeId: true, questionText: true, sectionType: true },
+            select: {
+                id: true,
+                riasecTypeId: true,
+                questionText: true,
+                phase2Type: true,
+                displayOrder: true,
+            },
         });
-        return questions
-            .filter((q) => !answeredSet.has(q.id))
+        return this.applyDepthFilter(questions, answeredSet, answeredCounts, depth)
             .slice(0, poolSize)
             .map((q) => ({
                 id: q.id,
                 text: q.questionText,
                 riasecType: q.riasecTypeId,
-                sectionType: q.sectionType,
+                sectionType: q.phase2Type,
             }));
     }
 
-    private async ensureRecommendations(sessionToken: string, limit: number) {
-        const existing = await this.prisma.sessionCareerRecommendation.findMany({
-            where: { result: { session: { sessionToken } } },
+    private async ensureRecommendations(sessionToken: string, assessmentId: string, limit: number) {
+        const existing = await this.prisma.assessmentCareerRecommendation.findMany({
+            where: { result: { assessmentId } },
             include: { career: true },
             orderBy: { rankPosition: 'asc' },
             take: limit,
         });
         if (existing.length) return existing;
-        return this.recommendationsService.getRecommendations({ sessionToken, limit });
+        return this.recommendationsService.getRecommendations({
+            sessionToken,
+            assessmentId,
+            limit,
+        });
     }
 
-    private async getExistingRecommendations(sessionId: string) {
-        const recs = await this.prisma.sessionCareerRecommendation.findMany({
-            where: { result: { sessionId } },
+    private async getExistingRecommendations(assessmentId: string) {
+        const recs = await this.prisma.assessmentCareerRecommendation.findMany({
+            where: { result: { assessmentId } },
             include: { career: true },
             orderBy: { rankPosition: 'asc' },
             take: 6,
@@ -358,5 +458,23 @@ export class AiService {
             category: rec.career.category,
             matchScore: rec.matchScore,
         }));
+    }
+
+    private mergeProfiles(
+        sessionProfile?: unknown | null,
+        userProfile?: unknown | null,
+    ): Record<string, unknown> | null {
+        const sessionObj =
+            sessionProfile && typeof sessionProfile === 'object'
+                ? (sessionProfile as Record<string, unknown>)
+                : null;
+        const userObj =
+            userProfile && typeof userProfile === 'object'
+                ? (userProfile as Record<string, unknown>)
+                : null;
+        if (sessionObj && userObj) {
+            return { ...userObj, ...sessionObj };
+        }
+        return sessionObj ?? userObj ?? null;
     }
 }

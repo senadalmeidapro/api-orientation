@@ -1,11 +1,9 @@
 import {
-    PrismaClient,
     RiasecType,
-    SectionType,
+    Phase2Type,
     CareerCategory,
     Label,
     BadgeRarity,
-    ConsistencyLevel,
 } from '@prisma/client';
 import 'dotenv/config';
 import { PrismaService } from '../../src/prisma/prisma.service';
@@ -1100,14 +1098,14 @@ async function main() {
                 where: {
                     testVersionId_sectionType_displayOrder: {
                         testVersionId: version.id,
-                        sectionType: SectionType.OCCUPATIONS,
+                        sectionType: Phase2Type.OCCUPATIONS,
                         displayOrder: occOrder,
                     },
                 },
                 update: {
                     riasecTypeId: code,
                     questionText: text,
-                    sectionType: SectionType.OCCUPATIONS,
+                    sectionType: Phase2Type.OCCUPATIONS,
                     displayOrder: occOrder,
                     isActive: true,
                 },
@@ -1115,7 +1113,7 @@ async function main() {
                     testVersionId: version.id,
                     riasecTypeId: code,
                     questionText: text,
-                    sectionType: SectionType.OCCUPATIONS,
+                    sectionType: Phase2Type.OCCUPATIONS,
                     displayOrder: occOrder,
                     isActive: true,
                 },
@@ -1132,14 +1130,14 @@ async function main() {
                 where: {
                     testVersionId_sectionType_displayOrder: {
                         testVersionId: version.id,
-                        sectionType: SectionType.APTITUDES,
+                        sectionType: Phase2Type.APTITUDES,
                         displayOrder: aptOrder,
                     },
                 },
                 update: {
                     riasecTypeId: code,
                     questionText: text,
-                    sectionType: SectionType.APTITUDES,
+                    sectionType: Phase2Type.APTITUDES,
                     displayOrder: aptOrder,
                     minValue: 1,
                     maxValue: 3,
@@ -1150,7 +1148,7 @@ async function main() {
                     testVersionId: version.id,
                     riasecTypeId: code,
                     questionText: text,
-                    sectionType: SectionType.APTITUDES,
+                    sectionType: Phase2Type.APTITUDES,
                     displayOrder: aptOrder,
                     minValue: 1,
                     maxValue: 3,
@@ -1170,14 +1168,14 @@ async function main() {
                 where: {
                     testVersionId_sectionType_displayOrder: {
                         testVersionId: version.id,
-                        sectionType: SectionType.PERSONALITY,
+                        sectionType: Phase2Type.PERSONALITY,
                         displayOrder: perOrder,
                     },
                 },
                 update: {
                     riasecTypeId: code,
                     questionText: text,
-                    sectionType: SectionType.PERSONALITY,
+                    sectionType: Phase2Type.PERSONALITY,
                     displayOrder: perOrder,
                     isActive: true,
                 },
@@ -1185,7 +1183,7 @@ async function main() {
                     testVersionId: version.id,
                     riasecTypeId: code,
                     questionText: text,
-                    sectionType: SectionType.PERSONALITY,
+                    sectionType: Phase2Type.PERSONALITY,
                     displayOrder: perOrder,
                     isActive: true,
                 },

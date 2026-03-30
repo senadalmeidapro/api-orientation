@@ -7,24 +7,28 @@ const prisma = {
         create: jest.fn(),
     },
     user: { findUnique: jest.fn() },
-    userTestSession: { create: jest.fn(), findUnique: jest.fn() },
+    session: { create: jest.fn(), findUnique: jest.fn() },
+    assessment: { create: jest.fn() },
 } as any;
 
 describe('SessionsService', () => {
-    it('creates session with active version', async () => {
+    it('creates session with initial assessment', async () => {
         prisma.testVersion.findUnique.mockResolvedValue({ id: 1 });
-        prisma.userTestSession.create.mockResolvedValue({
-            id: 's1',
+        prisma.session.create.mockResolvedValue({
+            id: 1,
             sessionToken: 'token',
             shareToken: 'share',
-            testVersionId: 1,
-            currentPhase: 'PHASE_1',
             startedAt: new Date(),
         });
+        prisma.assessment.create.mockResolvedValue({
+            id: 'a1',
+            type: 'PHASE1',
+        });
+
         const service = new SessionsService(prisma);
         const res = await service.createSession({ testVersionId: 1 } as any);
 
         expect(res.sessionToken).toBe('token');
-        expect(res.currentPhase).toBe('PHASE_1');
+        expect(res.assessment.id).toBe('a1');
     });
 });

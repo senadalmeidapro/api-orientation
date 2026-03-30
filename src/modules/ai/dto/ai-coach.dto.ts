@@ -1,9 +1,13 @@
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { SectionType } from '@prisma/client';
+import { Phase2Type } from '@prisma/client';
 
 export class AiCoachDto {
     @IsString()
     sessionToken!: string;
+
+    @IsOptional()
+    @IsString()
+    assessmentId?: string;
 
     @IsOptional()
     @IsString()
@@ -16,6 +20,6 @@ export class AiCoachDto {
     maxQuestions?: number;
 
     @IsOptional()
-    @IsEnum(SectionType)
-    section?: SectionType;
+    @IsEnum(Phase2Type)
+    section?: Phase2Type;
 }

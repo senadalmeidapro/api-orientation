@@ -6,6 +6,10 @@ export class GetRecommendationsDto {
     sessionToken!: string;
 
     @IsOptional()
+    @IsString()
+    assessmentId?: string;
+
+    @IsOptional()
     @Type(() => Number)
     @IsInt()
     @Min(1)

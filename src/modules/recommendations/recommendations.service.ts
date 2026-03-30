@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
-import { RiasecType } from '@prisma/client';
+import { AssessmentStatus, RiasecType } from '@prisma/client';
 
 @Injectable()
 export class RecommendationsService {
@@ -21,24 +21,44 @@ export class RecommendationsService {
     }
 
     async getRecommendations(dto: GetRecommendationsDto) {
-        const session = await this.prisma.testSession.findUnique({
+        const session = await this.prisma.session.findUnique({
             where: { sessionToken: dto.sessionToken },
+            select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        let result = await this.prisma.sessionResult.findUnique({
-            where: { sessionId: session.id },
+        const assessment = dto.assessmentId
+            ? await this.prisma.assessment.findFirst({
+                  where: { id: dto.assessmentId, sessionId: session.id },
+              })
+            : await this.prisma.assessment.findFirst({
+                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completedAt: 'desc' },
+              });
+
+        if (!assessment) {
+            throw new NotFoundException('Aucun test disponible pour cette session');
+        }
+
+        let result = await this.prisma.assessmentResult.findUnique({
+            where: { assessmentId: assessment.id },
         });
 
         if (!result) {
-            result = await this.resultsService.compute({ sessionToken: dto.sessionToken });
+            result = await this.resultsService.compute({
+                sessionToken: dto.sessionToken,
+                assessmentId: assessment.id,
+            });
         }
 
         const careers = await this.prisma.career.findMany({
             where: { isActive: true },
         });
 
-        const weights = this.buildWeights(result.phase2Code);
+        const baseCode = result.phase2Code ?? result.phase1Code;
+        if (!baseCode) return [];
+
+        const weights = this.buildWeights(baseCode);
 
         const scored = careers
             .map((career) => {
@@ -65,7 +85,7 @@ export class RecommendationsService {
 
         const saved = await this.prisma.$transaction(
             top.map((item, index) =>
-                this.prisma.sessionCareerRecommendation.upsert({
+                this.prisma.assessmentCareerRecommendation.upsert({
                     where: {
                         resultId_careerId: {
                             resultId: result.id,

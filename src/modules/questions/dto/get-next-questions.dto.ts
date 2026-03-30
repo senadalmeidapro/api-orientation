@@ -1,6 +1,6 @@
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SectionType } from '@prisma/client';
+import { Phase2Type } from '@prisma/client';
 
 export class GetNextQuestionsDto {
     @IsString()
@@ -14,8 +14,8 @@ export class GetNextQuestionsDto {
     maxQuestions?: number;
 
     @IsOptional()
-    @IsEnum(SectionType)
-    section?: SectionType;
+    @IsEnum(Phase2Type)
+    section?: Phase2Type;
 
     @IsOptional()
     @IsString()

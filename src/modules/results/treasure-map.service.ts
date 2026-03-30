@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ResultsService } from './results.service';
-import { RiasecType } from '@prisma/client';
+import { AssessmentStatus, RiasecType, Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 import { StorageService } from '../media/storage.service';
 import { BadgesService } from '../badges/badges.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TreasureMapService {
@@ -24,8 +25,9 @@ export class TreasureMapService {
         return weights;
     }
 
-    private async computeRecommendations(resultId: number, phase2Code: string, limit = 6) {
-        const weights = this.buildWeights(phase2Code);
+    private async computeRecommendations(resultId: string, baseCode: string, limit = 6) {
+        if (!baseCode) return [];
+        const weights = this.buildWeights(baseCode);
         const careers = await this.prisma.career.findMany({
             where: { isActive: true },
         });
@@ -55,7 +57,7 @@ export class TreasureMapService {
 
         await this.prisma.$transaction(
             scored.map((item, index) =>
-                this.prisma.sessionCareerRecommendation.upsert({
+                this.prisma.assessmentCareerRecommendation.upsert({
                     where: {
                         resultId_careerId: {
                             resultId,
@@ -111,21 +113,39 @@ export class TreasureMapService {
         return Buffer.concat(chunks);
     }
 
-    async generate(sessionToken: string, generatePdf = false) {
-        const session = await this.prisma.testSession.findUnique({
+    async generate(sessionToken: string, assessmentId?: string, generatePdf = false) {
+        const session = await this.prisma.session.findUnique({
             where: { sessionToken },
+            select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        let result = await this.prisma.sessionResult.findUnique({
-            where: { sessionId: session.id },
-        });
-
-        if (!result) {
-            result = await this.resultsService.compute({ sessionToken });
+        const assessment = assessmentId
+            ? await this.prisma.assessment.findFirst({
+                  where: { id: assessmentId, sessionId: session.id },
+              })
+            : await this.prisma.assessment.findFirst({
+                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completedAt: 'desc' },
+              });
+        if (!assessment) {
+            throw new NotFoundException('Aucun test disponible pour cette session');
         }
 
-        const existingRecs = await this.prisma.sessionCareerRecommendation.findMany({
+        let result = await this.prisma.assessmentResult.findUnique({
+            where: { assessmentId: assessment.id },
+        });
+        if (!result) {
+            if (assessment.status !== AssessmentStatus.COMPLETED) {
+                throw new NotFoundException('Resultat indisponible, test non termine');
+            }
+            result = await this.resultsService.compute({
+                sessionToken,
+                assessmentId: assessment.id,
+            });
+        }
+
+        const existingRecs = await this.prisma.assessmentCareerRecommendation.findMany({
             where: { resultId: result.id },
             include: { career: true },
             orderBy: { rankPosition: 'asc' },
@@ -138,7 +158,11 @@ export class TreasureMapService {
                   matchScore: r.matchScore,
                   career: r.career,
               }))
-            : await this.computeRecommendations(result.id, result.phase2Code, 6);
+            : await this.computeRecommendations(
+                  result.id,
+                  result.phase2Code ?? result.phase1Code ?? '',
+                  6,
+              );
 
         const mapData = {
             generatedAt: new Date().toISOString(),
@@ -164,18 +188,24 @@ export class TreasureMapService {
             })),
         };
 
-        const shareToken = session.shareToken ?? session.sessionToken;
-
         let pdfUrl: string | undefined;
         if (generatePdf) {
             const buffer = await this.generatePdfBuffer(mapData);
             pdfUrl = await this.storage.uploadBuffer(buffer, 'application/pdf');
         }
 
+        const updateData: { mapData: Prisma.InputJsonValue; pdfUrl?: string } = { mapData: mapData as Prisma.InputJsonValue };
+        if (generatePdf) updateData.pdfUrl = pdfUrl;
+
         const treasureMap = await this.prisma.treasureMap.upsert({
-            where: { sessionId: session.id },
-            update: { mapData, shareToken, pdfUrl },
-            create: { sessionId: session.id, mapData, shareToken, pdfUrl },
+            where: { assessmentId: assessment.id },
+            update: updateData,
+            create: {
+                assessmentId: assessment.id,
+                mapData: mapData as Prisma.InputJsonValue,
+                pdfUrl,
+                shareToken: randomUUID(),
+            },
         });
 
         await this.badges.grantTreasureMap(session);
@@ -199,14 +229,15 @@ export class TreasureMapService {
     }
 
     async getBySessionToken(sessionToken: string) {
-        const session = await this.prisma.testSession.findUnique({
+        const session = await this.prisma.session.findUnique({
             where: { sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        const map = await this.prisma.treasureMap.findUnique({
-            where: { sessionId: session.id },
+        const map = await this.prisma.treasureMap.findFirst({
+            where: { assessment: { sessionId: session.id } },
+            orderBy: { createdAt: 'desc' },
         });
         if (!map) throw new NotFoundException('Carte introuvable');
         return map;

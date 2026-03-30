@@ -1,6 +1,6 @@
 import { IsBoolean, IsEnum, IsInt, IsObject, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { RiasecType, SectionType } from '@prisma/client';
+import { RiasecType, Phase2Type } from '@prisma/client';
 
 export class UpdatePhase2QuestionDto {
     @IsOptional()
@@ -8,8 +8,8 @@ export class UpdatePhase2QuestionDto {
     riasecTypeId?: RiasecType;
 
     @IsOptional()
-    @IsEnum(SectionType)
-    sectionType?: SectionType;
+    @IsEnum(Phase2Type)
+    phase2Type?: Phase2Type;
 
     @IsOptional()
     @IsString()

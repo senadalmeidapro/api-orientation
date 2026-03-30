@@ -1,22 +1,37 @@
 import { QuestionsService } from './questions.service';
+import { AssessmentStatus, PhaseType } from '@prisma/client';
 
 const prisma = {
-    userTestSession: { findUnique: jest.fn() },
+    session: { findUnique: jest.fn() },
+    assessment: { findFirst: jest.fn() },
     language: { findUnique: jest.fn() },
     phase1Question: { findMany: jest.fn() },
-    phase2Question: { findMany: jest.fn() },
+    phase1Response: { findMany: jest.fn() },
 } as any;
 
 describe('QuestionsService', () => {
     it('returns phase1 questions with translations', async () => {
-        prisma.userTestSession.findUnique.mockResolvedValue({ testVersionId: 1 });
+        prisma.session.findUnique.mockResolvedValue({ id: 1 });
+        prisma.assessment.findFirst.mockResolvedValue({
+            id: 'a1',
+            sessionId: 1,
+            status: AssessmentStatus.IN_PROGRESS,
+            currentPhase: PhaseType.PHASE_1,
+            testVersionId: 1,
+            depth: 5,
+        });
         prisma.language.findUnique.mockResolvedValue({ id: 1 });
+        prisma.phase1Response.findMany.mockResolvedValue([]);
         prisma.phase1Question.findMany.mockResolvedValue([
             {
                 id: 1,
                 riasecTypeId: 'R',
                 questionText: 'q',
-                translations: [{ questionText: 't' }],
+                questionShort: null,
+                illustrationUrl: null,
+                pointsValue: 10,
+                displayOrder: 1,
+                translations: [{ questionText: 't', questionShort: null }],
             },
         ]);
 

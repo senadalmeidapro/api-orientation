@@ -2,19 +2,28 @@ import { ResultsService } from './results.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ScoringService } from '../scoring/scoring.service';
 import { BadgesService } from '../badges/badges.service';
+import { AssessmentStatus } from '@prisma/client';
 
 const prisma = {
-    userTestSession: { findUnique: jest.fn(), update: jest.fn() },
-    userResult: { upsert: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+    session: { findUnique: jest.fn() },
+    assessment: { findFirst: jest.fn() },
+    assessmentResult: {
+        findFirst: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        upsert: jest.fn(),
+    },
 } as any;
 
 describe('ResultsService', () => {
     it('requires completed test before compute', async () => {
-        prisma.userTestSession.findUnique.mockResolvedValue({
-            id: 's1',
-            phase1CompletedAt: null,
-            phase2CompletedAt: null,
+        prisma.session.findUnique.mockResolvedValue({ id: 1 });
+        prisma.assessment.findFirst.mockResolvedValue({
+            id: 'a1',
+            sessionId: 1,
+            status: AssessmentStatus.IN_PROGRESS,
         });
+
         const scoring = { computeScores: jest.fn() } as unknown as ScoringService;
         const badges = { grantTestCompleted: jest.fn() } as unknown as BadgesService;
         const service = new ResultsService(prisma, scoring, badges);
@@ -25,11 +34,11 @@ describe('ResultsService', () => {
     });
 
     it('throws when result missing', async () => {
-        prisma.userResult.findUnique.mockResolvedValue(null);
+        prisma.assessmentResult.findFirst.mockResolvedValue(null);
         const scoring = { computeScores: jest.fn() } as unknown as ScoringService;
         const badges = { grantTestCompleted: jest.fn() } as unknown as BadgesService;
         const service = new ResultsService(prisma, scoring, badges);
 
-        await expect(service.getBySessionId('s1')).rejects.toBeInstanceOf(NotFoundException);
+        await expect(service.getBySessionId(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 });

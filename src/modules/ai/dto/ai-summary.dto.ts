@@ -5,6 +5,10 @@ export class AiSummaryDto {
     sessionToken!: string;
 
     @IsOptional()
+    @IsString()
+    assessmentId?: string;
+
+    @IsOptional()
     @IsInt()
     @Min(1)
     @Max(12)

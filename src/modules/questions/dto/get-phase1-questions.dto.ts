@@ -6,5 +6,9 @@ export class GetPhase1QuestionsDto {
 
     @IsOptional()
     @IsString()
+    assessmentId?: string;
+
+    @IsOptional()
+    @IsString()
     lang?: string;
 }

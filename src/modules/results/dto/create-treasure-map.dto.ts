@@ -5,6 +5,10 @@ export class CreateTreasureMapDto {
     sessionToken!: string;
 
     @IsOptional()
+    @IsString()
+    assessmentId?: string;
+
+    @IsOptional()
     @IsBoolean()
     generatePdf?: boolean;
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BadgeRarity, TestSession } from '@prisma/client';
+import { BadgeRarity, Session } from '@prisma/client';
 
 @Injectable()
 export class BadgesService {
@@ -62,8 +62,8 @@ export class BadgesService {
         return this.prisma.badge.findMany({ orderBy: { pointsValue: 'desc' } });
     }
 
-    private async addXp(sessionId: string, amount: number, reason: string) {
-        await this.prisma.sessionXP.create({
+    private async addXp(sessionId: number, amount: number, reason: string) {
+        await this.prisma.xPHistory.create({
             data: {
                 sessionId,
                 amount,
@@ -71,35 +71,22 @@ export class BadgesService {
             },
         });
 
-        const level = await this.prisma.sessionLevel.upsert({
-            where: { sessionId },
-            update: {
-                totalXp: { increment: amount },
-                currentXp: { increment: amount },
-            },
-            create: {
-                sessionId,
-                level: 1,
-                currentXp: amount,
-                totalXp: amount,
-            },
+        const session = await this.prisma.session.update({
+            where: { id: sessionId },
+            data: { totalXp: { increment: amount } },
+            select: { totalXp: true, level: true },
         });
 
-        if (level.currentXp >= 100) {
-            const extra = level.currentXp;
-            const newLevel = level.level + Math.floor(extra / 100);
-            const remaining = extra % 100;
-            await this.prisma.sessionLevel.update({
-                where: { sessionId },
-                data: {
-                    level: newLevel,
-                    currentXp: remaining,
-                },
+        const nextLevel = Math.floor(session.totalXp / 100) + 1;
+        if (nextLevel !== session.level) {
+            await this.prisma.session.update({
+                where: { id: sessionId },
+                data: { level: nextLevel },
             });
         }
     }
 
-    private async awardBadge(session: TestSession, code: string, reason: string) {
+    private async awardBadge(session: Pick<Session, 'id'>, code: string, reason: string) {
         await this.ensureDefaults();
         const badge = await this.prisma.badge.findUnique({ where: { code } });
         if (!badge) return null;
@@ -126,19 +113,19 @@ export class BadgesService {
         return created;
     }
 
-    async grantPhase1Completed(session: TestSession) {
+    async grantPhase1Completed(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'PHASE1_COMPLETED', 'Phase 1 terminee');
     }
 
-    async grantPhase2Completed(session: TestSession) {
+    async grantPhase2Completed(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'PHASE2_COMPLETED', 'Phase 2 terminee');
     }
 
-    async grantTestCompleted(session: TestSession) {
+    async grantTestCompleted(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'TEST_COMPLETED', 'Test termine');
     }
 
-    async grantTreasureMap(session: TestSession) {
+    async grantTreasureMap(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'TREASURE_MAP', 'Carte au tresor generee');
     }
 

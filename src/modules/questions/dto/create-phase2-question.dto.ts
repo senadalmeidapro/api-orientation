@@ -1,13 +1,13 @@
 import { IsBoolean, IsEnum, IsInt, IsObject, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { RiasecType, SectionType } from '@prisma/client';
+import { RiasecType, Phase2Type } from '@prisma/client';
 
 export class CreatePhase2QuestionDto {
     @IsEnum(RiasecType)
     riasecTypeId!: RiasecType;
 
-    @IsEnum(SectionType)
-    sectionType!: SectionType;
+    @IsEnum(Phase2Type)
+    phase2Type!: Phase2Type;
 
     @IsString()
     questionText!: string;

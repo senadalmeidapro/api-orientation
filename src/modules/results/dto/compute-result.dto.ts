@@ -5,6 +5,10 @@ export class ComputeResultDto {
     sessionToken!: string;
 
     @IsOptional()
+    @IsString()
+    assessmentId?: string;
+
+    @IsOptional()
     @IsObject()
     subjectiveRanking?: Record<string, number>;
 }

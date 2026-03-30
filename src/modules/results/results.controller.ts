@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { ResultsService } from './results.service';
 import { ComputeResultDto } from './dto/compute-result.dto';
 import { Public } from '../../common/decorators/public.decorator';
@@ -22,8 +22,14 @@ export class ResultsController {
     }
 
     @Throttle({ default: { limit: 60, ttl: 60 } })
+    @Get('by-assessment/:assessmentId')
+    getByAssessmentId(@Param('assessmentId') assessmentId: string) {
+        return this.service.getByAssessmentId(assessmentId);
+    }
+
+    @Throttle({ default: { limit: 60, ttl: 60 } })
     @Get(':sessionId')
-    getBySessionId(@Param('sessionId') sessionId: string) {
+    getBySessionId(@Param('sessionId', ParseIntPipe) sessionId: number) {
         return this.service.getBySessionId(sessionId);
     }
 }
