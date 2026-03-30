@@ -1,16 +1,9 @@
-import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { SectionType } from '@prisma/client';
 
 export class GetPhase2QuestionsDto {
-    @IsOptional()
     @IsString()
-    sessionToken?: string;
-
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    testVersionId?: number;
+    sessionToken!: string;
 
     @IsEnum(SectionType)
     section!: SectionType;

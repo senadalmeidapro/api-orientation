@@ -6,8 +6,7 @@ const RIASEC_ORDER: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
 
 @Injectable()
 export class ScoringService {
-    constructor(private readonly prisma: PrismaService) {
-    }
+    constructor(private readonly prisma: PrismaService) {}
 
     private sortCodes(scores: Record<RiasecType, number>) {
         return [...RIASEC_ORDER].sort((a, b) => {
@@ -31,7 +30,7 @@ export class ScoringService {
     }
 
     async computeScores(sessionId: string) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { id: sessionId },
             select: { testVersionId: true },
         });
@@ -112,8 +111,8 @@ export class ScoringService {
             consistencyScore === 3
                 ? ConsistencyLevel.FORTE
                 : consistencyScore === 2
-                    ? ConsistencyLevel.MOYENNE
-                    : ConsistencyLevel.FAIBLE;
+                  ? ConsistencyLevel.MOYENNE
+                  : ConsistencyLevel.FAIBLE;
 
         const normalizedValues = this.sortCodes(phase2NormalizedScores).map(
             (k) => phase2NormalizedScores[k],

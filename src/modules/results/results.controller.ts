@@ -7,8 +7,7 @@ import { Throttle } from '@nestjs/throttler';
 @Public()
 @Controller('results')
 export class ResultsController {
-    constructor(private readonly service: ResultsService) {
-    }
+    constructor(private readonly service: ResultsService) {}
 
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Post('compute')

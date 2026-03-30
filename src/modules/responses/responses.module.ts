@@ -9,5 +9,4 @@ import { BadgesModule } from '../badges/badges.module';
     providers: [ResponsesService],
     exports: [ResponsesService],
 })
-export class ResponsesModule {
-}
+export class ResponsesModule {}

@@ -7,8 +7,7 @@ import { AiCoachDto, AiSummaryDto } from './dto';
 @Public()
 @Controller('ai')
 export class AiController {
-    constructor(private readonly service: AiService) {
-    }
+    constructor(private readonly service: AiService) {}
 
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Post('summary')

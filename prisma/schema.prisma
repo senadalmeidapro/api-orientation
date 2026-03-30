@@ -53,45 +53,6 @@ enum ConsistencyLevel {
   FORTE // 3
 }
 
-enum Departement {
-  Alibori
-  Atacora
-  Atlantique
-  Borgou
-  Collines
-  Couffo
-  Donga
-  Littoral
-  Mono
-  Oueme
-  Plateau
-  Zou
-}
-
-enum Gender {
-  M
-  F
-  Other
-}
-
-enum UserRole {
-  ADMIN
-  EDITOR
-  ANALYST
-}
-
-enum Theme {
-  light
-  dark
-  system
-}
-
-enum FontSize {
-  small
-  medium
-  large
-}
-
 enum Label {
   Faible
   Moyen
@@ -106,39 +67,6 @@ enum CareerCategory {
   EDUCATION
   COMMERCE
   ADMINISTRATION
-}
-
-enum RequestType {
-  INFO
-  RENDEZ_VOUS
-  QUESTION
-  AUTRE
-}
-
-enum PreferredTime {
-  MATIN
-  APRES_MIDI
-  SOIR
-}
-
-enum ContactSatus {
-  PENDING
-  CONTACTED
-  RESOLVED
-}
-
-enum AnnouncementType {
-  INFO
-  EVENT
-  ALERTE
-  PROMO
-}
-
-enum TargetAudience {
-  ALL
-  STUDENTS
-  PARENTS
-  TEACHERS
 }
 
 enum FeedbackType {
@@ -185,7 +113,7 @@ model TestVersion {
 
   phase1Questions Phase1Question[]
   phase2Questions Phase2Question[]
-  sessions        UserTestSession[]
+  sessions        TestSession[]
 
   @@index([isActive])
   @@map("test_versions")
@@ -205,7 +133,6 @@ model Language {
   phase2QuestionTranslations Phase2QuestionTranslation[]
   careerTranslations         CareerTranslation[]
   resourceTranslations       ResourceTranslation[]
-  announcementTranslations   AnnouncementTranslation[]
   institutionTranslations    TrainingInstitutionTranslation[]
 
   @@index([isActive])
@@ -213,85 +140,12 @@ model Language {
 }
 
 // =====================================================
-// TABLES PRINCIPALES
-// =====================================================
-
-// Utilisateurs de la plateforme
-model User {
-  id         String       @id @default(uuid())
-  email      String       @unique
-  phone      String?      @unique
-  password   String
-  firstName  String?
-  lastName   String?
-  birthDate  DateTime?
-  gender     Gender?
-  department Departement?
-  city       String?
-  school     String? // Établissement scolaire
-  level      String? // Niveau d'étude (3e, Terminale, etc.)
-
-  // Préférences
-  preferredLanguage   String  @default("fr") // fr, fon, yoruba, etc.
-  acceptNotifications Boolean @default(true)
-
-  // Métadonnées
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  lastLoginAt DateTime?
-  isActive    Boolean    @default(true)
-  isAdmin     Boolean    @default(false)
-  roles       UserRole[] @default([])
-
-  // Relations
-  testSessions         UserTestSession[]
-  badges               UserBadge[]
-  savedCareers         SavedCareer[]
-  feedbacks            UserFeedback[]
-  outcomes             UserOutcome[]
-  userFeature          UserFeature?
-  interactionEvents    InteractionEvent[]
-  recommendationScores RecommendationScore[]
-  settings             UserSettings?
-  contactRequests      ContactRequest[]
-  xpEvents             UserXP[]
-  userLevel            UserLevel?
-  refreshTokens        RefreshToken[]
-  passwordResetTokens  PasswordResetToken[]
-  auditLogs            AdminAuditLog[]
-
-  @@index([email])
-  @@index([phone])
-  @@index([department])
-  @@index([createdAt])
-}
-
-// Paramètres utilisateur
-model UserSettings {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Préférences d'affichage
-  theme    Theme    @default(light)
-  fontSize FontSize @default(medium)
-
-  // Confidentialité
-  shareResults Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// =====================================================
 // SESSIONS DE TEST
 // =====================================================
 
-// Sessions de test (une par parcours utilisateur)
-model UserTestSession {
+// Session de test (anonyme, isolée)
+model TestSession {
   id            String      @id @default(uuid())
-  userId        String? // Null si non connecté
-  user          User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   testVersionId Int
   testVersion   TestVersion @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
 
@@ -303,7 +157,6 @@ model UserTestSession {
   currentPhase     PhaseType    @default(PHASE_1)
   currentStepIndex Int          @default(0)
   currentSection   SectionType? // Pour phase 2
-  department       Departement?
 
   // Timestamps
   startedAt         DateTime  @default(now())
@@ -317,28 +170,25 @@ model UserTestSession {
   isAbandoned          Boolean @default(false)
   completionPercentage Int     @default(0)
 
-  // Métadonnées
-  deviceInfo Json? // Infos sur l'appareil (OS, navigateur, etc.)
-  ipAddress  String? // @db.Inet?
-  userAgent  String?
-
   // Relations
   phase1Responses Phase1Response[]
   phase2Responses Phase2Response[]
-  result          UserResult?
+  result          SessionResult?
   treasureMap     TreasureMap?
-  feedbacks       UserFeedback[]
-  userBadges      UserBadge[]
-  xpEvents        UserXP[]
+  feedbacks       SessionFeedback[]
+  sessionBadges   SessionBadge[]
+  xpEvents        SessionXP[]
+  sessionLevel    SessionLevel?
+  outcomes        SessionOutcome[]
+  interactions    SessionInteraction[]
 
-  @@index([userId])
   @@index([testVersionId])
   @@index([sessionToken])
   @@index([shareToken])
   @@index([startedAt])
   @@index([isAbandoned])
   @@index([completionPercentage])
-  @@index([department])
+  @@map("test_sessions")
 }
 
 // =====================================================
@@ -485,11 +335,11 @@ model AptitudeResponseOption {
 
 // Réponses de la Phase 1
 model Phase1Response {
-  id         Int             @id @default(autoincrement())
+  id         Int            @id @default(autoincrement())
   sessionId  String
-  session    UserTestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session    TestSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   questionId Int
-  question   Phase1Question  @relation(fields: [questionId], references: [id])
+  question   Phase1Question @relation(fields: [questionId], references: [id])
 
   responseValue  Int // 0 pour non, 1 pour oui
   responseTimeMs Int? // Temps de réponse (ms)
@@ -505,11 +355,11 @@ model Phase1Response {
 
 // Réponses de la Phase 2
 model Phase2Response {
-  id         Int             @id @default(autoincrement())
+  id         Int            @id @default(autoincrement())
   sessionId  String
-  session    UserTestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session    TestSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   questionId Int
-  question   Phase2Question  @relation(fields: [questionId], references: [id])
+  question   Phase2Question @relation(fields: [questionId], references: [id])
 
   responseValue  Int // Pour occupations: 0/1; aptitudes: 1-3; personality: 0/1
   responseTimeMs Int? // Temps de réponse
@@ -528,10 +378,10 @@ model Phase2Response {
 // =====================================================
 
 // Résultats calculés du test
-model UserResult {
-  id        Int             @id @default(autoincrement())
-  sessionId String          @unique
-  session   UserTestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+model SessionResult {
+  id        Int         @id @default(autoincrement())
+  sessionId String      @unique
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   // Codes
   phase1Code        String @db.Char(3) // Ex: "RIA"
@@ -559,14 +409,14 @@ model UserResult {
   viewCount    Int       @default(0)
 
   // Relations
-  careerRecommendations UserCareerRecommendation[]
+  careerRecommendations SessionCareerRecommendation[]
 
   @@index([sessionId])
   @@index([phase2Code])
   @@index([consistencyLevel])
   @@index([profileStrength])
   @@index([createdAt])
-  @@map("user_results")
+  @@map("session_results")
 }
 
 // =====================================================
@@ -609,13 +459,11 @@ model Career {
   updatedAt DateTime @updatedAt
 
   // Relations
-  recommendations      UserCareerRecommendation[]
-  savedBy              SavedCareer[]
-  institutions         CareerInstitution[]
-  resources            CareerResource[]
-  translations         CareerTranslation[]
-  outcomes             UserOutcome[]
-  recommendationScores RecommendationScore[]
+  recommendations SessionCareerRecommendation[]
+  institutions    CareerInstitution[]
+  resources       CareerResource[]
+  translations    CareerTranslation[]
+  outcomes        SessionOutcome[]
 
   @@index([category])
   @@index([isFeatured])
@@ -675,12 +523,12 @@ model CareerTranslation {
 }
 
 // Recommandations personnalisées pour un utilisateur
-model UserCareerRecommendation {
-  id       Int        @id @default(autoincrement())
+model SessionCareerRecommendation {
+  id       Int           @id @default(autoincrement())
   resultId Int
-  result   UserResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  result   SessionResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
   careerId Int
-  career   Career     @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  career   Career        @relation(fields: [careerId], references: [id], onDelete: Cascade)
 
   matchScore   Int // Pourcentage de matching (0-100)
   rankPosition Int // Position dans le classement
@@ -690,31 +538,14 @@ model UserCareerRecommendation {
 
   createdAt DateTime @default(now())
 
-  feedbacks UserFeedback[]
+  feedbacks SessionFeedback[]
 
   @@unique([resultId, careerId])
   @@index([resultId])
   @@index([careerId])
   @@index([matchScore])
   @@index([rankPosition])
-  @@map("user_career_recommendations")
-}
-
-// Métiers sauvegardés par l'utilisateur (favoris)
-model SavedCareer {
-  id       Int    @id @default(autoincrement())
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  careerId Int
-  career   Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
-
-  notes   String? // Notes personnelles sur ce métier
-  savedAt DateTime @default(now())
-
-  @@unique([userId, careerId])
-  @@index([userId])
-  @@index([careerId])
-  @@map("saved_careers")
+  @@map("session_career_recommendations")
 }
 
 // =====================================================
@@ -743,7 +574,7 @@ model Badge {
   updatedAt DateTime @updatedAt
 
   // Relations
-  userBadges UserBadge[]
+  sessionBadges SessionBadge[]
 
   @@index([rarity])
   @@index([unlockCount])
@@ -751,104 +582,63 @@ model Badge {
 }
 
 // Badges débloqués par les utilisateurs
-model UserBadge {
-  id        Int              @id @default(autoincrement())
-  userId    String? // Null si non connecté
-  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionId String? // Session où le badge a été débloqué
-  session   UserTestSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+model SessionBadge {
+  id        Int         @id @default(autoincrement())
+  sessionId String
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   badgeId   Int
-  badge     Badge            @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badge     Badge       @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   unlockedAt     DateTime @default(now())
   sharedOnSocial Boolean  @default(false)
 
-  @@unique([userId, badgeId]) // Un utilisateur ne peut avoir un badge qu'une fois
-  @@index([userId])
+  @@unique([sessionId, badgeId])
   @@index([sessionId])
   @@index([badgeId])
   @@index([unlockedAt])
-  @@map("user_badges")
+  @@map("session_badges")
 }
 
 // Historique des points d'expérience
-model UserXP {
-  id        Int              @id @default(autoincrement())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessionId String?
-  session   UserTestSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+model SessionXP {
+  id        Int         @id @default(autoincrement())
+  sessionId String
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   amount Int
   reason String?
 
   createdAt DateTime @default(now())
 
-  @@index([userId])
   @@index([sessionId])
   @@index([createdAt])
-  @@map("user_xp")
+  @@map("session_xp")
 }
 
-// Niveau actuel de l'utilisateur
-model UserLevel {
-  id        Int    @id @default(autoincrement())
-  userId    String @unique
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  level     Int    @default(1)
-  currentXp Int    @default(0)
-  totalXp   Int    @default(0)
+// Niveau actuel de la session
+model SessionLevel {
+  id        Int         @id @default(autoincrement())
+  sessionId String      @unique
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  level     Int         @default(1)
+  currentXp Int         @default(0)
+  totalXp   Int         @default(0)
 
   updatedAt DateTime @updatedAt
 
   @@index([level])
-  @@map("user_levels")
+  @@map("session_levels")
 }
 
 // =====================================================
 // CARTE AU TRÉSOR (RÉSULTAT FINAL PERSONNALISÉ)
 // =====================================================
 
-// Refresh tokens (multi-device)
-model RefreshToken {
-  id        Int    @id @default(autoincrement())
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String @unique
-
-  createdAt DateTime  @default(now())
-  expiresAt DateTime
-  revokedAt DateTime?
-
-  ipAddress String?
-  userAgent String?
-
-  @@index([userId])
-  @@index([expiresAt])
-  @@map("refresh_tokens")
-}
-
-// Password reset tokens
-model PasswordResetToken {
-  id        Int    @id @default(autoincrement())
-  userId    String
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String @unique
-
-  createdAt DateTime  @default(now())
-  expiresAt DateTime
-  usedAt    DateTime?
-
-  @@index([userId])
-  @@index([expiresAt])
-  @@map("password_reset_tokens")
-}
-
 // Carte au Trésor générée
 model TreasureMap {
-  id        Int             @id @default(autoincrement())
-  sessionId String          @unique
-  session   UserTestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  id        Int         @id @default(autoincrement())
+  sessionId String      @unique
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   // Données de la carte (JSON complet)
   mapData    Json // Stockage de tous les éléments visuels
@@ -871,17 +661,14 @@ model TreasureMap {
 // FEEDBACK ET OUTCOMES
 // =====================================================
 
-model UserFeedback {
+model SessionFeedback {
   id Int @id @default(autoincrement())
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  sessionId String?
-  session   UserTestSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  sessionId String
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   recommendationId Int?
-  recommendation   UserCareerRecommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+  recommendation   SessionCareerRecommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
 
   type  FeedbackType
   value Float
@@ -890,19 +677,18 @@ model UserFeedback {
 
   createdAt DateTime @default(now())
 
-  @@index([userId])
   @@index([sessionId])
   @@index([recommendationId])
   @@index([type])
   @@index([createdAt])
-  @@map("user_feedbacks")
+  @@map("session_feedbacks")
 }
 
-model UserOutcome {
+model SessionOutcome {
   id Int @id @default(autoincrement())
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String
+  session   TestSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   careerId Int
   career   Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
@@ -914,36 +700,21 @@ model UserOutcome {
 
   createdAt DateTime @default(now())
 
-  @@index([userId])
+  @@index([sessionId])
   @@index([careerId])
   @@index([status])
   @@index([createdAt])
-  @@map("user_outcomes")
+  @@map("session_outcomes")
 }
 
 // =====================================================
 // ADAPTIVE RECOMMENDATIONS
 // =====================================================
 
-model UserFeature {
-  id                Int      @id @default(autoincrement())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  avgResponseTime   Float    @default(0)
-  responseVariance  Float    @default(0)
-  completionRate    Float    @default(0)
-  riasecConsistency Float    @default(0)
-  explorationScore  Float    @default(0)
-  lastUpdatedAt     DateTime @updatedAt
-
-  @@index([userId])
-  @@map("user_features")
-}
-
-model InteractionEvent {
+model SessionInteraction {
   id         BigInt                @id @default(autoincrement())
-  userId     String
-  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId  String
+  session    TestSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   type       InteractionEventType
   entityType InteractionEntityType
   entityId   Int
@@ -951,30 +722,12 @@ model InteractionEvent {
   metadata   Json?
   createdAt  DateTime              @default(now())
 
-  @@index([userId])
+  @@index([sessionId])
   @@index([type])
   @@index([entityType])
   @@index([entityId])
   @@index([createdAt])
-  @@map("interaction_events")
-}
-
-model RecommendationScore {
-  id           Int      @id @default(autoincrement())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  careerId     Int
-  career       Career   @relation(fields: [careerId], references: [id], onDelete: Cascade)
-  score        Float
-  confidence   Float
-  modelVersion String
-  createdAt    DateTime @default(now())
-
-  @@index([userId])
-  @@index([careerId])
-  @@index([modelVersion])
-  @@index([createdAt])
-  @@map("recommendation_scores")
+  @@map("session_interactions")
 }
 
 // =====================================================
@@ -1098,137 +851,3 @@ model TrainingInstitutionTranslation {
   @@index([languageId])
   @@map("training_institution_translations")
 }
-
-// =====================================================
-// CONTACT ET SUPPORT
-// =====================================================
-
-// Demandes de contact / rendez-vous
-model ContactRequest {
-  id     Int     @id @default(autoincrement())
-  userId String? // Null si non connecté
-  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  name  String
-  email String
-  phone String?
-
-  requestType RequestType // 'INFO', 'RENDEZ_VOUS', 'QUESTION', 'AUTRE'
-  message     String      @db.Text
-
-  // Pour rendez-vous
-  preferredDate DateTime?
-  preferredTime PreferredTime? // 'MATIN', 'APRES_MIDI', 'SOIR'
-
-  // Statut
-  status     ContactSatus @default(PENDING) // 'PENDING', 'CONTACTED', 'RESOLVED'
-  assignedTo String? // Admin/Conseiller assigné
-  response   String?      @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([email])
-  @@index([status])
-  @@index([createdAt])
-  @@map("contact_requests")
-}
-
-// =====================================================
-// ADMIN AUDIT LOG
-// =====================================================
-
-model AdminAuditLog {
-  id     Int    @id @default(autoincrement())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  action   String
-  entity   String
-  entityId String?
-  data     Json?
-
-  ipAddress String?
-  userAgent String?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([entity])
-  @@index([createdAt])
-  @@map("admin_audit_logs")
-}
-
-// =====================================================
-// NEWS ET ANNONCES
-// =====================================================
-
-// Annonces et actualités
-model Announcement {
-  id      Int     @id @default(autoincrement())
-  title   String
-  content String  @db.Text
-  excerpt String? // Résumé court
-
-  type     AnnouncementType // 'INFO', 'EVENT', 'ALERTE', 'PROMO'
-  priority Int              @default(0) // 0 = normal, 1 = important, 2 = urgent
-
-  // Image
-  imageUrl String?
-  linkUrl  String? // Lien vers plus d'infos
-
-  // Public cible
-  targetAudience TargetAudience? // 'ALL', 'STUDENTS', 'PARENTS', 'TEACHERS'
-
-  // Dates
-  startDate DateTime? // Date de début d'affichage
-  endDate   DateTime? // Date de fin d'affichage
-  isActive  Boolean   @default(true)
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  publishedAt DateTime?
-
-  // Relations
-  translations AnnouncementTranslation[]
-
-  @@index([type])
-  @@index([isActive])
-  @@index([startDate, endDate])
-  @@index([priority])
-  @@map("announcements")
-}
-
-// Traductions des annonces
-model AnnouncementTranslation {
-  id             Int          @id @default(autoincrement())
-  announcementId Int
-  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
-  languageId     Int
-  language       Language     @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  title    String
-  content  String  @db.Text
-  excerpt  String?
-  audioUrl String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([announcementId, languageId])
-  @@index([languageId])
-  @@map("announcement_translations")
-}
-
-// =====================================================
-// INDEX POUR PERFORMANCE
-// =====================================================
-
-// Notes d'indexation supplémentaires :
-// - Toutes les clés étrangères sont automatiquement indexées par Prisma
-// - Les champs utilisés dans WHERE, ORDER BY, ou JOIN fréquents sont indexés manuellement
-// - Les champs JSON utilisent des index GIN pour les requêtes avancées
-
-// Exemple d'index GIN pour les champs JSON (à ajouter manuellement en SQL)
-// CREATE INDEX idx_results_phase2_scores ON user_results USING gin (phase2_scores);
-// CREATE INDEX idx_careers_riasec_codes ON careers USING gin (riasec_codes);

@@ -1,4 +1,4 @@
-# README IA — Integration GPT-4o
+# README IA — Integration GPT-4o (Session-Only)
 
 Ce document explique comment integrer l'IA dans l'API d'orientation RIASEC en utilisant le modele GPT-4o.
 
@@ -9,6 +9,8 @@ Ajouter une couche IA pour:
 - Expliquer le profil RIASEC en langage naturel.
 - Proposer un coach d'orientation (conseils et prochaines etapes).
 - Resumer les resultats et recommandations.
+
+**Contrainte stricte :** aucune PII, aucun utilisateur, uniquement des donnees de session.
 
 ## Pourquoi GPT-4o
 
@@ -41,7 +43,7 @@ Creer un module IA dedie, independant et facilement remplaçable:
 ## Flux d'integration
 
 1. Recuperer les donnees du parcours (session, resultats, recommandations).
-2. Construire un contexte minimal (pas de PII inutile).
+2. Construire un contexte minimal (pas de PII).
 3. Appeler GPT-4o.
 4. Valider la reponse (texte ou JSON structure).
 5. Sauvegarder ou renvoyer la reponse via l'API.
@@ -150,4 +152,3 @@ Pour des reponses fiables, demander un JSON valide:
 3. Brancher `AiService` dans les services metier.
 4. Ajouter les DTO et endpoints.
 5. Ajouter un test e2e simple.
-

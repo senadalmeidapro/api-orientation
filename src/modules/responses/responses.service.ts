@@ -10,27 +10,26 @@ export class ResponsesService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly badges: BadgesService,
-    ) {
-    }
+    ) {}
 
     private async invalidateResultIfExists(sessionId: string) {
-        const existing = await this.prisma.userResult.findUnique({
+        const existing = await this.prisma.sessionResult.findUnique({
             where: { sessionId },
             select: { id: true },
         });
         if (!existing) return;
 
         await this.prisma.$transaction([
-            this.prisma.userCareerRecommendation.deleteMany({
+            this.prisma.sessionCareerRecommendation.deleteMany({
                 where: { resultId: existing.id },
             }),
             this.prisma.treasureMap.deleteMany({
                 where: { sessionId },
             }),
-            this.prisma.userResult.delete({
+            this.prisma.sessionResult.delete({
                 where: { sessionId },
             }),
-            this.prisma.userTestSession.update({
+            this.prisma.testSession.update({
                 where: { id: sessionId },
                 data: {
                     completedAt: null,
@@ -41,7 +40,7 @@ export class ResponsesService {
     }
 
     async savePhase1(dto: CreatePhase1ResponsesDto) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken: dto.sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
@@ -96,7 +95,7 @@ export class ResponsesService {
 
         const phase1Completed = totalQuestions > 0 && answered >= totalQuestions;
 
-        await this.prisma.userTestSession.update({
+        await this.prisma.testSession.update({
             where: { id: session.id },
             data: {
                 phase1CompletedAt: phase1Completed ? new Date() : undefined,
@@ -117,7 +116,7 @@ export class ResponsesService {
     }
 
     async savePhase2(dto: CreatePhase2ResponsesDto) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken: dto.sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
@@ -200,7 +199,7 @@ export class ResponsesService {
 
         const phase2Completed = totalQuestions > 0 && answered >= totalQuestions;
 
-        await this.prisma.userTestSession.update({
+        await this.prisma.testSession.update({
             where: { id: session.id },
             data: {
                 phase2CompletedAt: phase2Completed ? new Date() : undefined,

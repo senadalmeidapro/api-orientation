@@ -2,27 +2,22 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetPhase1QuestionsDto } from './dto/get-phase1-questions.dto';
 import { GetPhase2QuestionsDto } from './dto/get-phase2-questions.dto';
-import { CreatePhase1QuestionDto } from './dto/create-phase1-question.dto';
-import { UpdatePhase1QuestionDto } from './dto/update-phase1-question.dto';
-import { CreatePhase2QuestionDto } from './dto/create-phase2-question.dto';
-import { UpdatePhase2QuestionDto } from './dto/update-phase2-question.dto';
+import { PhaseType } from '@prisma/client';
 
 @Injectable()
 export class QuestionsService {
-    constructor(private readonly prisma: PrismaService) {
-    }
+    constructor(private readonly prisma: PrismaService) {}
 
-    private async resolveTestVersionId(sessionToken?: string, testVersionId?: number) {
-        if (sessionToken) {
-            const session = await this.prisma.userTestSession.findUnique({
-                where: { sessionToken },
-                select: { testVersionId: true },
-            });
-            if (!session) throw new NotFoundException('Session introuvable');
-            return session.testVersionId;
+    private async resolveSession(sessionToken: string, phase: PhaseType) {
+        const session = await this.prisma.testSession.findUnique({
+            where: { sessionToken },
+            select: { id: true, testVersionId: true, currentPhase: true },
+        });
+        if (!session) throw new NotFoundException('Session introuvable');
+        if (session.currentPhase !== phase) {
+            throw new BadRequestException('Phase courante invalide pour cette requete');
         }
-        if (testVersionId) return testVersionId;
-        throw new BadRequestException('sessionToken ou testVersionId requis');
+        return session;
     }
 
     private async resolveLanguageId(code?: string) {
@@ -32,18 +27,18 @@ export class QuestionsService {
     }
 
     async getPhase1Questions(dto: GetPhase1QuestionsDto) {
-        const testVersionId = await this.resolveTestVersionId(dto.sessionToken, dto.testVersionId);
+        const session = await this.resolveSession(dto.sessionToken, PhaseType.PHASE_1);
         const languageId = await this.resolveLanguageId(dto.lang);
 
         const questions = await this.prisma.phase1Question.findMany({
-            where: { isActive: true, testVersionId },
+            where: { isActive: true, testVersionId: session.testVersionId },
             orderBy: { displayOrder: 'asc' },
             include: {
                 translations: languageId
                     ? {
-                        where: {languageId},
-                        take: 1,
-                    }
+                          where: { languageId },
+                          take: 1,
+                      }
                     : false,
             },
         });
@@ -63,18 +58,22 @@ export class QuestionsService {
     }
 
     async getPhase2Questions(dto: GetPhase2QuestionsDto) {
-        const testVersionId = await this.resolveTestVersionId(dto.sessionToken, dto.testVersionId);
+        const session = await this.resolveSession(dto.sessionToken, PhaseType.PHASE_2);
         const languageId = await this.resolveLanguageId(dto.lang);
 
         const questions = await this.prisma.phase2Question.findMany({
-            where: { isActive: true, testVersionId, sectionType: dto.section },
+            where: {
+                isActive: true,
+                testVersionId: session.testVersionId,
+                sectionType: dto.section,
+            },
             orderBy: { displayOrder: 'asc' },
             include: {
                 translations: languageId
                     ? {
-                        where: {languageId},
-                        take: 1,
-                    }
+                          where: { languageId },
+                          take: 1,
+                      }
                     : false,
             },
         });
@@ -97,19 +96,19 @@ export class QuestionsService {
         });
     }
 
-    async createPhase1Question(dto: CreatePhase1QuestionDto) {
-        return this.prisma.phase1Question.create({ data: dto });
-    }
+    // async createPhase1Question() {
+    //     throw new BadRequestException('Creation de questions desactivee');
+    // }
 
-    async updatePhase1Question(id: number, dto: UpdatePhase1QuestionDto) {
-        return this.prisma.phase1Question.update({ where: { id }, data: dto });
-    }
+    // async updatePhase1Question() {
+    //     throw new BadRequestException('Mise a jour de questions desactivee');
+    // }
 
-    async createPhase2Question(dto: CreatePhase2QuestionDto) {
-        return this.prisma.phase2Question.create({ data: dto });
-    }
+    // async createPhase2Question() {
+    //     throw new BadRequestException('Creation de questions desactivee');
+    // }
 
-    async updatePhase2Question(id: number, dto: UpdatePhase2QuestionDto) {
-        return this.prisma.phase2Question.update({ where: { id }, data: dto });
-    }
+    // async updatePhase2Question() {
+    //     throw new BadRequestException('Mise a jour de questions desactivee');
+    // }
 }

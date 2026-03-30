@@ -24,16 +24,15 @@ export class AiService {
         private readonly resultsService: ResultsService,
         private readonly recommendationsService: RecommendationsService,
         private readonly ai: AiClient,
-    ) {
-    }
+    ) {}
 
     async summary(dto: AiSummaryDto) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken: dto.sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        let result = await this.prisma.userResult.findUnique({
+        let result = await this.prisma.sessionResult.findUnique({
             where: { sessionId: session.id },
         });
         if (!result) {
@@ -44,6 +43,7 @@ export class AiService {
         }
 
         const recommendations = await this.ensureRecommendations(dto.sessionToken, dto.limit ?? 6);
+        const behavior = await this.computeBehaviorMetrics(session.id, session.currentPhase);
 
         const context = {
             session: {
@@ -71,6 +71,7 @@ export class AiService {
                 matchScore: rec.matchScore,
                 rankPosition: rec.rankPosition,
             })),
+            behavior,
         };
 
         const schema: JsonSchemaFormat = {
@@ -125,18 +126,22 @@ export class AiService {
     }
 
     async coach(dto: AiCoachDto) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken: dto.sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        const partialScores = await this.computePartialScores(session.id);
+        const partialScores = await this.computePartialScores(session.id, session.currentPhase);
+        const behavior = await this.computeBehaviorMetrics(session.id, session.currentPhase);
         const candidates = await this.getCandidateQuestions(session, dto.section, dto.maxQuestions);
         if (!candidates.length) {
             throw new BadRequestException('Aucune question disponible');
         }
-
-        const recommendations = await this.getExistingRecommendations(session.id);
+        const recommendations: Array<{
+            name: string;
+            category: string | null;
+            matchScore: number;
+        }> = [];
 
         const schema: JsonSchemaFormat = {
             name: 'riasec_coach',
@@ -171,6 +176,7 @@ export class AiService {
                 completionPercentage: session.completionPercentage,
             },
             partialScores,
+            behavior,
             recommendations,
             candidates,
             userMessage: dto.message ?? null,
@@ -215,29 +221,63 @@ export class AiService {
         }
     }
 
-    private async computePartialScores(sessionId: string) {
+    private async computePartialScores(sessionId: string, phase: PhaseType) {
         const phase1Scores = this.emptyScores();
         const phase2Scores = this.emptyScores();
 
-        const phase1Responses = await this.prisma.phase1Response.findMany({
-            where: { sessionId },
-            select: { responseValue: true, question: { select: { riasecTypeId: true } } },
-        });
-        for (const response of phase1Responses) {
-            this.addScore(phase1Scores, response.question.riasecTypeId, response.responseValue);
-        }
-
-        const phase2Responses = await this.prisma.phase2Response.findMany({
-            where: { sessionId },
-            select: { responseValue: true, question: { select: { riasecTypeId: true } } },
-        });
-        for (const response of phase2Responses) {
-            this.addScore(phase2Scores, response.question.riasecTypeId, response.responseValue);
+        if (phase === PhaseType.PHASE_1) {
+            const responses = await this.prisma.phase1Response.findMany({
+                where: { sessionId },
+                select: { responseValue: true, question: { select: { riasecTypeId: true } } },
+            });
+            for (const response of responses) {
+                this.addScore(phase1Scores, response.question.riasecTypeId, response.responseValue);
+            }
+        } else if (phase === PhaseType.PHASE_2) {
+            const responses = await this.prisma.phase2Response.findMany({
+                where: { sessionId },
+                select: { responseValue: true, question: { select: { riasecTypeId: true } } },
+            });
+            for (const response of responses) {
+                this.addScore(phase2Scores, response.question.riasecTypeId, response.responseValue);
+            }
         }
 
         return {
             phase1Scores,
             phase2Scores,
+        };
+    }
+
+    private async computeBehaviorMetrics(sessionId: string, phase: PhaseType) {
+        let responses: Array<{ responseTimeMs: number | null }> = [];
+        if (phase === PhaseType.PHASE_1) {
+            responses = await this.prisma.phase1Response.findMany({
+                where: { sessionId, responseTimeMs: { not: null } },
+                select: { responseTimeMs: true },
+            });
+        } else if (phase === PhaseType.PHASE_2) {
+            responses = await this.prisma.phase2Response.findMany({
+                where: { sessionId, responseTimeMs: { not: null } },
+                select: { responseTimeMs: true },
+            });
+        }
+
+        const times = responses
+            .map((r) => r.responseTimeMs ?? 0)
+            .filter((v) => Number.isFinite(v) && v > 0);
+
+        if (!times.length) {
+            return { responseCount: 0, avgResponseTimeMs: null, responseVarianceMs: null };
+        }
+
+        const avg = times.reduce((sum, v) => sum + v, 0) / times.length;
+        const variance = times.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / times.length;
+
+        return {
+            responseCount: times.length,
+            avgResponseTimeMs: Math.round(avg),
+            responseVarianceMs: Math.round(variance),
         };
     }
 
@@ -296,7 +336,7 @@ export class AiService {
     }
 
     private async ensureRecommendations(sessionToken: string, limit: number) {
-        const existing = await this.prisma.userCareerRecommendation.findMany({
+        const existing = await this.prisma.sessionCareerRecommendation.findMany({
             where: { result: { session: { sessionToken } } },
             include: { career: true },
             orderBy: { rankPosition: 'asc' },
@@ -307,7 +347,7 @@ export class AiService {
     }
 
     private async getExistingRecommendations(sessionId: string) {
-        const recs = await this.prisma.userCareerRecommendation.findMany({
+        const recs = await this.prisma.sessionCareerRecommendation.findMany({
             where: { result: { sessionId } },
             include: { career: true },
             orderBy: { rankPosition: 'asc' },

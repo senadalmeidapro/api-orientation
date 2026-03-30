@@ -13,8 +13,7 @@ export class TreasureMapService {
         private readonly resultsService: ResultsService,
         private readonly storage: StorageService,
         private readonly badges: BadgesService,
-    ) {
-    }
+    ) {}
 
     private buildWeights(phase2Code: string) {
         const letters = phase2Code.split('') as RiasecType[];
@@ -56,7 +55,7 @@ export class TreasureMapService {
 
         await this.prisma.$transaction(
             scored.map((item, index) =>
-                this.prisma.userCareerRecommendation.upsert({
+                this.prisma.sessionCareerRecommendation.upsert({
                     where: {
                         resultId_careerId: {
                             resultId,
@@ -113,12 +112,12 @@ export class TreasureMapService {
     }
 
     async generate(sessionToken: string, generatePdf = false) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        let result = await this.prisma.userResult.findUnique({
+        let result = await this.prisma.sessionResult.findUnique({
             where: { sessionId: session.id },
         });
 
@@ -126,7 +125,7 @@ export class TreasureMapService {
             result = await this.resultsService.compute({ sessionToken });
         }
 
-        const existingRecs = await this.prisma.userCareerRecommendation.findMany({
+        const existingRecs = await this.prisma.sessionCareerRecommendation.findMany({
             where: { resultId: result.id },
             include: { career: true },
             orderBy: { rankPosition: 'asc' },
@@ -135,10 +134,10 @@ export class TreasureMapService {
 
         const recs = existingRecs.length
             ? existingRecs.map((r) => ({
-                rankPosition: r.rankPosition,
-                matchScore: r.matchScore,
-                career: r.career,
-            }))
+                  rankPosition: r.rankPosition,
+                  matchScore: r.matchScore,
+                  career: r.career,
+              }))
             : await this.computeRecommendations(result.id, result.phase2Code, 6);
 
         const mapData = {
@@ -200,7 +199,7 @@ export class TreasureMapService {
     }
 
     async getBySessionToken(sessionToken: string) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken },
             select: { id: true },
         });

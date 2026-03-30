@@ -11,11 +11,10 @@ export class ResultsService {
         private readonly prisma: PrismaService,
         private readonly scoring: ScoringService,
         private readonly badges: BadgesService,
-    ) {
-    }
+    ) {}
 
     async compute(dto: ComputeResultDto) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken: dto.sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
@@ -27,7 +26,7 @@ export class ResultsService {
 
         const scores = await this.scoring.computeScores(session.id);
 
-        const result = await this.prisma.userResult.upsert({
+        const result = await this.prisma.sessionResult.upsert({
             where: { sessionId: session.id },
             update: {
                 phase1Code: scores.phase1Code,
@@ -66,7 +65,7 @@ export class ResultsService {
             },
         });
 
-        await this.prisma.userTestSession.update({
+        await this.prisma.testSession.update({
             where: { id: session.id },
             data: {
                 currentPhase: PhaseType.PHASE_3,
@@ -82,12 +81,12 @@ export class ResultsService {
     }
 
     async getBySessionId(sessionId: string) {
-        const result = await this.prisma.userResult.findUnique({
+        const result = await this.prisma.sessionResult.findUnique({
             where: { sessionId },
             include: { careerRecommendations: true },
         });
         if (!result) throw new NotFoundException('Résultat introuvable');
-        await this.prisma.userResult.update({
+        await this.prisma.sessionResult.update({
             where: { sessionId },
             data: {
                 viewCount: { increment: 1 },
@@ -98,7 +97,7 @@ export class ResultsService {
     }
 
     async getByToken(sessionToken: string) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken },
             select: { id: true },
         });

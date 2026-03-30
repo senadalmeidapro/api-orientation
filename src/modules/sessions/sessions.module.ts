@@ -7,5 +7,4 @@ import { SessionsService } from './sessions.service';
     providers: [SessionsService],
     exports: [SessionsService],
 })
-export class SessionsModule {
-}
+export class SessionsModule {}

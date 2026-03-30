@@ -1,15 +1,8 @@
-import { IsInt, IsOptional, IsString } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsOptional, IsString } from 'class-validator';
 
 export class GetPhase1QuestionsDto {
-    @IsOptional()
     @IsString()
-    sessionToken?: string;
-
-    @IsOptional()
-    @Type(() => Number)
-    @IsInt()
-    testVersionId?: number;
+    sessionToken!: string;
 
     @IsOptional()
     @IsString()

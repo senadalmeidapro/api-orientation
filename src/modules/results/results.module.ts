@@ -13,5 +13,4 @@ import { BadgesModule } from '../badges/badges.module';
     providers: [ResultsService, TreasureMapService],
     exports: [ResultsService],
 })
-export class ResultsModule {
-}
+export class ResultsModule {}

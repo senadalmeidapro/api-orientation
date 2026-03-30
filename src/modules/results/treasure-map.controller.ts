@@ -10,8 +10,7 @@ import { Throttle } from '@nestjs/throttler';
 @Public()
 @Controller('treasure-map')
 export class TreasureMapController {
-    constructor(private readonly service: TreasureMapService) {
-    }
+    constructor(private readonly service: TreasureMapService) {}
 
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Post()

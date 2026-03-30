@@ -1,21 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
 import { RiasecType } from '@prisma/client';
-import { RecommendationEngine } from '../adaptive/recommendation-engine.service';
-import { ExplanationService } from '../adaptive/explanation.service';
-import { GetAdaptiveRecommendationsDto } from './dto/get-adaptive-recommendations.dto';
 
 @Injectable()
 export class RecommendationsService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly resultsService: ResultsService,
-        private readonly recommendationEngine: RecommendationEngine,
-        private readonly explanationService: ExplanationService,
-    ) {
-    }
+    ) {}
 
     private buildWeights(phase2Code: string) {
         const letters = phase2Code.split('') as RiasecType[];
@@ -27,12 +21,12 @@ export class RecommendationsService {
     }
 
     async getRecommendations(dto: GetRecommendationsDto) {
-        const session = await this.prisma.userTestSession.findUnique({
+        const session = await this.prisma.testSession.findUnique({
             where: { sessionToken: dto.sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
-        let result = await this.prisma.userResult.findUnique({
+        let result = await this.prisma.sessionResult.findUnique({
             where: { sessionId: session.id },
         });
 
@@ -71,7 +65,7 @@ export class RecommendationsService {
 
         const saved = await this.prisma.$transaction(
             top.map((item, index) =>
-                this.prisma.userCareerRecommendation.upsert({
+                this.prisma.sessionCareerRecommendation.upsert({
                     where: {
                         resultId_careerId: {
                             resultId: result.id,
@@ -96,19 +90,5 @@ export class RecommendationsService {
             ...rec,
             career: top[idx].career,
         }));
-    }
-
-    async getAdaptiveRecommendations(
-        userId: string | undefined,
-        dto: GetAdaptiveRecommendationsDto,
-    ) {
-        if (!userId) throw new BadRequestException('Utilisateur requis');
-        const limit = dto.limit ?? undefined;
-        return this.recommendationEngine.getRecommendations(userId, limit);
-    }
-
-    async explainRecommendation(userId: string | undefined, careerId: number) {
-        if (!userId) throw new BadRequestException('Utilisateur requis');
-        return this.explanationService.explainRecommendation(userId, careerId);
     }
 }

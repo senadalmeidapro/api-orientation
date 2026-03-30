@@ -24,7 +24,7 @@ async function bootstrap() {
     }
     app.use(helmet());
     // --- Swagger sécurisé ---
-    await setupSecureSwagger(app);
+    setupSecureSwagger(app);
     app.useGlobalPipes(
         new ValidationPipe({
             whitelist: true,
