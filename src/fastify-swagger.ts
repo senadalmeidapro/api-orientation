@@ -1,20 +1,38 @@
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 export function setupSecureSwagger(app: any) {
-    const PORT = process.env.APP_PORT ?? 3000;
+    const port = Number(process.env.PORT ?? 3000);
+    const title = process.env.APP_NAME ?? 'POPI 2.0 API';
+    const description = "Documentation technique de l'API d'orientation";
+    const version = process.env.APP_VERSION ?? '1.0.0';
+    const swaggerPath = 'api/v1/docs';
 
-    const swaggerConfig = new DocumentBuilder()
-        .setTitle('ECOSYT API')
-        .setDescription('Documentation technique du projet ECOSYT')
-        .setVersion('1.0.0')
-        .addServer(`http://localhost:${PORT}`, 'Serveur local')
-        .addServer('https://api.ecosyt.com', 'Serveur distant')
-        .setContact('Sèna D’ALMEIDA', 'https://ecosyt.com', 'senadalmeidapro@gmail.com')
-        .build();
+    const serverUrls = (process.env.SWAGGER_SERVER_URLS ?? '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
 
-    const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+    const builder = new DocumentBuilder()
+        .setTitle(title)
+        .setDescription(description)
+        .setVersion(version);
 
-    SwaggerModule.setup('api/v1/docs/v1', app, swaggerDocument, {
+    const contactName = "Sèna Gédéon D'ALMEIDA";
+    const contactUrl = '';
+    const contactEmail = 'senadalmeidapro@gmail.com';
+    if (contactName || contactUrl || contactEmail) {
+        builder.setContact(contactName, contactUrl, contactEmail);
+    }
+
+    if (serverUrls.length > 0) {
+        serverUrls.forEach((url) => builder.addServer(url));
+    } else {
+        builder.addServer(`http://localhost:${port}`, 'Serveur local');
+    }
+
+    const swaggerDocument = SwaggerModule.createDocument(app, builder.build());
+
+    SwaggerModule.setup(swaggerPath, app, swaggerDocument, {
         swaggerOptions: {
             persistAuthorization: false,
             docExpansion: 'none',

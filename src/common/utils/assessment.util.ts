@@ -15,7 +15,7 @@ export async function resolveSessionAndAssessment(
     options: ResolveAssessmentOptions = {},
 ) {
     const session = await prisma.session.findUnique({
-        where: { sessionToken },
+        where: { session_token: sessionToken },
         include: { user: true },
     });
     if (!session) throw new NotFoundException('Session introuvable');
@@ -25,30 +25,30 @@ export async function resolveSessionAndAssessment(
         ? await prisma.assessment.findFirst({
               where: {
                   id: options.assessmentId,
-                  sessionId: session.id,
-                  ...(statusFilter ? { status: statusFilter } : {}),
+                  session_id: session.id,
+                  status: statusFilter ?? undefined,
               },
           })
         : await prisma.assessment.findFirst({
               where: {
-                  sessionId: session.id,
-                  ...(statusFilter ? { status: statusFilter } : {}),
-                  ...(options.phase ? { currentPhase: options.phase } : {}),
+                  session_id: session.id,
+                  status: statusFilter ?? undefined,
+                  current_phase: options.phase ?? undefined,
               },
-              orderBy: { startedAt: 'desc' },
+              orderBy: { started_at: 'desc' },
           });
 
     if (!assessment) {
         throw new NotFoundException('Aucun test actif pour cette session');
     }
 
-    if (options.phase && assessment.currentPhase !== options.phase) {
+    if (options.phase && assessment.current_phase !== options.phase) {
         throw new BadRequestException('Phase courante invalide pour cette requete');
     }
     if (
         options.section &&
-        assessment.currentSection &&
-        assessment.currentSection !== options.section
+        assessment.current_section &&
+        assessment.current_section !== options.section
     ) {
         throw new BadRequestException('Section courante invalide pour cette requete');
     }

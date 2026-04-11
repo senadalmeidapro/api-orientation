@@ -35,7 +35,8 @@ describe('QuestionsService', () => {
             },
         ]);
 
-        const service = new QuestionsService(prisma);
+        const cache = { get: jest.fn().mockResolvedValue(null), set: jest.fn() } as any;
+        const service = new QuestionsService(prisma, cache);
         const res = await service.getPhase1Questions({ sessionToken: 's', lang: 'fr' } as any);
 
         expect(res[0].text).toBe('t');

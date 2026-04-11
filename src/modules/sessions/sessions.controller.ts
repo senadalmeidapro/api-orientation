@@ -1,21 +1,23 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionTokenParam } from './dto/session-token.param';
-import { Public } from '../../common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateSessionProfileDto } from './dto/update-session-profile.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
+import { CurrentUser } from '../../common/decorators';
+import type { User } from '@prisma/client';
 
-@Public()
+@UseGuards(JwtAuthGuard)
 @Controller('sessions')
 export class SessionsController {
     constructor(private readonly service: SessionsService) {}
 
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
-    create(@Body() dto: CreateSessionDto) {
-        return this.service.createSession(dto);
+    create(@CurrentUser() user: User, @Body() dto: CreateSessionDto) {
+        return this.service.createSession(user.id, dto);
     }
 
     @Throttle({ default: { limit: 60, ttl: 60 } })

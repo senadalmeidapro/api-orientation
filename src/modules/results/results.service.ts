@@ -2,8 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../prisma/prisma.service';
 import { ScoringService } from '../scoring/scoring.service';
 import { ComputeResultDto } from './dto/compute-result.dto';
-import { AssessmentStatus, AssessmentType, Phase2Type } from '@prisma/client';
+import { AssessmentStatus, AssessmentType, Phase2Type, Prisma } from '@prisma/client';
 import { BadgesService } from '../badges/badges.service';
+import { EnhancedResultsService } from './services/enhanced-results.service';
 
 @Injectable()
 export class ResultsService {
@@ -11,22 +12,23 @@ export class ResultsService {
         private readonly prisma: PrismaService,
         private readonly scoring: ScoringService,
         private readonly badges: BadgesService,
+        private readonly enhancedResults: EnhancedResultsService,
     ) {}
 
     async compute(dto: ComputeResultDto) {
         const session = await this.prisma.session.findUnique({
-            where: { sessionToken: dto.sessionToken },
+            where: { session_token: dto.sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = dto.assessmentId
             ? await this.prisma.assessment.findFirst({
-                  where: { id: dto.assessmentId, sessionId: session.id },
+                  where: { id: dto.assessmentId, session_id: session.id },
               })
             : await this.prisma.assessment.findFirst({
-                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
-                  orderBy: { completedAt: 'desc' },
+                  where: { session_id: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completed_at: 'desc' },
               });
 
         if (!assessment) {
@@ -39,17 +41,32 @@ export class ResultsService {
             );
         }
 
+        const existing = await this.prisma.assessmentResult.findUnique({
+            where: { assessment_id: assessment.id },
+        });
+        if (existing && !dto.force) {
+            if (dto.subjectiveRanking) {
+                return this.prisma.assessmentResult.update({
+                    where: { assessment_id: assessment.id },
+                    data: {
+                        subjective_ranking: dto.subjectiveRanking as Prisma.InputJsonObject,
+                    },
+                });
+            }
+            return existing;
+        }
+
         const phase1Source =
             assessment.type === AssessmentType.PHASE1 || assessment.type === AssessmentType.FULL
                 ? assessment.id
                 : await this.prisma.assessment
                       .findFirst({
                           where: {
-                              sessionId: session.id,
+                              session_id: session.id,
                               type: AssessmentType.PHASE1,
                               status: AssessmentStatus.COMPLETED,
                           },
-                          orderBy: { completedAt: 'desc' },
+                          orderBy: { completed_at: 'desc' },
                           select: { id: true },
                       })
                       .then((item) => item?.id);
@@ -71,41 +88,41 @@ export class ResultsService {
         });
 
         const result = await this.prisma.assessmentResult.upsert({
-            where: { assessmentId: assessment.id },
+            where: { assessment_id: assessment.id },
             update: {
-                phase1Code: scores.phase1Code,
-                phase2Code: scores.phase2Code,
-                phase1Scores: scores.phase1Scores,
-                phase2Scores: scores.phase2Scores,
-                sectionScores: {
+                phase1_code: scores.phase1Code,
+                phase2_code: scores.phase2Code,
+                phase1_scores: scores.phase1Scores,
+                phase2_scores: scores.phase2Scores,
+                section_scores: {
                     ...scores.sectionScores,
                     totalRaw: scores.phase2Scores,
                     totalNormalized: scores.phase2NormalizedScores,
                 },
-                consistencyScore: scores.consistencyScore,
-                consistencyLevel: scores.consistencyLevel,
-                differentiationScore: scores.differentiationScore,
-                profileStrength: scores.profileStrength,
+                consistency_score: scores.consistencyScore,
+                consistency_level: scores.consistencyLevel,
+                differentiation_score: scores.differentiationScore,
+                profile_strength: scores.profileStrength,
                 strengths: scores.strengths,
-                subjectiveRanking: dto.subjectiveRanking ?? undefined,
+                subjective_ranking: dto.subjectiveRanking ?? undefined,
             },
             create: {
-                assessmentId: assessment.id,
-                phase1Code: scores.phase1Code,
-                phase2Code: scores.phase2Code,
-                phase1Scores: scores.phase1Scores,
-                phase2Scores: scores.phase2Scores,
-                sectionScores: {
+                assessment_id: assessment.id,
+                phase1_code: scores.phase1Code,
+                phase2_code: scores.phase2Code,
+                phase1_scores: scores.phase1Scores,
+                phase2_scores: scores.phase2Scores,
+                section_scores: {
                     ...scores.sectionScores,
                     totalRaw: scores.phase2Scores,
                     totalNormalized: scores.phase2NormalizedScores,
                 },
-                consistencyScore: scores.consistencyScore,
-                consistencyLevel: scores.consistencyLevel,
-                differentiationScore: scores.differentiationScore,
-                profileStrength: scores.profileStrength,
+                consistency_score: scores.consistencyScore,
+                consistency_level: scores.consistencyLevel,
+                differentiation_score: scores.differentiationScore,
+                profile_strength: scores.profileStrength,
                 strengths: scores.strengths,
-                subjectiveRanking: dto.subjectiveRanking ?? undefined,
+                subjective_ranking: dto.subjectiveRanking ?? undefined,
             },
         });
 
@@ -116,19 +133,19 @@ export class ResultsService {
         return result;
     }
 
-    async getBySessionId(sessionId: number) {
+    async getBySessionId(sessionId: string) {
         const result = await this.prisma.assessmentResult.findFirst({
-            where: { assessment: { sessionId } },
-            orderBy: { createdAt: 'desc' },
-            include: { careerRecommendations: true },
+            where: { assessment: { session_id: sessionId } },
+            orderBy: { created_at: 'desc' },
+            include: { career_recommendations: true },
         });
         if (!result) throw new NotFoundException('Résultat introuvable');
-        return this.touchResult(result.assessmentId);
+        return this.touchResult(result.assessment_id);
     }
 
     async getByToken(sessionToken: string) {
         const session = await this.prisma.session.findUnique({
-            where: { sessionToken },
+            where: { session_token: sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
@@ -137,8 +154,8 @@ export class ResultsService {
 
     async getByAssessmentId(assessmentId: string) {
         const result = await this.prisma.assessmentResult.findUnique({
-            where: { assessmentId },
-            include: { careerRecommendations: true },
+            where: { assessment_id: assessmentId },
+            include: { career_recommendations: true },
         });
         if (!result) throw new NotFoundException('Résultat introuvable');
         return this.touchResult(assessmentId);
@@ -146,12 +163,38 @@ export class ResultsService {
 
     private async touchResult(assessmentId: string) {
         return this.prisma.assessmentResult.update({
-            where: { assessmentId },
+            where: { assessment_id: assessmentId },
             data: {
-                viewCount: { increment: 1 },
-                lastViewedAt: new Date(),
+                view_sount: { increment: 1 },
+                lastViewed_at: new Date(),
             },
-            include: { careerRecommendations: true },
+            include: { career_recommendations: true },
         });
+    }
+
+    /**
+     * Nouvelle méthode : Générer un rapport enrichi avec analyses comportementales
+     */
+    async computeEnhancedResult(assessmentId: string) {
+        // S'assurer que le résultat de base existe
+        const baseResult = await this.prisma.assessmentResult.findUnique({
+            where: { assessment_id: assessmentId },
+        });
+
+        if (!baseResult) {
+            throw new NotFoundException(
+                "Résultat de base non trouvé. Calculez d'abord le résultat standard.",
+            );
+        }
+
+        // Générer le rapport enrichi
+        return await this.enhancedResults.generateEnhancedReport(assessmentId);
+    }
+
+    /**
+     * Récupérer les observations comportementales pour un assessment
+     */
+    async getBehavioralObservations(assessmentId: string) {
+        return await this.enhancedResults.formatBehavioralObservations(assessmentId);
     }
 }

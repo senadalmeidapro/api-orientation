@@ -1,7 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
-import { Public } from '../../common/decorators/public.decorator';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 
-@Public()
+@UseGuards(JwtAuthGuard)
 @Controller('scoring')
 export class ScoringController {
     @Get('health')

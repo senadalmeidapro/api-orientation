@@ -76,3 +76,11 @@ generate-secret-key.js
 secret-key
 custom_migration
 .aiignore
+
+# AI
+.claude/
+.codex/
+.copilot/
+.cursor/
+.cursorignore
+.codex

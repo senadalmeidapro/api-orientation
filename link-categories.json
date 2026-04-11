@@ -1,0 +1,221 @@
+{
+  "categories": [
+    {
+      "name": "Liens utiles",
+      "links": [
+        {
+          "title": "plateforme",
+          "url": "https://apresbac.bj/"
+        },
+        {
+          "title": "choix de filiere",
+          "url": "https://apresmonbac.bj/"
+        },
+        {
+          "title": "demande de bourse (DBAU)",
+          "url": "https://bourses.enseignementsuperieur.bj"
+        },
+        {
+          "title": "Campus France",
+          "url": null,
+          "note": "Campus France se met en quatre pour vous informer"
+        },
+        {
+          "title": "lien concours du senegal",
+          "url": "https://www.bing.com/ck/a?!&&p=058f3a3e4c3bbe164b27d1a2bc878342813d22905ab8a2694f7500ab19edd810JmltdHM9MTc3NDQ4MzIwMA&ptn=3&ver=2&hsh=4&fclid=1bd68963-ad72-6fd1-3ca8-9c58acc66e36&psq=liens+du+concours+esmt++de+dakar&u=a1aHR0cHM6Ly93d3cuYXJjZXAuYmYvZG93bmxvYWQvY29uY291cnMtZGVudHJlZS1lc210LTIwMjUtMjAyNi8"
+        },
+        {
+          "title": "bourse du maroc",
+          "url": "https://www.bing.com/ck/a?!&&p=657201f868f97ad2211f6df5f93b8b950f1290d5ee458cffa8f526c44e9f41d2JmltdHM9MTc3NDQ4MzIwMA&ptn=3&ver=2&hsh=4&fclid=1bd68963-ad72-6fd1-3ca8-9c58acc66e36&psq=lien+bourses+du+maroc+pour+le+benin&u=a1aHR0cHM6Ly9ib3Vyc2VzLmVuc2VpZ25lbWVudHN1cGVyaWV1ci5nb3V2LmJqL2JvdXJzZS1tYXJvY2FpbmUtZm9ybWF0aW9ucy11bml2ZXJzaXRhaXJlcy8"
+        },
+        {
+          "title": "SIGES | Accueil Concours",
+          "url": null,
+          "note": "cote d’ivoire"
+        },
+        {
+          "title": "Accueil - Ecole Supérieure Polytechnique",
+          "url": null,
+          "note": "Sénegal"
+        },
+        {
+          "title": "Bourse Russe",
+          "url": "https://bourses.enseignementsuperieur.gouv.bj/bourse-russe-2025-2026/"
+        }
+      ]
+    },
+    {
+      "name": "Liens des universités",
+      "links": [
+        {
+          "title": "CIFEC",
+          "url": "http://cifecbenin.com/"
+        },
+        {
+          "title": "ENEAM",
+          "url": "https://eneam.uac.bj/"
+        },
+        {
+          "title": "Epitech Africa",
+          "url": "https://epitech.africa/"
+        },
+        {
+          "title": "ESGIS",
+          "url": "https://www.esgis.bj/"
+        },
+        {
+          "title": "ESM Bénin",
+          "url": "https://esm-benin.com/"
+        },
+        {
+          "title": "FADESP",
+          "url": "https://www.fadesp.net/fr/"
+        },
+        {
+          "title": "FASEG-UAC",
+          "url": "https://faseg-uac.bj/"
+        },
+        {
+          "title": "ESTG Bénin",
+          "url": "https://estg-benin.com/"
+        },
+        {
+          "title": "FASHS",
+          "url": "https://fr.wikipedia.org/wiki/Facult%C3%A9_des_sciences_humaines_et_sociales_(B%C3%A9nin)"
+        },
+        {
+          "title": "FAST",
+          "url": "https://www.oreilleducampus.org/universite-abomey-calavi/129-faculte-des-sciences-et-techniques-fast-uac-benin-etudes-mathematique-physique-chimie-sciences-naturelles-geologie-biochimie-biotechnologie-alimentaire-physiologie-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html"
+        },
+        {
+          "title": "FSS Cotonou",
+          "url": "https://www.fss-cotonou.com/"
+        },
+        {
+          "title": "HECM e-learning",
+          "url": "https://www.hecm-elearning.net/"
+        },
+        {
+          "title": "IFRI-UAC",
+          "url": "https://ifri-uac.bj/"
+        },
+        {
+          "title": "Imalearning",
+          "url": "https://imalearning.com/"
+        },
+        {
+          "title": "INMES",
+          "url": "https://inmes.uac.bj/"
+        },
+        {
+          "title": "ISM Adonaï",
+          "url": "https://www.ismadonai.net/fr/"
+        },
+        {
+          "title": "ISMA Bénin",
+          "url": "https://isma-benin.org/"
+        },
+        {
+          "title": "Les Cours Onou Université",
+          "url": "https://lescoursonou-universite.org/"
+        },
+        {
+          "title": "Pigier Bénin",
+          "url": "https://pigier-benin.com/"
+        },
+        {
+          "title": "UATM-GASA",
+          "url": "https://uatm-gasa.com/"
+        },
+        {
+          "title": "UCAO Bénin",
+          "url": "https://www.ucaobenin.org/"
+        },
+        {
+          "title": "UPAOPN Bénin",
+          "url": "https://www.upaopnbenin-edu.org/"
+        },
+        {
+          "title": "ESGCVAK",
+          "url": "https://esgcvak.com/"
+        },
+        {
+          "title": "FSA-UAC",
+          "url": "https://fsa-uac.bj/"
+        },
+        {
+          "title": "UNSTIM",
+          "url": "https://unstim.bj/"
+        },
+        {
+          "title": "UNA",
+          "url": "https://una.bj/"
+        },
+        {
+          "title": "ESEP Le Berger",
+          "url": "https://legrandfrere.africa/etablissement/esep-le-berger/"
+        },
+        {
+          "title": "ISMT St Salomon",
+          "url": "https://legrandfrere.africa/etablissement/ismt-st-salomon/"
+        },
+        {
+          "title": "ESMath Bénin",
+          "url": "https://legrandfrere.africa/etablissement/esmath-benin/"
+        },
+        {
+          "title": "IRGIB Africa",
+          "url": "https://edukiya.com/fiche/irgib-africa-benin-institut-regional-du-genie-industriel-des-biotechnologies-et-sciences-appliquees/"
+        },
+        {
+          "title": "Institut Jean-Paul II",
+          "url": "https://legrandfrere.africa/etablissement/institut-jean-paul-ii/"
+        },
+        {
+          "title": "ISSIC Bénin",
+          "url": "https://legrandfrere.africa/etablissement/institut-superieur-des-sciences-de-linformation-et-de-la-communication-issic-benin/"
+        },
+        {
+          "title": "INE",
+          "url": "https://www.oreilleducampus.org/universite-abomey-calavi/135-institut-national-de-l-eau-ine-uac-benin-etudes-eau-hydrologie-genie-assainissement-ressource-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-debouche.html"
+        },
+        {
+          "title": "UIT PARAKOU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/143-institut-universitaire-de-technologie-iut-up-parakou-benin-etudes-gestion-banque-entreprise-commercial-informatique-transport-logistique-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-debouche.html"
+        },
+        {
+          "title": "ENSAGAP TCHAOUROU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/145-ecole-nationale-superieure-d-amenagement-et-de-gestion-des-aires-protegees-ensagap-de-kandi-up-parakou-benin-etudes-faune-flore-parcours-naturel-gestion-aire-protege-science-technique-forestiere-foret-forestier-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-debouche.html"
+        },
+        {
+          "title": "ENSPD PARAKOU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/146-ecole-nationale-de-la-statistique-de-la-planification-et-de-la-demographie-enspd-de-tchaourou-up-parakou-benin-etudes-statistiques-planification-demographie-developpement-local-economique-financiere-economie-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html"
+        },
+        {
+          "title": "ENSAP GOGOUNOU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/147-ecole-nationale-superieure-agro-pastorale-ensap-de-gogounou-up-parakou-benin-etudes-elevage-alimentation-production-sante-amelioration-genetique-aliment-animaux-domestique-agro-pastorale-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-debouche.html"
+        },
+        {
+          "title": "FDSP PARAKOU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/148-faculte-de-droit-et-de-sciences-politiques-fdsp-up-parakou-benin-etudes-droit-prive-public-science-juridique-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html"
+        },
+        {
+          "title": "FADESP PARAKOU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/149-faculte-des-sciences-economiques-et-de-gestion-faseg-up-parakou-benin-etudes-economie-benin-finance-comptabilite-marketing-management-organisation-economie-finance-internationale-analyse-politique-economique-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html"
+        },
+        {
+          "title": "FASHS PARAKOU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/150-faculte-des-lettres-arts-et-sciences-humaines-flash-up-parakou-benin-etudes-sociologie-anthropologie-geographie-amenagement-territoire-anglais-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html"
+        },
+        {
+          "title": "FASEG SAVE",
+          "url": "https://www.oreilleducampus.org/universite-parakou/151-faculte-des-sciences-economiques-et-de-gestion-faseg-de-save-up-parakou-benin-etudes-economie-gestion-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html"
+        },
+        {
+          "title": "FDSP TCHAOUROU",
+          "url": "https://www.oreilleducampus.org/universite-parakou/152-faculte-de-droit-et-de-science-politique-fdsp-de-tchaourou-up-parakou-benin-etudes-droit-etat-civil-regime-foncier-strategie-communication-politique-science-juridique-politique-administrative-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html"
+        }
+      ]
+    }
+  ]
+}

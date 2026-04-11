@@ -1,13 +1,13 @@
-import { Body, Controller, Get, Param, Post, Res, StreamableFile } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res, StreamableFile, UseGuards } from '@nestjs/common';
 import { TreasureMapService } from './treasure-map.service';
 import { CreateTreasureMapDto } from './dto/create-treasure-map.dto';
-import { Public } from '../../common/decorators/public.decorator';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 
-@Public()
+@UseGuards(JwtAuthGuard)
 @Controller('treasure-map')
 export class TreasureMapController {
     constructor(private readonly service: TreasureMapService) {}
@@ -31,13 +31,13 @@ export class TreasureMapController {
         @Res({ passthrough: true }) res: Response,
     ) {
         const map = await this.service.getByShareToken(shareToken);
-        if (!map.pdfUrl) return res.status(404).json({ error: 'PDF non généré' });
+        if (!map.pdf_url) return res.status(404).json({ error: 'PDF non généré' });
 
-        if (map.pdfUrl.startsWith('http')) {
-            return res.redirect(map.pdfUrl);
+        if (map.pdf_url.startsWith('http')) {
+            return res.redirect(map.pdf_url);
         }
 
-        const filePath = path.join(process.cwd(), map.pdfUrl);
+        const filePath = path.join(process.cwd(), map.pdf_url);
         if (!fs.existsSync(filePath))
             return res.status(404).json({ error: 'Fichier PDF introuvable' });
 

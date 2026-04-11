@@ -1,4 +1,4 @@
-import { IsObject, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class ComputeResultDto {
     @IsString()
@@ -11,4 +11,8 @@ export class ComputeResultDto {
     @IsOptional()
     @IsObject()
     subjectiveRanking?: Record<string, number>;
+
+    @IsOptional()
+    @IsBoolean()
+    force?: boolean;
 }

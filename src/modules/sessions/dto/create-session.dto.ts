@@ -9,10 +9,6 @@ export class CreateSessionDto {
     testVersionId?: number;
 
     @IsOptional()
-    @IsString()
-    userId?: string;
-
-    @IsOptional()
     @IsEnum(AssessmentType)
     initialAssessmentType?: AssessmentType;
 

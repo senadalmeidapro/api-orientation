@@ -2,7 +2,7 @@ import { ResultsService } from './results.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ScoringService } from '../scoring/scoring.service';
 import { BadgesService } from '../badges/badges.service';
-import { AssessmentStatus } from '@prisma/client';
+import { AssessmentStatus, AssessmentType } from '@prisma/client';
 
 const prisma = {
     session: { findUnique: jest.fn() },
@@ -40,5 +40,24 @@ describe('ResultsService', () => {
         const service = new ResultsService(prisma, scoring, badges);
 
         await expect(service.getBySessionId(1)).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('returns cached result when available', async () => {
+        prisma.session.findUnique.mockResolvedValue({ id: 1 });
+        prisma.assessment.findFirst.mockResolvedValue({
+            id: 'a1',
+            sessionId: 1,
+            status: AssessmentStatus.COMPLETED,
+            type: AssessmentType.PHASE1,
+        });
+        prisma.assessmentResult.findUnique.mockResolvedValue({ id: 'r1', assessmentId: 'a1' });
+
+        const scoring = { computeScores: jest.fn() } as unknown as ScoringService;
+        const badges = { grantTestCompleted: jest.fn() } as unknown as BadgesService;
+        const service = new ResultsService(prisma, scoring, badges);
+
+        const result = await service.compute({ sessionToken: 'tok' } as any);
+        expect(result).toEqual({ id: 'r1', assessmentId: 'a1' });
+        expect(scoring.computeScores).not.toHaveBeenCalled();
     });
 });

@@ -15,6 +15,18 @@ export class AiClient {
     private readonly temperature = Number(process.env.OPENAI_TEMPERATURE ?? 0.3);
     private readonly timeoutMs = Number(process.env.OPENAI_TIMEOUT_MS ?? 15000);
 
+    async chat(
+        prompt: string,
+        options: { temperature?: number; max_tokens?: number } = {},
+    ): Promise<string> {
+        const result = await this.respondText({
+            instructions: '',
+            input: prompt,
+            temperature: options.temperature,
+        });
+        return result.text;
+    }
+
     async respondText(params: { instructions: string; input: string; temperature?: number }) {
         const response = await this.createResponse({
             instructions: params.instructions,
