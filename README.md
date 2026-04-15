@@ -52,7 +52,8 @@
 
 | Branche | Description |
 |---|---|
-| `copilot/analyze-repo-state-and-redact-readme` | Branche principale active (contient le code complet de l'application) |
+| `master` | Branche principale active (contient le code complet de l'application) |
+| `setup-dev-orient-bj` | Branche de développement active (contient le code complet de l'application) |
 
 > **Note** : Le dépôt est un clone shallow depuis le commit initial `init`. Il n'existe qu'une seule branche distante visible. L'historique complet et les autres branches éventuelles sont à vérifier directement sur GitHub.
 
