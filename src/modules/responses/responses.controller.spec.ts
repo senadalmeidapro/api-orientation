@@ -1,5 +1,5 @@
-import { ResponsesController } from './responses.controller';
 import { ResponsesService } from './responses.service';
+import { ResponsesController } from './responses.controller';
 
 describe('ResponsesController', () => {
     it('delegates phase1', async () => {

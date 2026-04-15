@@ -1,0 +1,2 @@
+export const EMAIL_PROVIDER = 'EMAIL_PROVIDER';
+export const EMAIL_CONFIG = 'EMAIL_CONFIG';

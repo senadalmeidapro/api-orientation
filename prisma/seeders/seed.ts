@@ -1,14 +1,14 @@
 import {
-    PrismaClient,
     RiasecType,
-    SectionType,
+    Phase2Type,
     CareerCategory,
     Label,
     BadgeRarity,
-    ConsistencyLevel,
 } from '@prisma/client';
 import 'dotenv/config';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { seedLinkCategories } from './seed-link-categories';
+import { seedQuestionProfiles } from './seed-question-profiles';
 
 const prisma = new PrismaService();
 
@@ -1029,41 +1029,41 @@ async function main() {
     // --- Version du test ---
     const version = await prisma.testVersion.upsert({
         where: { code: 'v1' },
-        update: { isActive: true },
-        create: { code: 'v1', name: 'Version 1', description: 'Version initiale du test RIASEC', isActive: true },
+        update: { is_active: true },
+        create: { code: 'v1', name: 'Version 1', description: 'Version initiale du test RIASEC', is_active: true },
     });
 
     // --- Langue française ---
     await prisma.language.upsert({
         where: { code: 'fr' },
-        update: { isActive: true },
-        create: { code: 'fr', name: 'Français', nativeName: 'Français', isActive: true },
+        update: { is_active: true },
+        create: { code: 'fr', name: 'Français', native_name: 'Français', is_active: true },
     });
 
     // --- Types RIASEC ---
     for (const r of riasecTypes) {
         await prisma.riasecTypeModel.upsert({
             where: { id: r.id },
-            update: { name: r.name, slogan: r.slogan, colorHex: r.colorHex },
-            create: { id: r.id, name: r.name, slogan: r.slogan, colorHex: r.colorHex },
+            update: { name: r.name, slogan: r.slogan, color_hex: r.colorHex },
+            create: { id: r.id, name: r.name, slogan: r.slogan, color_hex: r.colorHex },
         });
     }
 
     // --- Options pour les aptitudes (échelle 1-3) ---
     await prisma.aptitudeResponseOption.upsert({
         where: { value: 1 },
-        update: { label: Label.Faible, emoji: '😕', colorCode: '#FF4444' },
-        create: { value: 1, label: Label.Faible, emoji: '😕', colorCode: '#FF4444' },
+        update: { label: Label.Faible, emoji: '😕', color_code: '#FF4444' },
+        create: { value: 1, label: Label.Faible, emoji: '😕', color_code: '#FF4444' },
     });
     await prisma.aptitudeResponseOption.upsert({
         where: { value: 2 },
-        update: { label: Label.Moyen, emoji: '😐', colorCode: '#FFA500' },
-        create: { value: 2, label: Label.Moyen, emoji: '😐', colorCode: '#FFA500' },
+        update: { label: Label.Moyen, emoji: '😐', color_code: '#FFA500' },
+        create: { value: 2, label: Label.Moyen, emoji: '😐', color_code: '#FFA500' },
     });
     await prisma.aptitudeResponseOption.upsert({
         where: { value: 3 },
-        update: { label: Label.Fort, emoji: '😊', colorCode: '#4CAF50' },
-        create: { value: 3, label: Label.Fort, emoji: '😊', colorCode: '#4CAF50' },
+        update: { label: Label.Fort, emoji: '😊', color_code: '#4CAF50' },
+        create: { value: 3, label: Label.Fort, emoji: '😊', color_code: '#4CAF50' },
     });
 
     // --- PHASE 1 : Questions d’amorce ---
@@ -1072,20 +1072,20 @@ async function main() {
         for (const text of phase1Questions[code]) {
             await prisma.phase1Question.upsert({
                 where: {
-                    testVersionId_displayOrder: { testVersionId: version.id, displayOrder: order },
+                    test_version_id_display_order: { test_version_id: version.id, display_order: order },
                 },
                 update: {
-                    riasecTypeId: code,
-                    questionText: text,
-                    displayOrder: order,
-                    isActive: true,
+                    riasec_type_id: code,
+                    question_text: text,
+                    display_order: order,
+                    is_active: true,
                 },
                 create: {
-                    testVersionId: version.id,
-                    riasecTypeId: code,
-                    questionText: text,
-                    displayOrder: order,
-                    isActive: true,
+                    test_version_id: version.id,
+                    riasec_type_id: code,
+                    question_text: text,
+                    display_order: order,
+                    is_active: true,
                 },
             });
             order += 1;
@@ -1098,26 +1098,26 @@ async function main() {
         for (const text of phase2Occupations[code]) {
             await prisma.phase2Question.upsert({
                 where: {
-                    testVersionId_sectionType_displayOrder: {
-                        testVersionId: version.id,
-                        sectionType: SectionType.OCCUPATIONS,
-                        displayOrder: occOrder,
+                    test_version_id_phase2_type_display_order: {
+                        test_version_id: version.id,
+                        phase2_type: Phase2Type.OCCUPATIONS,
+                        display_order: occOrder,
                     },
                 },
                 update: {
-                    riasecTypeId: code,
-                    questionText: text,
-                    sectionType: SectionType.OCCUPATIONS,
-                    displayOrder: occOrder,
-                    isActive: true,
+                    riasec_type_id: code,
+                    question_text: text,
+                    phase2_type: Phase2Type.OCCUPATIONS,
+                    display_order: occOrder,
+                    is_active: true,
                 },
                 create: {
-                    testVersionId: version.id,
-                    riasecTypeId: code,
-                    questionText: text,
-                    sectionType: SectionType.OCCUPATIONS,
-                    displayOrder: occOrder,
-                    isActive: true,
+                    test_version_id: version.id,
+                    riasec_type_id: code,
+                    question_text: text,
+                    phase2_type: Phase2Type.OCCUPATIONS,
+                    display_order: occOrder,
+                    is_active: true,
                 },
             });
             occOrder += 1;
@@ -1130,32 +1130,32 @@ async function main() {
         for (const text of phase2Aptitudes[code]) {
             await prisma.phase2Question.upsert({
                 where: {
-                    testVersionId_sectionType_displayOrder: {
-                        testVersionId: version.id,
-                        sectionType: SectionType.APTITUDES,
-                        displayOrder: aptOrder,
+                    test_version_id_phase2_type_display_order: {
+                        test_version_id: version.id,
+                        phase2_type: Phase2Type.APTITUDES,
+                        display_order: aptOrder,
                     },
                 },
                 update: {
-                    riasecTypeId: code,
-                    questionText: text,
-                    sectionType: SectionType.APTITUDES,
-                    displayOrder: aptOrder,
-                    minValue: 1,
-                    maxValue: 3,
-                    valueLabels: { '1': 'Faible', '2': 'Moyen', '3': 'Fort' },
-                    isActive: true,
+                    riasec_type_id: code,
+                    question_text: text,
+                    phase2_type: Phase2Type.APTITUDES,
+                    display_order: aptOrder,
+                    min_value: 1,
+                    max_value: 3,
+                    value_labels: { '1': 'Faible', '2': 'Moyen', '3': 'Fort' },
+                    is_active: true,
                 },
                 create: {
-                    testVersionId: version.id,
-                    riasecTypeId: code,
-                    questionText: text,
-                    sectionType: SectionType.APTITUDES,
-                    displayOrder: aptOrder,
-                    minValue: 1,
-                    maxValue: 3,
-                    valueLabels: { '1': 'Faible', '2': 'Moyen', '3': 'Fort' },
-                    isActive: true,
+                    test_version_id: version.id,
+                    riasec_type_id: code,
+                    question_text: text,
+                    phase2_type: Phase2Type.APTITUDES,
+                    display_order: aptOrder,
+                    min_value: 1,
+                    max_value: 3,
+                    value_labels: { '1': 'Faible', '2': 'Moyen', '3': 'Fort' },
+                    is_active: true,
                 },
             });
             aptOrder += 1;
@@ -1168,26 +1168,26 @@ async function main() {
         for (const text of phase2Personality[code]) {
             await prisma.phase2Question.upsert({
                 where: {
-                    testVersionId_sectionType_displayOrder: {
-                        testVersionId: version.id,
-                        sectionType: SectionType.PERSONALITY,
-                        displayOrder: perOrder,
+                    test_version_id_phase2_type_display_order: {
+                        test_version_id: version.id,
+                        phase2_type: Phase2Type.PERSONALITY,
+                        display_order: perOrder,
                     },
                 },
                 update: {
-                    riasecTypeId: code,
-                    questionText: text,
-                    sectionType: SectionType.PERSONALITY,
-                    displayOrder: perOrder,
-                    isActive: true,
+                    riasec_type_id: code,
+                    question_text: text,
+                    phase2_type: Phase2Type.PERSONALITY,
+                    display_order: perOrder,
+                    is_active: true,
                 },
                 create: {
-                    testVersionId: version.id,
-                    riasecTypeId: code,
-                    questionText: text,
-                    sectionType: SectionType.PERSONALITY,
-                    displayOrder: perOrder,
-                    isActive: true,
+                    test_version_id: version.id,
+                    riasec_type_id: code,
+                    question_text: text,
+                    phase2_type: Phase2Type.PERSONALITY,
+                    display_order: perOrder,
+                    is_active: true,
                 },
             });
             perOrder += 1;
@@ -1201,19 +1201,19 @@ async function main() {
             update: {
                 description: c.description,
                 category: c.category,
-                riasecCodes: c.riasecCodes,
-                localDemand: c.localDemand ?? undefined,
-                formationLevel: c.formationLevel ?? undefined,
-                isActive: true,
+                riasec_codes: c.riasecCodes,
+                local_demand: c.localDemand ?? undefined,
+                formation_level: c.formationLevel ?? undefined,
+                is_active: true,
             },
             create: {
                 name: c.name,
                 description: c.description,
                 category: c.category,
-                riasecCodes: c.riasecCodes,
-                localDemand: c.localDemand ?? undefined,
-                formationLevel: c.formationLevel ?? undefined,
-                isActive: true,
+                riasec_codes: c.riasecCodes,
+                local_demand: c.localDemand ?? undefined,
+                formation_level: c.formationLevel ?? undefined,
+                is_active: true,
             },
         });
     }
@@ -1227,8 +1227,8 @@ async function main() {
                 description: b.description,
                 emoji: b.emoji,
                 rarity: b.rarity,
-                pointsValue: b.pointsValue,
-                unlockCondition: b.unlockCondition,
+                points_value: b.pointsValue,
+                unlock_condition: b.unlockCondition,
             },
             create: {
                 code: b.code,
@@ -1236,11 +1236,17 @@ async function main() {
                 description: b.description,
                 emoji: b.emoji,
                 rarity: b.rarity,
-                pointsValue: b.pointsValue,
-                unlockCondition: b.unlockCondition,
+                points_value: b.pointsValue,
+                unlock_condition: b.unlockCondition,
             },
         });
     }
+
+    // --- Link categories ---
+    await seedLinkCategories(prisma);
+
+    // --- Question Profiles (multi-RIASEC) ---
+    await seedQuestionProfiles(prisma);
 
     console.log('Seed completed successfully');
 }

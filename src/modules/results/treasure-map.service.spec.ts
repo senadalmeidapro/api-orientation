@@ -2,21 +2,34 @@ import { TreasureMapService } from './treasure-map.service';
 import { ResultsService } from './results.service';
 import { StorageService } from '../media/storage.service';
 import { BadgesService } from '../badges/badges.service';
+import { AssessmentStatus } from '@prisma/client';
 
 const prisma = {
-    userTestSession: { findUnique: jest.fn() },
-    userResult: { findUnique: jest.fn() },
-    userCareerRecommendation: { findMany: jest.fn(), upsert: jest.fn() },
+    session: { findUnique: jest.fn() },
+    assessment: { findFirst: jest.fn() },
+    assessmentResult: { findUnique: jest.fn() },
+    assessmentCareerRecommendation: { findMany: jest.fn(), upsert: jest.fn() },
     career: { findMany: jest.fn() },
-    treasureMap: { upsert: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
+    treasureMap: {
+        upsert: jest.fn(),
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        findFirst: jest.fn(),
+    },
     $transaction: jest.fn().mockImplementation((args: any[]) => Promise.all(args)),
 } as any;
 
 describe('TreasureMapService', () => {
     it('generates treasure map without pdf', async () => {
-        prisma.userTestSession.findUnique.mockResolvedValue({ id: 's1', shareToken: 'share' });
-        prisma.userResult.findUnique.mockResolvedValue({
-            id: 1,
+        prisma.session.findUnique.mockResolvedValue({ id: 1 });
+        prisma.assessment.findFirst.mockResolvedValue({
+            id: 'a1',
+            sessionId: 1,
+            status: AssessmentStatus.COMPLETED,
+        });
+        prisma.assessmentResult.findUnique.mockResolvedValue({
+            id: 'r1',
+            assessmentId: 'a1',
             phase1Code: 'R',
             phase2Code: 'RIA',
             phase1Scores: {},
@@ -26,18 +39,18 @@ describe('TreasureMapService', () => {
             profileStrength: 'FORT',
             strengths: ['R', 'I'],
         });
-        prisma.userCareerRecommendation.findMany.mockResolvedValue([]);
+        prisma.assessmentCareerRecommendation.findMany.mockResolvedValue([]);
         prisma.career.findMany.mockResolvedValue([{ id: 1, name: 'Tech', riasecCodes: ['R'] }]);
-        prisma.userCareerRecommendation.upsert.mockResolvedValue({ id: 1 });
-        prisma.treasureMap.upsert.mockResolvedValue({ id: 1, shareToken: 'share' });
+        prisma.assessmentCareerRecommendation.upsert.mockResolvedValue({ id: 1 });
+        prisma.treasureMap.upsert.mockResolvedValue({ id: 'tm1', shareToken: 'share' });
 
         const results = { compute: jest.fn() } as unknown as ResultsService;
         const storage = { uploadBuffer: jest.fn() } as unknown as StorageService;
         const badges = { grantTreasureMap: jest.fn() } as unknown as BadgesService;
 
         const service = new TreasureMapService(prisma, results, storage, badges);
-        const res = await service.generate('token', false);
+        const res = await service.generate('token', 'a1', false);
 
-        expect(res.id).toBe(1);
+        expect(res.id).toBe('tm1');
     });
 });

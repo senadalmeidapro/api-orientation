@@ -11,5 +11,4 @@ import { RecommendationsModule } from '../recommendations/recommendations.module
     providers: [AiService, AiClient],
     exports: [AiService],
 })
-export class AiModule {
-}
+export class AiModule {}

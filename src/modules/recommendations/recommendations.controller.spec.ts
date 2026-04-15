@@ -1,5 +1,5 @@
-import { RecommendationsController } from './recommendations.controller';
 import { RecommendationsService } from './recommendations.service';
+import { RecommendationsController } from './recommendations.controller';
 
 describe('RecommendationsController', () => {
     it('delegates to service', async () => {

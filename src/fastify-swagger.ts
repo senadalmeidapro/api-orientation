@@ -1,24 +1,50 @@
+import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-export async function setupSecureSwagger(app: any) {
-    const PORT = process.env.APP_PORT ?? 3000;
+const parseListEnv = (value: string | undefined): string[] =>
+    (value ?? '')
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
 
-    const swaggerConfig = new DocumentBuilder()
-        .setTitle('ECOSYT API')
-        .setDescription('Documentation technique du projet ECOSYT')
-        .setVersion('1.0.0')
-        .addServer(`http://localhost:${PORT}`, 'Serveur local')
-        .addServer('https://api.ecosyt.com', 'Serveur distant')
-        .setContact('Sèna D’ALMEIDA', 'https://ecosyt.com', 'senadalmeidapro@gmail.com')
-        .addBasicAuth(
-            { type: 'http', scheme: 'basic', description: 'Authentification basique' },
-            'basic',
-        )
-        .build();
+export function setupSecureSwagger(app: INestApplication) {
+    const title = process.env.APP_NAME ?? 'POPI 2.0 API';
+    const description =
+        process.env.APP_DESCRIPTION ?? "Documentation technique de l'API d'orientation";
+    const version = process.env.APP_VERSION ?? '1.0.0';
+    const swaggerPath = (process.env.SWAGGER_PATH ?? 'api/v1/docs').trim() || 'api/v1/docs';
+    const serverUrls = parseListEnv(process.env.SWAGGER_SERVER_URLS);
 
-    const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+    const builder = new DocumentBuilder()
+        .setTitle(title)
+        .setDescription(description)
+        .setVersion(version)
+        .addBearerAuth(
+            {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+                description: 'Token JWT dans le header Authorization: Bearer <token>',
+            },
+            'access-token',
+        );
 
-    SwaggerModule.setup('api/v1/docs/v1', app, swaggerDocument, {
+    const contactName = (process.env.SWAGGER_CONTACT_NAME ?? '').trim();
+    const contactUrl = (process.env.SWAGGER_CONTACT_URL ?? '').trim();
+    const contactEmail = (process.env.SWAGGER_CONTACT_EMAIL ?? '').trim();
+    if (contactName || contactUrl || contactEmail) {
+        builder.setContact(contactName, contactUrl, contactEmail);
+    }
+
+    if (serverUrls.length > 0) {
+        serverUrls.forEach((url) => builder.addServer(url));
+    } else {
+        builder.addServer('/', 'Current host');
+    }
+
+    const swaggerDocument = SwaggerModule.createDocument(app, builder.build());
+
+    SwaggerModule.setup(swaggerPath, app, swaggerDocument, {
         swaggerOptions: {
             persistAuthorization: false,
             docExpansion: 'none',

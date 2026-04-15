@@ -1,35 +1,32 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
 import { QuestionsModule } from './modules/questions/questions.module';
 import { ResponsesModule } from './modules/responses/responses.module';
 import { ScoringModule } from './modules/scoring/scoring.module';
 import { ResultsModule } from './modules/results/results.module';
-import { AdminModule } from './modules/admin/admin.module';
-import { AnnouncementsModule } from './modules/announcements/announcements.module';
-import { BadgesModule } from './modules/badges/badges.module';
-import { CareersModule } from './modules/careers/careers.module';
-import { ContactModule } from './modules/contact/contact.module';
-import { FeedbackModule } from './modules/feedback/feedback.module';
-import { InstitutionsModule } from './modules/institutions/institutions.module';
-import { LocalizationModule } from './modules/localization/localization.module';
-import { MediaModule } from './modules/media/media.module';
-import { OutcomesModule } from './modules/outcomes/outcomes.module';
 import { RecommendationsModule } from './modules/recommendations/recommendations.module';
-import { ResourcesModule } from './modules/resources/resources.module';
-import { AdaptiveModule } from './modules/adaptive/adaptive.module';
 import { AiModule } from './modules/ai/ai.module';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
-import { RolesGuard } from './common/guards/roles.guard';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerBehindProxyGuard } from './common/guards/throttler-behind-proxy.guard';
-import { ConfigModule } from '@nestjs/config';
-import { AuditModule } from './common/audit/audit.module';
+import { HealthController } from './health.controller';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { JwtAuthGuard } from './modules/auth/guards/jwt.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+import { AssessmentsModule } from './modules/assessments/assessments.module';
+import { CareersModule } from './modules/careers/careers.module';
+import { TrainingCentersModule } from './modules/training-centers/training-centers.module';
+import { ResourcesModule } from './modules/resources/resources.module';
+import { LinksModule } from './modules/links/links.module';
+import { TrainingPathsModule } from './modules/training-paths/training-paths.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { EmailModule } from './common/email/email.module';
+import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
+import { createKeyv } from '@keyv/redis';
+import { AppCacheModule } from './common/cache/cache.module';
 
 @Module({
     imports: [
@@ -38,43 +35,49 @@ import { AuditModule } from './common/audit/audit.module';
             envFilePath: '.env', // Chemin vers votre fichier .env (par défaut c'est '.env')
             cache: true, // Met en cache les variables pour de meilleures performances
         }),
+        NestCacheModule.registerAsync({
+            isGlobal: true,
+            imports: [ConfigModule],
+            useFactory: async (config: ConfigService) => {
+                const redisUrl = config.get('REDIS_URL') || 'redis://localhost:6379';
+                return {
+                    stores: [createKeyv(redisUrl)],
+                    ttl: 0,
+                };
+            },
+            inject: [ConfigService],
+        }),
         ThrottlerModule.forRoot([
             {
                 ttl: 60,
                 limit: 120,
             },
         ]),
-        AuditModule,
         PrismaModule,
-        AuthModule,
-        UsersModule,
         SessionsModule,
         QuestionsModule,
         ResponsesModule,
         ScoringModule,
         ResultsModule,
         RecommendationsModule,
-        CareersModule,
-        ResourcesModule,
-        InstitutionsModule,
-        AnnouncementsModule,
-        ContactModule,
-        BadgesModule,
-        FeedbackModule,
-        OutcomesModule,
-        LocalizationModule,
-        MediaModule,
-        AdminModule,
-        AdaptiveModule,
         AiModule,
+        AuthModule,
+        UsersModule,
+        AssessmentsModule,
+        CareersModule,
+        TrainingCentersModule,
+        ResourcesModule,
+        LinksModule,
+        TrainingPathsModule,
+        AnalyticsModule,
+        EmailModule,
+        AppCacheModule,
     ],
-    controllers: [AppController],
+    controllers: [HealthController],
     providers: [
-        AppService,
         { provide: APP_GUARD, useClass: ThrottlerBehindProxyGuard },
         { provide: APP_GUARD, useClass: JwtAuthGuard },
         { provide: APP_GUARD, useClass: RolesGuard },
     ],
 })
-export class AppModule {
-}
+export class AppModule {}

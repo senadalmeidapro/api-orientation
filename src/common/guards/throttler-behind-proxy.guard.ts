@@ -4,12 +4,17 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 @Injectable()
 export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
     override async getTracker(req: Record<string, any>): Promise<string> {
-        const forwarded = req.headers['x-forwarded-for'];
-
-        if (typeof forwarded === 'string' && forwarded.length > 0) {
-            return forwarded.split(',')[0].trim();
+        if (Array.isArray(req.ips) && req.ips.length > 0) {
+            return req.ips[0];
         }
 
-        return req.ip ?? req.connection?.remoteAddress ?? 'unknown';
+        const forwardedFor = req.headers?.['x-forwarded-for'];
+        const rawForwarded = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+        if (typeof rawForwarded === 'string' && rawForwarded.trim().length > 0) {
+            const firstForwardedIp = rawForwarded.split(',')[0]?.trim();
+            if (firstForwardedIp) return firstForwardedIp;
+        }
+
+        return req.ip ?? req.socket?.remoteAddress ?? req.connection?.remoteAddress ?? 'unknown';
     }
 }

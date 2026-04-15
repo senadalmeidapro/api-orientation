@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BadgeRarity, UserTestSession } from '@prisma/client';
+import { BadgeRarity, Session } from '@prisma/client';
 
 @Injectable()
 export class BadgesService {
-    constructor(private readonly prisma: PrismaService) {
-    }
+    constructor(private readonly prisma: PrismaService) {}
 
     private defaultBadges = [
         {
@@ -60,107 +59,73 @@ export class BadgesService {
 
     async listBadges() {
         await this.ensureDefaults();
-        return this.prisma.badge.findMany({ orderBy: { pointsValue: 'desc' } });
+        return this.prisma.badge.findMany({ orderBy: { points_value: 'desc' } });
     }
 
-    async getUserBadges(userId: string) {
-        return this.prisma.userBadge.findMany({
-            where: { userId },
-            include: { badge: true },
-            orderBy: { unlockedAt: 'desc' },
-        });
-    }
-
-    async getUserLevel(userId: string) {
-        return this.prisma.userLevel.findUnique({ where: { userId } });
-    }
-
-    private async addXp(userId: string, amount: number, reason: string, sessionId?: string) {
-        await this.prisma.userXP.create({
+    private async addXp(sessionId: string, amount: number, reason: string) {
+        await this.prisma.xPHistory.create({
             data: {
-                userId,
+                session_id: sessionId,
                 amount,
                 reason,
-                sessionId,
             },
         });
 
-        const level = await this.prisma.userLevel.upsert({
-            where: { userId },
-            update: {
-                totalXp: { increment: amount },
-                currentXp: { increment: amount },
-            },
-            create: {
-                userId,
-                level: 1,
-                currentXp: amount,
-                totalXp: amount,
-            },
+        const session = await this.prisma.session.update({
+            where: { id: sessionId },
+            data: { total_xp: { increment: amount } },
+            select: { total_xp: true, level: true },
         });
 
-        if (level.currentXp >= 100) {
-            const extra = level.currentXp;
-            const newLevel = level.level + Math.floor(extra / 100);
-            const remaining = extra % 100;
-            await this.prisma.userLevel.update({
-                where: { userId },
-                data: {
-                    level: newLevel,
-                    currentXp: remaining,
-                },
+        const nextLevel = Math.floor(session.total_xp / 100) + 1;
+        if (nextLevel !== session.level) {
+            await this.prisma.session.update({
+                where: { id: sessionId },
+                data: { level: nextLevel },
             });
         }
     }
 
-    private async awardBadge(session: UserTestSession, code: string, reason: string) {
+    private async awardBadge(session: Pick<Session, 'id'>, code: string, reason: string) {
         await this.ensureDefaults();
         const badge = await this.prisma.badge.findUnique({ where: { code } });
         if (!badge) return null;
 
-        const or: any[] = [{ sessionId: session.id }];
-        if (session.userId) or.push({ userId: session.userId });
-        const existing = await this.prisma.userBadge.findFirst({
-            where: {
-                badgeId: badge.id,
-                OR: or,
-            },
+        const existing = await this.prisma.sessionBadge.findFirst({
+            where: { badge_id: badge.id, session_id: session.id },
         });
         if (existing) return existing;
 
-        const created = await this.prisma.userBadge.create({
+        const created = await this.prisma.sessionBadge.create({
             data: {
-                badgeId: badge.id,
-                userId: session.userId ?? undefined,
-                sessionId: session.id,
+                badge_id: badge.id,
+                session_id: session.id,
             },
         });
 
         await this.prisma.badge.update({
             where: { id: badge.id },
-            data: { unlockCount: { increment: 1 } },
+            data: { unlock_count: { increment: 1 } },
         });
 
-        if (session.userId) {
-            await this.addXp(session.userId, badge.pointsValue, reason, session.id);
-        }
+        await this.addXp(session.id, badge.points_value, reason);
 
         return created;
     }
 
-    async grantPhase1Completed(session: UserTestSession) {
+    async grantPhase1Completed(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'PHASE1_COMPLETED', 'Phase 1 terminee');
     }
 
-    async grantPhase2Completed(session: UserTestSession) {
+    async grantPhase2Completed(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'PHASE2_COMPLETED', 'Phase 2 terminee');
     }
 
-    async grantTestCompleted(session: UserTestSession) {
+    async grantTestCompleted(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'TEST_COMPLETED', 'Test termine');
     }
 
-    async grantTreasureMap(session: UserTestSession) {
+    async grantTreasureMap(session: Pick<Session, 'id'>) {
         return this.awardBadge(session, 'TREASURE_MAP', 'Carte au tresor generee');
     }
 

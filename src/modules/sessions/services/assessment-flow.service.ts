@@ -1,0 +1,122 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma/client';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { CreateAssessmentDto } from '../dto/create-assessment.dto';
+
+const DEFAULT_DEPTH = 5;
+
+@Injectable()
+export class AssessmentFlowService {
+    constructor(private readonly prisma: PrismaService) {}
+
+    async resolveTestVersionId(explicitId?: number) {
+        if (explicitId) {
+            const exists = await this.prisma.testVersion.findUnique({
+                where: { id: explicitId },
+                select: { id: true },
+            });
+            if (!exists) throw new NotFoundException('TestVersion introuvable');
+            return explicitId;
+        }
+
+        const active = await this.prisma.testVersion.findFirst({
+            where: { is_active: true },
+            orderBy: { id: 'desc' },
+        });
+
+        if (active) return active.id;
+
+        const existing = await this.prisma.testVersion.findFirst({
+            orderBy: { id: 'desc' },
+        });
+
+        if (existing) return existing.id;
+
+        const created = await this.prisma.testVersion.create({
+            data: {
+                code: 'v1',
+                name: 'Version 1',
+                description: 'Version initiale du test RIASEC',
+                is_active: true,
+            },
+        });
+
+        return created.id;
+    }
+
+    resolvePhaseForType(type: AssessmentType) {
+        if (type === AssessmentType.PHASE1 || type === AssessmentType.FULL) {
+            return { phase: PhaseType.PHASE1, section: null };
+        }
+        if (type === AssessmentType.PHASE2_OCCUPATIONS) {
+            return { phase: PhaseType.PHASE2, section: Phase2Type.OCCUPATIONS };
+        }
+        if (type === AssessmentType.PHASE2_APTITUDES) {
+            return { phase: PhaseType.PHASE2, section: Phase2Type.APTITUDES };
+        }
+        return { phase: PhaseType.PHASE2, section: Phase2Type.PERSONALITY };
+    }
+
+    async createAssessment(sessionId: string, testVersionId: number, dto: CreateAssessmentDto) {
+        const depth = dto.depth ?? DEFAULT_DEPTH;
+        const { phase, section } = this.resolvePhaseForType(dto.type);
+
+        return this.prisma.assessment.create({
+            data: {
+                session_id: sessionId,
+                test_version_id: testVersionId,
+                type: dto.type,
+                depth,
+                status: AssessmentStatus.IN_PROGRESS,
+                current_phase: phase,
+                current_section: section,
+                current_stepIndex: 0,
+                completion_percentage: 0,
+            },
+        });
+    }
+
+    async createAssessmentForSession(sessionToken: string, dto: CreateAssessmentDto) {
+        const session = await this.prisma.session.findUnique({
+            where: { session_token: sessionToken },
+        });
+        if (!session) throw new NotFoundException('Session introuvable');
+
+        if (
+            dto.type === AssessmentType.PHASE2_OCCUPATIONS ||
+            dto.type === AssessmentType.PHASE2_APTITUDES ||
+            dto.type === AssessmentType.PHASE2_PERSONALITY
+        ) {
+            const phase1Done = await this.prisma.assessment.findFirst({
+                where: {
+                    session_id: session.id,
+                    type: AssessmentType.PHASE1,
+                    status: AssessmentStatus.COMPLETED,
+                },
+                select: { id: true },
+            });
+            if (!phase1Done) {
+                throw new NotFoundException(
+                    "Le test d'amorce doit être complété avant un test spécifique",
+                );
+            }
+        }
+
+        const testVersionId = await this.resolveTestVersionId(dto.testVersionId);
+        return this.createAssessment(session.id, testVersionId, dto);
+    }
+
+    async listAssessments(sessionToken: string) {
+        const session = await this.prisma.session.findUnique({
+            where: { session_token: sessionToken },
+            select: { id: true },
+        });
+        if (!session) throw new NotFoundException('Session introuvable');
+
+        return this.prisma.assessment.findMany({
+            where: { session_id: session.id },
+            orderBy: { started_at: 'desc' },
+            include: { result: true, treasure_map: true },
+        });
+    }
+}

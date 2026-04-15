@@ -1,178 +1,143 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreateResourceDto } from './dto/create-resource.dto';
-import { UpdateResourceDto } from './dto/update-resource.dto';
-import { ListResourcesDto } from './dto/list-resources.dto';
-import { CreateResourceTranslationDto } from './dto/create-resource-translation.dto';
+import { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
 
 @Injectable()
 export class ResourcesService {
-    constructor(private readonly prisma: PrismaService) {
-    }
+    constructor(private readonly prisma: PrismaService) {}
 
-    private normalizeResource(resource: any) {
-        if (!resource) return resource;
-        if (resource.translations?.length) {
-            const t = resource.translations[0];
-            return {
-                ...resource,
-                title: t.title,
-                description: t.description,
-                content: t.content,
-                translationAudioUrl: t.audioUrl,
-                translations: undefined,
-            };
+    async list(dto: ListResourcesDto) {
+        const where: Prisma.ResourceWhereInput = {
+            ...(dto.category ? { category: dto.category } : {}),
+        };
+
+        const publishedOnly = dto.publishedOnly !== false;
+        if (publishedOnly) {
+            where.is_published = true;
         }
-        return resource;
-    }
 
-    async listResources(dto: ListResourcesDto, includeUnpublished = false) {
-        const where: any = {};
-        if (dto.category) where.category = dto.category;
-        if (dto.tag) where.tags = { has: dto.tag };
-        if (!includeUnpublished) where.isPublished = true;
-        if (dto.search) {
+        if (dto.q) {
             where.OR = [
-                { title: { contains: dto.search, mode: 'insensitive' } },
-                { description: { contains: dto.search, mode: 'insensitive' } },
-                { content: { contains: dto.search, mode: 'insensitive' } },
+                { title: { contains: dto.q, mode: 'insensitive' } },
+                { description: { contains: dto.q, mode: 'insensitive' } },
             ];
         }
 
-        const take = Math.min(dto.limit ?? 20, 100);
-        const skip = dto.offset ?? 0;
-
-        const include = dto.lang
-            ? {
-                translations: {
-                    where: { language: { code: dto.lang } },
-                    take: 1,
-                },
-            }
-            : undefined;
-
-        const items = await this.prisma.resource.findMany({
+        return this.prisma.resource.findMany({
             where,
-            take,
-            skip,
-            orderBy: { publishedAt: 'desc' },
-            include,
+            orderBy: { created_at: 'desc' },
+            skip: dto.offset ?? undefined,
+            take: dto.limit ?? undefined,
         });
-
-        return items.map((r) => this.normalizeResource(r));
     }
 
-    async getResource(id: number, lang?: string, includeUnpublished = false) {
-        const include = lang
-            ? {
-                translations: {
-                    where: { language: { code: lang } },
-                    take: 1,
-                },
-            }
-            : undefined;
-
+    async getById(id: number) {
         const resource = await this.prisma.resource.findUnique({
             where: { id },
-            include,
+            include: { related_careers: { include: { career: true } } },
         });
         if (!resource) throw new NotFoundException('Ressource introuvable');
-        if (!includeUnpublished && !resource.isPublished) {
-            throw new NotFoundException('Ressource introuvable');
-        }
-
-        if (resource.isPublished) {
-            await this.prisma.resource.update({
-                where: { id },
-                data: { viewCount: { increment: 1 } },
-            });
-        }
-
-        return this.normalizeResource(resource);
+        return resource;
     }
 
-    async createResource(dto: CreateResourceDto) {
+    async create(dto: CreateResourceDto) {
         const publishedAt = dto.isPublished
             ? dto.publishedAt
                 ? new Date(dto.publishedAt)
                 : new Date()
-            : undefined;
-        if (dto.publishedAt && Number.isNaN(publishedAt?.getTime() ?? 0)) {
-            throw new BadRequestException('Date de publication invalide');
-        }
+            : dto.publishedAt
+              ? new Date(dto.publishedAt)
+              : undefined;
 
-        return this.prisma.resource.create({
+        const resource = await this.prisma.resource.create({
             data: {
                 title: dto.title,
                 description: dto.description,
                 content: dto.content,
-                contentType: dto.contentType,
-                thumbnailUrl: dto.thumbnailUrl,
-                mediaUrl: dto.mediaUrl,
+                content_type: dto.contentType,
+                thumbnail_url: dto.thumbnailUrl,
+                media_url: dto.mediaUrl,
                 category: dto.category,
                 tags: dto.tags ?? [],
                 author: dto.author,
-                isPublished: dto.isPublished ?? false,
-                publishedAt: publishedAt,
+                is_published: dto.isPublished ?? false,
+                published_at: publishedAt,
             },
         });
-    }
 
-    async updateResource(id: number, dto: UpdateResourceDto) {
-        const publishedAt = dto.publishedAt ? new Date(dto.publishedAt) : undefined;
-        if (dto.publishedAt && Number.isNaN(publishedAt?.getTime() ?? 0)) {
-            throw new BadRequestException('Date de publication invalide');
+        if (dto.careerIds !== undefined) {
+            await this.replaceCareers(resource.id, dto.careerIds);
         }
 
-        return this.prisma.resource.update({
-            where: { id },
-            data: {
-                title: dto.title,
-                description: dto.description,
-                content: dto.content,
-                contentType: dto.contentType,
-                thumbnailUrl: dto.thumbnailUrl,
-                mediaUrl: dto.mediaUrl,
-                category: dto.category,
-                tags: dto.tags,
-                author: dto.author,
-                isPublished: dto.isPublished,
-                publishedAt,
-            },
-        });
+        return this.getById(resource.id);
     }
 
-    async addTranslation(resourceId: number, dto: CreateResourceTranslationDto) {
-        const language = await this.prisma.language.findUnique({
-            where: { code: dto.languageCode },
-        });
-        if (!language) throw new NotFoundException('Langue introuvable');
+    async update(id: number, dto: UpdateResourceDto) {
+        const exists = await this.prisma.resource.findUnique({ where: { id } });
+        if (!exists) throw new NotFoundException('Ressource introuvable');
 
-        return this.prisma.resourceTranslation.upsert({
-            where: {
-                resourceId_languageId: {
-                    resourceId,
-                    languageId: language.id,
-                },
-            },
-            update: {
-                title: dto.title,
-                description: dto.description,
-                content: dto.content,
-                audioUrl: dto.audioUrl,
-            },
-            create: {
-                resourceId,
-                languageId: language.id,
-                title: dto.title,
-                description: dto.description,
-                content: dto.content,
-                audioUrl: dto.audioUrl,
-            },
-        });
+        const publishedAt = dto.isPublished
+            ? dto.publishedAt
+                ? new Date(dto.publishedAt)
+                : new Date()
+            : dto.publishedAt
+              ? new Date(dto.publishedAt)
+              : undefined;
+
+        const updateData: Prisma.ResourceUpdateInput = {
+            ...(dto.title !== undefined ? { title: dto.title } : {}),
+            ...(dto.description !== undefined ? { description: dto.description } : {}),
+            ...(dto.content !== undefined ? { content: dto.content } : {}),
+            ...(dto.contentType !== undefined ? { contentType: dto.contentType } : {}),
+            ...(dto.thumbnailUrl !== undefined ? { thumbnailUrl: dto.thumbnailUrl } : {}),
+            ...(dto.mediaUrl !== undefined ? { mediaUrl: dto.mediaUrl } : {}),
+            ...(dto.category !== undefined ? { category: dto.category } : {}),
+            ...(dto.tags !== undefined ? { tags: dto.tags ?? [] } : {}),
+            ...(dto.author !== undefined ? { author: dto.author } : {}),
+            ...(dto.isPublished !== undefined ? { isPublished: dto.isPublished } : {}),
+            ...(publishedAt !== undefined ? { publishedAt } : {}),
+        };
+
+        await this.prisma.resource.update({ where: { id }, data: updateData });
+
+        if (dto.careerIds !== undefined) {
+            await this.replaceCareers(id, dto.careerIds);
+        }
+
+        return this.getById(id);
     }
 
-    health() {
-        return { status: 'ok', module: 'resources' };
+    async remove(id: number) {
+        const exists = await this.prisma.resource.findUnique({ where: { id } });
+        if (!exists) throw new NotFoundException('Ressource introuvable');
+        await this.prisma.careerResource.deleteMany({ where: { resource_id: id } });
+        return this.prisma.resource.delete({ where: { id } });
+    }
+
+    private async replaceCareers(resourceId: number, careerIds: number[]) {
+        if (careerIds.length > 0) {
+            const careers = await this.prisma.career.findMany({
+                where: { id: { in: careerIds } },
+                select: { id: true },
+            });
+            if (careers.length !== careerIds.length) {
+                throw new BadRequestException('Metiers invalides');
+            }
+        }
+
+        await this.prisma.$transaction([
+            this.prisma.careerResource.deleteMany({ where: { resource_id: resourceId } }),
+            ...(careerIds.length > 0
+                ? [
+                      this.prisma.careerResource.createMany({
+                          data: careerIds.map((careerId) => ({
+                              career_id: careerId,
+                              resource_id: resourceId,
+                          })),
+                      }),
+                  ]
+                : []),
+        ]);
     }
 }

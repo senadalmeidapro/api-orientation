@@ -1,4 +1,4 @@
-# ECOSYT API — Documentation complète
+# orientation-bj API — Documentation complète
 
 > **API d'orientation professionnelle basée sur le modèle RIASEC**
 > Application NestJS · PostgreSQL · Prisma · TypeScript
@@ -29,7 +29,7 @@
 
 ## 1. Vue d'ensemble du projet
 
-**ECOSYT API** est le backend d'une plateforme d'orientation professionnelle destinée principalement aux jeunes béninois. Elle implémente le modèle psychométrique **RIASEC** (Holland) pour identifier les profils professionnels et proposer des recommandations de métiers adaptées au contexte local.
+**orientation-bj API** est le backend d'une plateforme d'orientation professionnelle destinée principalement aux jeunes béninois. Elle implémente le modèle psychométrique **RIASEC** (Holland) pour identifier les profils professionnels et proposer des recommandations de métiers adaptées au contexte local.
 
 ### Fonctionnalités principales
 
@@ -52,7 +52,8 @@
 
 | Branche | Description |
 |---|---|
-| `copilot/analyze-repo-state-and-redact-readme` | Branche principale active (contient le code complet de l'application) |
+| `master` | Branche principale active (contient le code complet de l'application) |
+| `setup-dev-orient-bj` | Branche de développement active (contient le code complet de l'application) |
 
 > **Note** : Le dépôt est un clone shallow depuis le commit initial `init`. Il n'existe qu'une seule branche distante visible. L'historique complet et les autres branches éventuelles sont à vérifier directement sur GitHub.
 
@@ -79,31 +80,31 @@
 ## 3. Architecture technique
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                          Client (HTTP)                          │
-└────────────────────────────┬────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                          Client (HTTP)                       │
+└────────────────────────────┬─────────────────────────────────┘
                              │
-┌────────────────────────────▼────────────────────────────────────┐
-│                        NestJS App                               │
-│  ┌──────────────┐  ┌─────────────┐  ┌──────────────────────┐   │
-│  │ ThrottlerGuard│  │ JwtAuthGuard│  │    RolesGuard        │   │
-│  └──────────────┘  └─────────────┘  └──────────────────────┘   │
-│                    (Guards globaux)                             │
-│  ┌────────────────────────────────────────────────────────┐    │
-│  │                 Modules métier                          │    │
-│  │  auth · users · sessions · questions · responses        │    │
-│  │  scoring · results · recommendations · careers          │    │
-│  │  badges · announcements · contact · institutions        │    │
-│  │  resources · localization · media · admin · ai          │    │
-│  │  adaptive · outcomes · feedback                         │    │
-│  └───────────────────────┬────────────────────────────────┘    │
-│                          │                                      │
-│  ┌───────────────────────▼────────────────────────────────┐    │
-│  │              Infrastructure commune                     │    │
-│  │  PrismaService · AuditService · MailService             │    │
-│  │  PinoLogger · StorageService · AdaptiveCacheService     │    │
-│  └───────────────────────┬────────────────────────────────┘    │
-└──────────────────────────┼──────────────────────────────────────┘
+┌────────────────────────────▼─────────────────────────────────┐
+│                        NestJS App                            │
+│  ┌────────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ ThrottlerGuard │  │ JwtAuthGuard │  │   RolesGuard     │  │
+│  └────────────────┘  └──────────────┘  └──────────────────┘  │
+│                    (Guards globaux)                          │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │                 Modules métier                         │  │
+│  │  auth · users · sessions · questions · responses       │  │
+│  │  scoring · results · recommendations · careers         │  │
+│  │  badges · announcements · contact · institutions       │  │
+│  │  resources · localization · media · admin · ai         │  │
+│  │  adaptive · outcomes · feedback                        │  │
+│  └───────────────────────┬────────────────────────────────┘  │
+│                          │                                   │
+│  ┌───────────────────────▼────────────────────────────────┐  │
+│  │              Infrastructure commune                    │  │
+│  │  PrismaService · AuditService · MailService            │  │
+│  │  PinoLogger · StorageService · AdaptiveCacheService    │  │
+│  └───────────────────────┬────────────────────────────────┘  │
+└──────────────────────────┼───────────────────────────────────┘
                            │
           ┌────────────────┼──────────────────┐
           ▼                ▼                  ▼
@@ -118,7 +119,7 @@
 - **RBAC** : décorateur `@Roles('admin' | 'editor' | 'analyst')` — les admins ont un flag `isAdmin` dédié
 - **ValidationPipe global** : `whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`
 - **Helmet** : en-têtes HTTP de sécurité
-- **CORS** : configurable via `CORS_ORIGIN` et `CORS_CREDENTIALS`
+- **CORS** : configurable via `CORS_ORIGIN`, méthodes et en-têtes autorisés
 - **Rate limiting** : 120 requêtes / 60 secondes par IP (configurable)
 
 ---
@@ -174,6 +175,7 @@ Copier `.env.example` vers `.env` et renseigner les valeurs suivantes :
 NODE_ENV=development          # development | production | test
 PORT=3000
 LOG_LEVEL=info                # trace | debug | info | warn | error
+TRUST_PROXY=false             # true uniquement derrière un proxy de confiance
 
 # ── Base de données (requis) ──────────────────────────────
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB_NAME
@@ -184,6 +186,10 @@ JWT_SECRET=change-me-in-production
 # ── CORS ──────────────────────────────────────────────────
 CORS_ORIGIN=http://localhost:3000,http://localhost:5173
 CORS_CREDENTIALS=true
+CORS_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Device-Id,X-Metrics-Token
+CORS_EXPOSED_HEADERS=Content-Disposition
+CORS_MAX_AGE=600
 
 # ── SMTP – réinitialisation de mot de passe (optionnel) ──
 SMTP_HOST=
@@ -219,6 +225,8 @@ SWAGGER_PASS=change-me
 > Si `S3_BUCKET` n'est pas configuré, les PDFs sont stockés localement dans `storage/treasure-maps/`.
 > Si `REDIS_URL` n'est pas configuré, le cache adaptatif bascule automatiquement en mémoire.
 > Si `SMTP_HOST` n'est pas configuré, les emails ne sont pas envoyés (avertissement dans les logs).
+> Si `CORS_ORIGIN` n'est pas configuré, les appels cross-origin sont refusés par défaut.
+> Si `CORS_ORIGIN=*`, les credentials CORS sont désactivés automatiquement.
 
 ---
 
@@ -358,7 +366,7 @@ Language
 
 ---
 
-### 🔐 Auth — `/auth`
+### Auth — `/auth`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -374,7 +382,7 @@ Language
 
 ---
 
-### 👤 Users — `/users`
+### Users — `/users`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -387,7 +395,7 @@ Language
 
 ---
 
-### 📋 Sessions — `/sessions`
+### Sessions — `/sessions`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -396,7 +404,7 @@ Language
 
 ---
 
-### ❓ Questions — `/questions`
+### Questions — `/questions`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -409,7 +417,7 @@ Language
 
 ---
 
-### 📝 Responses — `/responses`
+### Responses — `/responses`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -420,7 +428,7 @@ Language
 
 ---
 
-### 📊 Scoring — `/scoring`
+### Scoring — `/scoring`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -430,7 +438,7 @@ Language
 
 ---
 
-### 🏆 Results — `/results`
+### Results — `/results`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -447,7 +455,7 @@ Language
 
 ---
 
-### 🎯 Recommendations — `/careers`
+### Recommendations — `/careers`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -457,7 +465,7 @@ Language
 
 ---
 
-### 💼 Careers — `/careers`
+### Careers — `/careers`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -469,7 +477,7 @@ Language
 
 ---
 
-### 📚 Resources — `/resources`
+### Resources — `/resources`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -483,7 +491,7 @@ Language
 
 ---
 
-### 🏫 Institutions — `/institutions`
+### Institutions — `/institutions`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -497,7 +505,7 @@ Language
 
 ---
 
-### 📣 Announcements — `/announcements`
+### Announcements — `/announcements`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -511,7 +519,7 @@ Language
 
 ---
 
-### 🏅 Badges — `/badges`
+### Badges — `/badges`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -524,14 +532,14 @@ Language
 
 | Code | Nom | Déclencheur | Rareté | XP |
 |---|---|---|---|---|
-| `PHASE1_COMPLETED` | Explorateur 🧭 | Fin phase 1 | COMMON | 20 |
-| `PHASE2_COMPLETED` | Analyste 🧠 | Fin phase 2 | RARE | 30 |
-| `TEST_COMPLETED` | Orientation 🏁 | Résultat calculé | EPIC | 50 |
-| `TREASURE_MAP` | Carte au trésor 🗺️ | Génération du PDF | RARE | 20 |
+| `PHASE1_COMPLETED` | Explorateur | Fin phase 1 | COMMON | 20 |
+| `PHASE2_COMPLETED` | Analyste | Fin phase 2 | RARE | 30 |
+| `TEST_COMPLETED` | Orientation | Résultat calculé | EPIC | 50 |
+| `TREASURE_MAP` | Carte au trésor | Génération du PDF | RARE | 20 |
 
 ---
 
-### 📩 Contact — `/contact`
+### Contact — `/contact`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -542,7 +550,7 @@ Language
 
 ---
 
-### 💬 Feedback — `/feedback`
+### Feedback — `/feedback`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -551,7 +559,7 @@ Language
 
 ---
 
-### 🗺️ Outcomes — `/outcomes`
+### Outcomes — `/outcomes`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -560,7 +568,7 @@ Language
 
 ---
 
-### 🌐 Localization — `/localization`
+### Localization — `/localization`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -570,7 +578,7 @@ Language
 
 ---
 
-### 🖼️ Media — `/media`
+### Media — `/media`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -578,7 +586,7 @@ Language
 
 ---
 
-### ⚙️ Admin — `/admin`
+### Admin — `/admin`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -593,7 +601,7 @@ Language
 
 ---
 
-### 🤖 AI — `/ai`
+### AI — `/ai`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -800,7 +808,9 @@ Configuration dans `test/jest-e2e.json`.
 NODE_ENV=production
 DATABASE_URL=postgresql://...
 JWT_SECRET=<valeur longue et aléatoire>
+TRUST_PROXY=true
 CORS_ORIGIN=https://votre-frontend.com
+CORS_ALLOWED_HEADERS=Authorization,Content-Type,X-Device-Id,X-Metrics-Token
 REDIS_URL=redis://...
 S3_BUCKET=...
 OPENAI_API_KEY=...
@@ -852,16 +862,16 @@ Elle est protégée par une authentification HTTP Basic (`SWAGGER_USER` / `SWAGG
 
 Les deux serveurs documentés sont :
 - `http://localhost:3000` — Serveur local
-- `https://api.ecosyt.com` — Serveur distant
+- `https://api.orientation-bj.com` — Serveur distant
 
 ---
 
 ## Liens
 
 - **Auteur** : Sèna D'ALMEIDA — [senadalmeidapro@gmail.com](mailto:senadalmeidapro@gmail.com)
-- **Site** : [https://ecosyt.com](https://ecosyt.com)
+- **Site** : [https://orientation-bj.com](https://orientation-bj.com)
 - **Dépôt** : [github.com/senadalmeidapro/api-orientation](https://github.com/senadalmeidapro/api-orientation)
 
 ---
 
-*Documentation générée le 2026-04-13 — ECOSYT API v1.0.0*
+*Documentation générée le 2026-04-13 — Orientation-bj API v1.0.0*

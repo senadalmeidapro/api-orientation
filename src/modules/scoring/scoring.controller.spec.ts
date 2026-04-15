@@ -1,5 +1,5 @@
-import { ScoringController } from './scoring.controller';
 import { ScoringService } from './scoring.service';
+import { ScoringController } from './scoring.controller';
 
 describe('ScoringController', () => {
     it('health', () => {

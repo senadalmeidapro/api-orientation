@@ -1,106 +1,179 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Query,
+} from '@nestjs/common';
 import { ResourcesService } from './resources.service';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { ListResourcesDto } from './dto/list-resources.dto';
-import { CreateResourceDto } from './dto/create-resource.dto';
-import { UpdateResourceDto } from './dto/update-resource.dto';
-import { CreateResourceTranslationDto } from './dto/create-resource-translation.dto';
-import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { AuditService } from '../../common/audit/audit.service';
+import { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
+import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+    ApiStandardCreatedResponse,
+    ApiStandardErrorResponses,
+    ApiStandardOkResponse,
+} from '../../common/swagger';
 
-@Controller('resources')
+@ApiTags('Resources')
+@ApiBearerAuth('access-token')
+@Controller('api/v1/resources')
 export class ResourcesController {
-    constructor(
-        private readonly service: ResourcesService,
-        private readonly audit: AuditService,
-    ) {
-    }
+    constructor(private readonly resources: ResourcesService) {}
 
+    @ApiOperation({
+        summary: 'Lister les ressources publiées',
+        description:
+            'Endpoint public de consultation des ressources. `publishedOnly` est forcé à `true` si absent.',
+    })
+    @ApiStandardOkResponse({
+        description: 'Liste des ressources publiques récupérée.',
+        dataExample: [
+            {
+                id: 101,
+                title: 'Guide de découverte des métiers',
+                category: 'guides',
+                is_published: true,
+            },
+        ],
+    })
+    @ApiStandardErrorResponses()
     @Public()
+    @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
-    list(@Query() query: ListResourcesDto) {
-        return this.service.listResources(query, false);
+    list(@Query() dto: ListResourcesDto) {
+        return this.resources.list({ ...dto, publishedOnly: dto.publishedOnly ?? true });
     }
 
-    @Roles('admin', 'editor')
-    @Get('admin/list')
-    listAdmin(@Query() query: ListResourcesDto) {
-        return this.service.listResources(query, true);
+    @ApiOperation({
+        summary: 'Lister les ressources (admin)',
+        description: 'Liste complète des ressources, publiées ou non (endpoint réservé ADMIN).',
+    })
+    @ApiStandardOkResponse({
+        description: 'Liste des ressources (admin) récupérée.',
+        dataExample: [
+            {
+                id: 101,
+                title: 'Guide de découverte des métiers',
+                is_published: false,
+            },
+        ],
+    })
+    @ApiStandardErrorResponses({ includeUnauthorized: true })
+    @Roles('ADMIN')
+    @Throttle({ default: { limit: 60, ttl: 60 } })
+    @Get('admin')
+    listAdmin(@Query() dto: ListResourcesDto) {
+        return this.resources.list(dto);
     }
 
-    @Roles('admin', 'editor')
-    @Get('admin/:id')
-    getOneAdmin(@Param('id') id: string, @Query('lang') lang?: string) {
-        return this.service.getResource(Number(id), lang, true);
-    }
-
-    @Roles('admin', 'editor')
-    @Post()
-    async create(@Body() dto: CreateResourceDto, @CurrentUser() user: any, @Req() req: any) {
-        const created = await this.service.createResource(dto);
-        await this.audit.logAction({
-            userId: user.id,
-            action: 'create',
-            entity: 'Resource',
-            entityId: created.id,
-            data: { title: created.title },
-            ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
-        });
-        return created;
-    }
-
-    @Roles('admin', 'editor')
-    @Patch(':id')
-    async update(
-        @Param('id') id: string,
-        @Body() dto: UpdateResourceDto,
-        @CurrentUser() user: any,
-        @Req() req: any,
-    ) {
-        const updated = await this.service.updateResource(Number(id), dto);
-        await this.audit.logAction({
-            userId: user.id,
-            action: 'update',
-            entity: 'Resource',
-            entityId: id,
-            data: dto as any,
-            ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
-        });
-        return updated;
-    }
-
-    @Roles('admin', 'editor')
-    @Post(':id/translations')
-    async addTranslation(
-        @Param('id') id: string,
-        @Body() dto: CreateResourceTranslationDto,
-        @CurrentUser() user: any,
-        @Req() req: any,
-    ) {
-        const created = await this.service.addTranslation(Number(id), dto);
-        await this.audit.logAction({
-            userId: user.id,
-            action: 'translate',
-            entity: 'Resource',
-            entityId: id,
-            data: { languageCode: dto.languageCode },
-            ipAddress: req.ip,
-            userAgent: req.headers['user-agent'],
-        });
-        return created;
-    }
-
-    @Get('health')
-    health() {
-        return this.service.health();
-    }
-
+    @ApiOperation({
+        summary: 'Récupérer une ressource par ID',
+        description: 'Endpoint public de détail ressource.',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'Identifiant numérique de la ressource.',
+        example: 101,
+    })
+    @ApiStandardOkResponse({
+        description: 'Ressource récupérée.',
+        dataExample: {
+            id: 101,
+            title: 'Guide de découverte des métiers',
+            content_type: 'article',
+            related_careers: [],
+        },
+    })
+    @ApiStandardErrorResponses({ includeNotFound: true })
     @Public()
+    @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get(':id')
-    getOne(@Param('id') id: string, @Query('lang') lang?: string) {
-        return this.service.getResource(Number(id), lang, false);
+    getById(@Param('id', ParseIntPipe) id: number) {
+        return this.resources.getById(id);
+    }
+
+    @ApiOperation({
+        summary: 'Créer une ressource',
+        description: 'Création d’une ressource éditoriale (endpoint réservé ADMIN).',
+    })
+    @ApiBody({
+        type: CreateResourceDto,
+        description: 'Données de création ressource.',
+    })
+    @ApiStandardCreatedResponse({
+        description: 'Ressource créée.',
+        dataExample: {
+            id: 201,
+            title: 'Fiche métier Développeur backend',
+            is_published: false,
+        },
+    })
+    @ApiStandardErrorResponses({ includeUnauthorized: true })
+    @Roles('ADMIN')
+    @Throttle({ default: { limit: 30, ttl: 60 } })
+    @Post()
+    create(@Body() dto: CreateResourceDto) {
+        return this.resources.create(dto);
+    }
+
+    @ApiOperation({
+        summary: 'Mettre à jour une ressource',
+        description: 'Mise à jour partielle d’une ressource (endpoint réservé ADMIN).',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'Identifiant numérique de la ressource.',
+        example: 101,
+    })
+    @ApiBody({
+        type: UpdateResourceDto,
+        description: 'Données partielles de mise à jour.',
+    })
+    @ApiStandardOkResponse({
+        description: 'Ressource mise à jour.',
+        dataExample: {
+            id: 101,
+            title: 'Guide de découverte des métiers (édition 2026)',
+            is_published: true,
+        },
+    })
+    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    @Roles('ADMIN')
+    @Throttle({ default: { limit: 30, ttl: 60 } })
+    @Patch(':id')
+    update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateResourceDto) {
+        return this.resources.update(id, dto);
+    }
+
+    @ApiOperation({
+        summary: 'Supprimer une ressource',
+        description:
+            'Suppression définitive de la ressource et des liens de relation associés (endpoint réservé ADMIN).',
+    })
+    @ApiParam({
+        name: 'id',
+        description: 'Identifiant numérique de la ressource.',
+        example: 101,
+    })
+    @ApiStandardOkResponse({
+        description: 'Ressource supprimée.',
+        dataExample: {
+            id: 101,
+            title: 'Guide de découverte des métiers',
+        },
+    })
+    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    @Roles('ADMIN')
+    @Throttle({ default: { limit: 10, ttl: 60 } })
+    @Delete(':id')
+    remove(@Param('id', ParseIntPipe) id: number) {
+        return this.resources.remove(id);
     }
 }

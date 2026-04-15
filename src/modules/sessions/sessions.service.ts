@@ -1,91 +1,58 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
 import { CreateSessionDto } from './dto/create-session.dto';
-import { PhaseType } from '@prisma/client';
-import { randomUUID } from 'crypto';
-import { InputJsonValue } from '@prisma/client/runtime/client';
+import { CreateAssessmentDto } from './dto/create-assessment.dto';
+import { UpdateSessionProfileDto } from './dto/update-session-profile.dto';
+import { AssessmentType } from '@prisma/client';
+import { SessionLifecycleService } from './services/session-lifecycle.service';
+import { AssessmentFlowService } from './services/assessment-flow.service';
 
 @Injectable()
 export class SessionsService {
-    constructor(private readonly prisma: PrismaService) {
-    }
+    constructor(
+        private readonly lifecycleService: SessionLifecycleService,
+        private readonly flowService: AssessmentFlowService,
+    ) {}
 
-    private async resolveTestVersionId(explicitId?: number) {
-        if (explicitId) {
-            const exists = await this.prisma.testVersion.findUnique({
-                where: { id: explicitId },
-                select: { id: true },
-            });
-            if (!exists) throw new NotFoundException('TestVersion introuvable');
-            return explicitId;
+    async createSession(userId: string, dto: CreateSessionDto) {
+        const session = await this.lifecycleService.createSession(userId);
+
+        const testVersionId = await this.flowService.resolveTestVersionId(dto.testVersionId);
+
+        const assessmentType = dto.initialAssessmentType ?? AssessmentType.PHASE1;
+        const depth = dto.depth ?? 5; // DEFAULT_DEPTH
+
+        const assessment = await this.flowService.createAssessment(session.id, testVersionId, {
+            type: assessmentType,
+            depth,
+        });
+
+        // Ensure user profile is updated immediately if passed (and if it's an authenticated session)
+        if (dto.profile) {
+            await this.lifecycleService.updateProfile(session.session_token, dto.profile);
         }
-
-        const active = await this.prisma.testVersion.findFirst({
-            where: { isActive: true },
-            orderBy: { id: 'desc' },
-        });
-
-        if (active) return active.id;
-
-        const existing = await this.prisma.testVersion.findFirst({
-            orderBy: { id: 'desc' },
-        });
-        if (existing) return existing.id;
-
-        const created = await this.prisma.testVersion.create({
-            data: {
-                code: 'v1',
-                name: 'Version 1',
-                description: 'Version initiale du test RIASEC',
-                isActive: true,
-            },
-        });
-
-        return created.id;
-    }
-
-    async createSession(dto: CreateSessionDto) {
-        const testVersionId = await this.resolveTestVersionId(dto.testVersionId);
-        let userDepartment: any = undefined;
-        if (!dto.department && dto.userId) {
-            const user = await this.prisma.user.findUnique({
-                where: { id: dto.userId },
-                select: { department: true },
-            });
-            userDepartment = user?.department ?? undefined;
-        }
-
-        const session = await this.prisma.userTestSession.create({
-            data: {
-                userId: dto.userId ?? null,
-                testVersionId,
-                sessionToken: randomUUID(),
-                shareToken: randomUUID(),
-                currentPhase: PhaseType.PHASE_1,
-                currentStepIndex: 0,
-                currentSection: null,
-                department: dto.department ?? userDepartment ?? undefined,
-                deviceInfo: (dto.deviceInfo ?? undefined) as InputJsonValue,
-                ipAddress: dto.ipAddress ?? undefined,
-                userAgent: dto.userAgent ?? undefined,
-            },
-        });
 
         return {
             sessionId: session.id,
-            sessionToken: session.sessionToken,
-            shareToken: session.shareToken,
-            testVersionId: session.testVersionId,
-            currentPhase: session.currentPhase,
-            startedAt: session.startedAt,
+            sessionToken: session.session_token,
+            shareToken: session.share_token,
+            startedAt: session.created_at,
+            assessment,
         };
     }
 
     async getByToken(sessionToken: string) {
-        const session = await this.prisma.userTestSession.findUnique({
-            where: { sessionToken },
-        });
-        if (!session) throw new NotFoundException('Session introuvable');
-        return session;
+        return this.lifecycleService.getByToken(sessionToken);
+    }
+
+    async createAssessmentForSession(sessionToken: string, dto: CreateAssessmentDto) {
+        return this.flowService.createAssessmentForSession(sessionToken, dto);
+    }
+
+    async listAssessments(sessionToken: string) {
+        return this.flowService.listAssessments(sessionToken);
+    }
+
+    async updateProfile(sessionToken: string, dto: UpdateSessionProfileDto) {
+        return this.lifecycleService.updateProfile(sessionToken, dto.profile);
     }
 }
