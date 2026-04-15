@@ -1,13 +1,13 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { EmailService } from '../../common/email/email.service';
+import { EmailSendResultDto } from '../../common/email/dto/send-email.dto';
 import {
-    EmailSendResultDto,
-    SendEmailDto,
-    SendEmailOptionsDto,
-    SendTemplateEmailDto,
-} from '../../common/email/dto/send-email.dto';
+    SendEmailRequestDto,
+    SendTemplateEmailRequestDto,
+} from '../../common/email/dto/send-email-request.dto';
 import { JwtAuthGuard } from '../../modules/auth/guards/jwt.guard';
+import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../swagger';
 
 /**
  * Example Email Controller
@@ -21,6 +21,8 @@ import { JwtAuthGuard } from '../../modules/auth/guards/jwt.guard';
  */
 @ApiTags('Email (Example)')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth('access-token')
+@ApiStandardErrorResponses({ includeUnauthorized: true })
 @Controller('email')
 export class EmailExampleController {
     constructor(private readonly emailService: EmailService) {}
@@ -38,14 +40,22 @@ export class EmailExampleController {
      * }
      */
     @Post('send')
-    @ApiOperation({ summary: 'Send a standard email' })
-    @ApiResponse({ status: 201, description: 'Email sent successfully', type: EmailSendResultDto })
-    @ApiResponse({ status: 400, description: 'Invalid request' })
-    async sendEmail(
-        @Body() payload: SendEmailDto,
-        @Body() options?: SendEmailOptionsDto,
-    ): Promise<EmailSendResultDto> {
-        return this.emailService.sendEmail(payload, options);
+    @ApiOperation({
+        summary: 'Envoyer un email standard',
+        description:
+            'Endpoint exemple pour envoyer un email direct avec contenu texte/HTML et options de transport.',
+    })
+    @ApiBody({
+        type: SendEmailRequestDto,
+        description: 'Objet contenant `payload` et `options`.',
+    })
+    @ApiStandardCreatedResponse({
+        description: 'Email envoyé avec succès.',
+        model: EmailSendResultDto,
+        message: 'Email envoyé avec succès.',
+    })
+    async sendEmail(@Body() request: SendEmailRequestDto): Promise<EmailSendResultDto> {
+        return this.emailService.sendEmail(request.payload, request.options);
     }
 
     /**
@@ -63,13 +73,23 @@ export class EmailExampleController {
      * }
      */
     @Post('send-template')
-    @ApiOperation({ summary: 'Send a template email' })
-    @ApiResponse({ status: 201, description: 'Email sent successfully', type: EmailSendResultDto })
-    @ApiResponse({ status: 400, description: 'Invalid request' })
+    @ApiOperation({
+        summary: 'Envoyer un email template',
+        description:
+            'Endpoint exemple pour envoyer un email basé sur un template fournisseur (templateId + paramètres).',
+    })
+    @ApiBody({
+        type: SendTemplateEmailRequestDto,
+        description: 'Objet contenant `payload` template et `options`.',
+    })
+    @ApiStandardCreatedResponse({
+        description: 'Email template envoyé avec succès.',
+        model: EmailSendResultDto,
+        message: 'Email template envoyé avec succès.',
+    })
     async sendTemplateEmail(
-        @Body() payload: SendTemplateEmailDto,
-        @Body() options?: SendEmailOptionsDto,
+        @Body() request: SendTemplateEmailRequestDto,
     ): Promise<EmailSendResultDto> {
-        return this.emailService.sendTemplateEmail(payload, options);
+        return this.emailService.sendTemplateEmail(request.payload, request.options);
     }
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { Request } from 'express';
 import { UAParser } from 'ua-parser-js';
-import { v4 as uuidv4 } from 'uuid';
 
 export type AuthClientDeviceInfo = {
     deviceId: string;
@@ -50,7 +50,7 @@ export class AuthDeviceService {
         const deviceId =
             typeof headerDeviceId === 'string' && headerDeviceId.trim().length > 0
                 ? headerDeviceId.trim()
-                : uuidv4();
+                : randomUUID();
 
         const parser = new UAParser(userAgent || undefined);
         const result = parser.getResult();

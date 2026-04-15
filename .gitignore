@@ -84,3 +84,6 @@ custom_migration
 .cursor/
 .cursorignore
 .codex
+
+# OTHERS
+/test-question-response

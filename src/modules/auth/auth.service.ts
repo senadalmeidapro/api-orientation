@@ -198,6 +198,8 @@ export class AuthService {
         if (result.count === 0) {
             throw new UnauthorizedException('Invalid refresh token');
         }
+
+        return { message: 'Déconnexion effectuée avec succès.' };
     }
 
     async passwordResetRequest(dto: EmailDto, req?: Request) {
@@ -208,11 +210,17 @@ export class AuthService {
         });
 
         if (!user || user.is_deleted || user.status === UserStatus.DELETED) {
-            return;
+            return {
+                message:
+                    'Si un compte existe pour cet email, un message de réinitialisation a été envoyé.',
+            };
         }
 
         if (user.status === UserStatus.SUSPENDED) {
-            return;
+            return {
+                message:
+                    'Si un compte existe pour cet email, un message de réinitialisation a été envoyé.',
+            };
         }
 
         const token = await this.token.createUserToken(
@@ -229,6 +237,11 @@ export class AuthService {
                 userId: user.id,
             });
         }
+
+        return {
+            message:
+                'Si un compte existe pour cet email, un message de réinitialisation a été envoyé.',
+        };
     }
 
     async passwordReset(dto: ResetPasswordDto, token: string) {
@@ -258,6 +271,8 @@ export class AuthService {
                 data: { invalidated_at: now },
             }),
         ]);
+
+        return { message: 'Mot de passe réinitialisé avec succès.' };
     }
 
     async verifyEmail(token: string) {
@@ -279,6 +294,8 @@ export class AuthService {
                 data: { deleted_at: new Date() },
             }),
         ]);
+
+        return { message: 'Email vérifié avec succès.' };
     }
 
     async validateUserFromJwt(payload: any) {

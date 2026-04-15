@@ -118,7 +118,7 @@
 - **RBAC** : décorateur `@Roles('admin' | 'editor' | 'analyst')` — les admins ont un flag `isAdmin` dédié
 - **ValidationPipe global** : `whitelist: true`, `forbidNonWhitelisted: true`, `transform: true`
 - **Helmet** : en-têtes HTTP de sécurité
-- **CORS** : configurable via `CORS_ORIGIN` et `CORS_CREDENTIALS`
+- **CORS** : configurable via `CORS_ORIGIN`, méthodes et en-têtes autorisés
 - **Rate limiting** : 120 requêtes / 60 secondes par IP (configurable)
 
 ---
@@ -174,6 +174,7 @@ Copier `.env.example` vers `.env` et renseigner les valeurs suivantes :
 NODE_ENV=development          # development | production | test
 PORT=3000
 LOG_LEVEL=info                # trace | debug | info | warn | error
+TRUST_PROXY=false             # true uniquement derrière un proxy de confiance
 
 # ── Base de données (requis) ──────────────────────────────
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB_NAME
@@ -184,6 +185,10 @@ JWT_SECRET=change-me-in-production
 # ── CORS ──────────────────────────────────────────────────
 CORS_ORIGIN=http://localhost:3000,http://localhost:5173
 CORS_CREDENTIALS=true
+CORS_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Device-Id,X-Metrics-Token
+CORS_EXPOSED_HEADERS=Content-Disposition
+CORS_MAX_AGE=600
 
 # ── SMTP – réinitialisation de mot de passe (optionnel) ──
 SMTP_HOST=
@@ -219,6 +224,8 @@ SWAGGER_PASS=change-me
 > Si `S3_BUCKET` n'est pas configuré, les PDFs sont stockés localement dans `storage/treasure-maps/`.
 > Si `REDIS_URL` n'est pas configuré, le cache adaptatif bascule automatiquement en mémoire.
 > Si `SMTP_HOST` n'est pas configuré, les emails ne sont pas envoyés (avertissement dans les logs).
+> Si `CORS_ORIGIN` n'est pas configuré, les appels cross-origin sont refusés par défaut.
+> Si `CORS_ORIGIN=*`, les credentials CORS sont désactivés automatiquement.
 
 ---
 
@@ -800,7 +807,9 @@ Configuration dans `test/jest-e2e.json`.
 NODE_ENV=production
 DATABASE_URL=postgresql://...
 JWT_SECRET=<valeur longue et aléatoire>
+TRUST_PROXY=true
 CORS_ORIGIN=https://votre-frontend.com
+CORS_ALLOWED_HEADERS=Authorization,Content-Type,X-Device-Id,X-Metrics-Token
 REDIS_URL=redis://...
 S3_BUCKET=...
 OPENAI_API_KEY=...

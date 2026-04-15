@@ -1,32 +1,38 @@
 import { SessionsService } from './sessions.service';
 
-const prisma = {
-    testVersion: {
-        findUnique: jest.fn(),
-        findFirst: jest.fn(),
-        create: jest.fn(),
-    },
-    user: { findUnique: jest.fn() },
-    session: { create: jest.fn(), findUnique: jest.fn() },
-    assessment: { create: jest.fn() },
+const lifecycleService = {
+    createSession: jest.fn(),
+    updateProfile: jest.fn(),
+    getByToken: jest.fn(),
+} as any;
+
+const flowService = {
+    resolveTestVersionId: jest.fn(),
+    createAssessment: jest.fn(),
+    createAssessmentForSession: jest.fn(),
+    listAssessments: jest.fn(),
 } as any;
 
 describe('SessionsService', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
     it('creates session with initial assessment', async () => {
-        prisma.testVersion.findUnique.mockResolvedValue({ id: 1 });
-        prisma.session.create.mockResolvedValue({
+        lifecycleService.createSession.mockResolvedValue({
             id: 1,
-            sessionToken: 'token',
-            shareToken: 'share',
-            startedAt: new Date(),
+            session_token: 'token',
+            share_token: 'share',
+            created_at: new Date(),
         });
-        prisma.assessment.create.mockResolvedValue({
+        flowService.resolveTestVersionId.mockResolvedValue(1);
+        flowService.createAssessment.mockResolvedValue({
             id: 'a1',
             type: 'PHASE1',
         });
 
-        const service = new SessionsService(prisma);
-        const res = await service.createSession({ testVersionId: 1 } as any);
+        const service = new SessionsService(lifecycleService, flowService);
+        const res = await service.createSession('user-1', { testVersionId: 1 } as any);
 
         expect(res.sessionToken).toBe('token');
         expect(res.assessment.id).toBe('a1');

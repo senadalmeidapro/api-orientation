@@ -1,25 +1,37 @@
+import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-export function setupSecureSwagger(app: any) {
-    const port = Number(process.env.PORT ?? 3000);
-    const title = process.env.APP_NAME ?? 'POPI 2.0 API';
-    const description = "Documentation technique de l'API d'orientation";
-    const version = process.env.APP_VERSION ?? '1.0.0';
-    const swaggerPath = 'api/v1/docs';
-
-    const serverUrls = (process.env.SWAGGER_SERVER_URLS ?? '')
+const parseListEnv = (value: string | undefined): string[] =>
+    (value ?? '')
         .split(',')
-        .map((value) => value.trim())
-        .filter((value) => value.length > 0);
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0);
+
+export function setupSecureSwagger(app: INestApplication) {
+    const title = process.env.APP_NAME ?? 'POPI 2.0 API';
+    const description =
+        process.env.APP_DESCRIPTION ?? "Documentation technique de l'API d'orientation";
+    const version = process.env.APP_VERSION ?? '1.0.0';
+    const swaggerPath = (process.env.SWAGGER_PATH ?? 'api/v1/docs').trim() || 'api/v1/docs';
+    const serverUrls = parseListEnv(process.env.SWAGGER_SERVER_URLS);
 
     const builder = new DocumentBuilder()
         .setTitle(title)
         .setDescription(description)
-        .setVersion(version);
+        .setVersion(version)
+        .addBearerAuth(
+            {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT',
+                description: 'Token JWT dans le header Authorization: Bearer <token>',
+            },
+            'access-token',
+        );
 
-    const contactName = "Sèna Gédéon D'ALMEIDA";
-    const contactUrl = '';
-    const contactEmail = 'senadalmeidapro@gmail.com';
+    const contactName = (process.env.SWAGGER_CONTACT_NAME ?? '').trim();
+    const contactUrl = (process.env.SWAGGER_CONTACT_URL ?? '').trim();
+    const contactEmail = (process.env.SWAGGER_CONTACT_EMAIL ?? '').trim();
     if (contactName || contactUrl || contactEmail) {
         builder.setContact(contactName, contactUrl, contactEmail);
     }
@@ -27,7 +39,7 @@ export function setupSecureSwagger(app: any) {
     if (serverUrls.length > 0) {
         serverUrls.forEach((url) => builder.addServer(url));
     } else {
-        builder.addServer(`http://localhost:${port}`, 'Serveur local');
+        builder.addServer('/', 'Current host');
     }
 
     const swaggerDocument = SwaggerModule.createDocument(app, builder.build());

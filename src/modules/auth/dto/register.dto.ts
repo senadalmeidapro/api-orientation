@@ -10,14 +10,17 @@ import {
     MinLength,
 } from 'class-validator';
 import { toBoolean, trimLowercase, trimString } from './transforms';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class RegisterDto {
+    @ApiProperty({ description: 'Email', type: String, example: 'user@example.com' })
     @Transform(({ value }) => trimLowercase(value))
     @IsEmail()
     @MaxLength(254)
     @IsNotEmpty()
     email!: string;
 
+    @ApiProperty({ description: 'First name', type: String, example: 'John Doe' })
     @Transform(({ value }) => trimString(value))
     @IsString()
     @MinLength(2)
@@ -25,6 +28,7 @@ export class RegisterDto {
     @IsNotEmpty()
     firstName!: string;
 
+    @ApiProperty({ description: 'Last name', type: String, example: 'John Doe' })
     @Transform(({ value }) => trimString(value))
     @IsString()
     @MinLength(2)
@@ -32,6 +36,7 @@ export class RegisterDto {
     @IsNotEmpty()
     lastName!: string;
 
+    @ApiProperty({ description: 'Password', type: String, example: 'Str0ngP@ssw0rd!' })
     @IsString()
     @IsStrongPassword({
         minLength: 8,
@@ -44,6 +49,7 @@ export class RegisterDto {
     @IsNotEmpty()
     password!: string;
 
+    @ApiProperty({ description: 'Accept terms', type: Object, example: {} })
     @Transform(({ value }) => toBoolean(value))
     @IsBoolean()
     @Equals(true, { message: 'Terms must be accepted' })

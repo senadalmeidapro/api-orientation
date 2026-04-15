@@ -14,10 +14,10 @@ describe('QuestionsService', () => {
         prisma.session.findUnique.mockResolvedValue({ id: 1 });
         prisma.assessment.findFirst.mockResolvedValue({
             id: 'a1',
-            sessionId: 1,
+            session_id: 1,
             status: AssessmentStatus.IN_PROGRESS,
-            currentPhase: PhaseType.PHASE_1,
-            testVersionId: 1,
+            current_phase: PhaseType.PHASE1,
+            test_version_id: 1,
             depth: 5,
         });
         prisma.language.findUnique.mockResolvedValue({ id: 1 });
@@ -25,18 +25,20 @@ describe('QuestionsService', () => {
         prisma.phase1Question.findMany.mockResolvedValue([
             {
                 id: 1,
-                riasecTypeId: 'R',
-                questionText: 'q',
-                questionShort: null,
-                illustrationUrl: null,
+                riasec_type_id: 'R',
+                question_text: 'q',
+                question_short: null,
+                illustration_url: null,
                 pointsValue: 10,
-                displayOrder: 1,
-                translations: [{ questionText: 't', questionShort: null }],
+                display_order: 1,
+                translations: [{ question_text: 't', question_short: null }],
             },
         ]);
 
         const cache = { get: jest.fn().mockResolvedValue(null), set: jest.fn() } as any;
-        const service = new QuestionsService(prisma, cache);
+        const adaptive = {} as any;
+        const batch = {} as any;
+        const service = new QuestionsService(prisma, cache, adaptive, batch);
         const res = await service.getPhase1Questions({ sessionToken: 's', lang: 'fr' } as any);
 
         expect(res[0].text).toBe('t');
