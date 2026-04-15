@@ -26,7 +26,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-@Controller('training-paths')
+@Controller('api/v1/training-paths')
 export class TrainingPathsController {
     constructor(private readonly paths: TrainingPathsService) {}
 

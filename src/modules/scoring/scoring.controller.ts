@@ -7,7 +7,7 @@ import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/s
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true })
-@Controller('scoring')
+@Controller('api/v1/scoring')
 export class ScoringController {
     @ApiOperation({
         summary: 'Vérifier la santé du module scoring',

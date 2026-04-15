@@ -29,7 +29,7 @@ import {
 
 @ApiTags('Links')
 @ApiBearerAuth('access-token')
-@Controller('links')
+@Controller('api/v1/links')
 export class LinksController {
     constructor(private readonly links: LinksService) {}
 

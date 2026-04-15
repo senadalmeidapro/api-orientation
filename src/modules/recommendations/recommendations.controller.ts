@@ -8,7 +8,7 @@ import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/s
 
 @ApiTags('Careers')
 @ApiStandardErrorResponses({ includeNotFound: true })
-@Controller('careers')
+@Controller('api/v1/careers')
 export class RecommendationsController {
     constructor(private readonly service: RecommendationsService) {}
 

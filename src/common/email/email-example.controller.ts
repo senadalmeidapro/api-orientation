@@ -23,7 +23,7 @@ import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../swagge
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true })
-@Controller('email')
+@Controller('api/v1/email')
 export class EmailExampleController {
     constructor(private readonly emailService: EmailService) {}
 

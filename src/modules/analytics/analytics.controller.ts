@@ -20,7 +20,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-@Controller('analytics')
+@Controller('api/v1/analytics')
 export class AnalyticsController {
     constructor(private readonly analytics: AnalyticsService) {}
 

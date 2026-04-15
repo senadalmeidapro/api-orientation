@@ -16,7 +16,7 @@ type HealthResponse = {
 
 @ApiTags('Health')
 @Public()
-@Controller('health')
+@Controller('api/v1/health')
 @ApiStandardErrorResponses()
 export class HealthController {
     @ApiOperation({

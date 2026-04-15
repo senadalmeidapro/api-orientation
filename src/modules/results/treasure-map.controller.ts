@@ -36,7 +36,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-@Controller('treasure-map')
+@Controller('api/v1/treasure-map')
 export class TreasureMapController {
     constructor(private readonly service: TreasureMapService) {}
 

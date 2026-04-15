@@ -10,7 +10,7 @@ import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/s
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-@Controller('questions')
+@Controller('api/v1/questions')
 export class QuestionsController {
     constructor(private readonly service: QuestionsService) {}
 

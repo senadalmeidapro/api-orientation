@@ -38,7 +38,7 @@ const THROTTLE_AUTH_SENSITIVE = { default: { limit: 10, ttl: 60 } } as const;
 
 @ApiTags('Auth')
 @ApiStandardErrorResponses()
-@Controller('auth')
+@Controller('api/v1/auth')
 export class AuthController {
     constructor(private readonly auth: AuthService) {}
 

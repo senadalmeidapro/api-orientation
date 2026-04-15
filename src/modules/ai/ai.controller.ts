@@ -8,7 +8,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
 
 @ApiTags('Ai')
-@Controller('ai')
+@Controller('api/v1/ai')
 export class AiController {
     constructor(private readonly service: AiService) {}
 

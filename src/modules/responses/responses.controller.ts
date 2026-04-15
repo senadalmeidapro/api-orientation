@@ -18,7 +18,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-@Controller('responses')
+@Controller('api/v1/responses')
 export class ResponsesController {
     constructor(
         private readonly service: ResponsesService,

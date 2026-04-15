@@ -23,7 +23,7 @@ import {
 
 @ApiTags('Resources')
 @ApiBearerAuth('access-token')
-@Controller('resources')
+@Controller('api/v1/resources')
 export class ResourcesController {
     constructor(private readonly resources: ResourcesService) {}
 

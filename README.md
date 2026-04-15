@@ -1,4 +1,4 @@
-# ECOSYT API — Documentation complète
+# orientation-bj API — Documentation complète
 
 > **API d'orientation professionnelle basée sur le modèle RIASEC**
 > Application NestJS · PostgreSQL · Prisma · TypeScript
@@ -29,7 +29,7 @@
 
 ## 1. Vue d'ensemble du projet
 
-**ECOSYT API** est le backend d'une plateforme d'orientation professionnelle destinée principalement aux jeunes béninois. Elle implémente le modèle psychométrique **RIASEC** (Holland) pour identifier les profils professionnels et proposer des recommandations de métiers adaptées au contexte local.
+**orientation-bj API** est le backend d'une plateforme d'orientation professionnelle destinée principalement aux jeunes béninois. Elle implémente le modèle psychométrique **RIASEC** (Holland) pour identifier les profils professionnels et proposer des recommandations de métiers adaptées au contexte local.
 
 ### Fonctionnalités principales
 
@@ -79,31 +79,31 @@
 ## 3. Architecture technique
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                          Client (HTTP)                          │
-└────────────────────────────┬────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                          Client (HTTP)                       │
+└────────────────────────────┬─────────────────────────────────┘
                              │
-┌────────────────────────────▼────────────────────────────────────┐
-│                        NestJS App                               │
-│  ┌──────────────┐  ┌─────────────┐  ┌──────────────────────┐   │
-│  │ ThrottlerGuard│  │ JwtAuthGuard│  │    RolesGuard        │   │
-│  └──────────────┘  └─────────────┘  └──────────────────────┘   │
-│                    (Guards globaux)                             │
-│  ┌────────────────────────────────────────────────────────┐    │
-│  │                 Modules métier                          │    │
-│  │  auth · users · sessions · questions · responses        │    │
-│  │  scoring · results · recommendations · careers          │    │
-│  │  badges · announcements · contact · institutions        │    │
-│  │  resources · localization · media · admin · ai          │    │
-│  │  adaptive · outcomes · feedback                         │    │
-│  └───────────────────────┬────────────────────────────────┘    │
-│                          │                                      │
-│  ┌───────────────────────▼────────────────────────────────┐    │
-│  │              Infrastructure commune                     │    │
-│  │  PrismaService · AuditService · MailService             │    │
-│  │  PinoLogger · StorageService · AdaptiveCacheService     │    │
-│  └───────────────────────┬────────────────────────────────┘    │
-└──────────────────────────┼──────────────────────────────────────┘
+┌────────────────────────────▼─────────────────────────────────┐
+│                        NestJS App                            │
+│  ┌────────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │ ThrottlerGuard │  │ JwtAuthGuard │  │   RolesGuard     │  │
+│  └────────────────┘  └──────────────┘  └──────────────────┘  │
+│                    (Guards globaux)                          │
+│  ┌────────────────────────────────────────────────────────┐  │
+│  │                 Modules métier                         │  │
+│  │  auth · users · sessions · questions · responses       │  │
+│  │  scoring · results · recommendations · careers         │  │
+│  │  badges · announcements · contact · institutions       │  │
+│  │  resources · localization · media · admin · ai         │  │
+│  │  adaptive · outcomes · feedback                        │  │
+│  └───────────────────────┬────────────────────────────────┘  │
+│                          │                                   │
+│  ┌───────────────────────▼────────────────────────────────┐  │
+│  │              Infrastructure commune                    │  │
+│  │  PrismaService · AuditService · MailService            │  │
+│  │  PinoLogger · StorageService · AdaptiveCacheService    │  │
+│  └───────────────────────┬────────────────────────────────┘  │
+└──────────────────────────┼───────────────────────────────────┘
                            │
           ┌────────────────┼──────────────────┐
           ▼                ▼                  ▼
@@ -365,7 +365,7 @@ Language
 
 ---
 
-### 🔐 Auth — `/auth`
+### Auth — `/auth`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -381,7 +381,7 @@ Language
 
 ---
 
-### 👤 Users — `/users`
+### Users — `/users`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -394,7 +394,7 @@ Language
 
 ---
 
-### 📋 Sessions — `/sessions`
+### Sessions — `/sessions`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -403,7 +403,7 @@ Language
 
 ---
 
-### ❓ Questions — `/questions`
+### Questions — `/questions`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -416,7 +416,7 @@ Language
 
 ---
 
-### 📝 Responses — `/responses`
+### Responses — `/responses`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -427,7 +427,7 @@ Language
 
 ---
 
-### 📊 Scoring — `/scoring`
+### Scoring — `/scoring`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -437,7 +437,7 @@ Language
 
 ---
 
-### 🏆 Results — `/results`
+### Results — `/results`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -454,7 +454,7 @@ Language
 
 ---
 
-### 🎯 Recommendations — `/careers`
+### Recommendations — `/careers`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -464,7 +464,7 @@ Language
 
 ---
 
-### 💼 Careers — `/careers`
+### Careers — `/careers`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -476,7 +476,7 @@ Language
 
 ---
 
-### 📚 Resources — `/resources`
+### Resources — `/resources`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -490,7 +490,7 @@ Language
 
 ---
 
-### 🏫 Institutions — `/institutions`
+### Institutions — `/institutions`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -504,7 +504,7 @@ Language
 
 ---
 
-### 📣 Announcements — `/announcements`
+### Announcements — `/announcements`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -518,7 +518,7 @@ Language
 
 ---
 
-### 🏅 Badges — `/badges`
+### Badges — `/badges`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -531,14 +531,14 @@ Language
 
 | Code | Nom | Déclencheur | Rareté | XP |
 |---|---|---|---|---|
-| `PHASE1_COMPLETED` | Explorateur 🧭 | Fin phase 1 | COMMON | 20 |
-| `PHASE2_COMPLETED` | Analyste 🧠 | Fin phase 2 | RARE | 30 |
-| `TEST_COMPLETED` | Orientation 🏁 | Résultat calculé | EPIC | 50 |
-| `TREASURE_MAP` | Carte au trésor 🗺️ | Génération du PDF | RARE | 20 |
+| `PHASE1_COMPLETED` | Explorateur | Fin phase 1 | COMMON | 20 |
+| `PHASE2_COMPLETED` | Analyste | Fin phase 2 | RARE | 30 |
+| `TEST_COMPLETED` | Orientation | Résultat calculé | EPIC | 50 |
+| `TREASURE_MAP` | Carte au trésor | Génération du PDF | RARE | 20 |
 
 ---
 
-### 📩 Contact — `/contact`
+### Contact — `/contact`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -549,7 +549,7 @@ Language
 
 ---
 
-### 💬 Feedback — `/feedback`
+### Feedback — `/feedback`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -558,7 +558,7 @@ Language
 
 ---
 
-### 🗺️ Outcomes — `/outcomes`
+### Outcomes — `/outcomes`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -567,7 +567,7 @@ Language
 
 ---
 
-### 🌐 Localization — `/localization`
+### Localization — `/localization`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -577,7 +577,7 @@ Language
 
 ---
 
-### 🖼️ Media — `/media`
+### Media — `/media`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -585,7 +585,7 @@ Language
 
 ---
 
-### ⚙️ Admin — `/admin`
+### Admin — `/admin`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -600,7 +600,7 @@ Language
 
 ---
 
-### 🤖 AI — `/ai`
+### AI — `/ai`
 
 | Méthode | Route | Accès | Description |
 |---|---|---|---|
@@ -861,16 +861,16 @@ Elle est protégée par une authentification HTTP Basic (`SWAGGER_USER` / `SWAGG
 
 Les deux serveurs documentés sont :
 - `http://localhost:3000` — Serveur local
-- `https://api.ecosyt.com` — Serveur distant
+- `https://api.orientation-bj.com` — Serveur distant
 
 ---
 
 ## Liens
 
 - **Auteur** : Sèna D'ALMEIDA — [senadalmeidapro@gmail.com](mailto:senadalmeidapro@gmail.com)
-- **Site** : [https://ecosyt.com](https://ecosyt.com)
+- **Site** : [https://orientation-bj.com](https://orientation-bj.com)
 - **Dépôt** : [github.com/senadalmeidapro/api-orientation](https://github.com/senadalmeidapro/api-orientation)
 
 ---
 
-*Documentation générée le 2026-04-13 — ECOSYT API v1.0.0*
+*Documentation générée le 2026-04-13 — Orientation-bj API v1.0.0*

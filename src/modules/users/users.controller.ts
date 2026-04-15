@@ -21,7 +21,7 @@ import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/s
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true })
-@Controller('users')
+@Controller('api/v1/users')
 export class UsersController {
     constructor(private readonly users: UsersService) {}
 

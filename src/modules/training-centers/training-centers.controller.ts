@@ -26,7 +26,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-@Controller('training-centers')
+@Controller('api/v1/training-centers')
 export class TrainingCentersController {
     constructor(private readonly centers: TrainingCentersService) {}
 

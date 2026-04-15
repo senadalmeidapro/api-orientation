@@ -27,7 +27,7 @@ import {
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiStandardErrorResponses({ includeUnauthorized: true })
-@Controller('sessions')
+@Controller('api/v1/sessions')
 export class SessionsController {
     constructor(private readonly service: SessionsService) {}
 

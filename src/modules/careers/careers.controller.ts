@@ -23,7 +23,7 @@ import {
 
 @ApiTags('Careers')
 @ApiBearerAuth('access-token')
-@Controller('careers')
+@Controller('api/v1/careers')
 export class CareersController {
     constructor(private readonly careers: CareersService) {}
 
