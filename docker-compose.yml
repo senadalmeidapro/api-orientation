@@ -1,37 +1,151 @@
-version: '3.8'
+name: api-orientation
 
 services:
-  api:
-    build: .
-    ports:
-      - '3000:3000'
+  migrate:
+    profiles: ["dev", "prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
     env_file:
       - .env
     environment:
       NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/orientation
-      REDIS_URL: redis://redis:6379
-      SWAGGER_SERVER_URLS: http://localhost:3000
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://postgres:postgres@db:5432/orientation}
+    command: ["npx", "prisma", "migrate", "deploy"]
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - backend
+
+  api:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: ${API_IMAGE:-api-orientation:local}
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://postgres:postgres@db:5432/orientation}
+      REDIS_URL: ${REDIS_URL_DOCKER:-redis://redis:6379}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - app_storage:/app/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/v1/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    init: true
+    restart: unless-stopped
+    networks:
+      - backend
+
+  api-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
+    working_dir: /app
+    command:
+      [
+        "sh",
+        "-c",
+        "npm install && npx prisma generate && npx prisma db seed && npm run start:dev",
+      ]
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL_DOCKER:-postgresql://postgres:postgres@db:5432/orientation}
+      REDIS_URL: ${REDIS_URL_DOCKER:-redis://redis:6379}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - ./:/app
+      - api_node_modules:/app/node_modules
+      - app_storage:/app/storage
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/v1/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    init: true
+    networks:
+      - backend
 
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: orientation
-    ports:
-      - '5432:5432'
+      POSTGRES_DB: ${DOCKER_POSTGRES_DB:-orientation}
+      POSTGRES_USER: ${DOCKER_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${DOCKER_POSTGRES_PASSWORD:-postgres}
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend
 
   redis:
     image: redis:7-alpine
-    ports:
-      - '6379:6379'
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - backend
 
 volumes:
   db_data:
+  redis_data:
+  app_storage:
+  api_node_modules:
+
+networks:
+  backend:
+    driver: bridge

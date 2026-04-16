@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { BehavioralUtil, BehavioralIndicatorData } from '../../../common/utils/behavioral.util';
 
@@ -22,6 +22,8 @@ export interface BehavioralInsights {
 
 @Injectable()
 export class BehavioralAnalysisService {
+    private readonly logger = new Logger(BehavioralAnalysisService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async analyzeResponse(

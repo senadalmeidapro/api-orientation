@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BadgeRarity, Session } from '@prisma/client';
 
 @Injectable()
 export class BadgesService {
+    private readonly logger = new Logger(BadgesService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     private defaultBadges = [

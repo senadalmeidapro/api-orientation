@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
@@ -6,6 +6,8 @@ import * as path from 'path';
 
 @Injectable()
 export class StorageService {
+    private readonly logger = new Logger(StorageService.name);
+
     private s3: S3Client | null = null;
     private bucket = process.env.S3_BUCKET;
     private region = process.env.S3_REGION;

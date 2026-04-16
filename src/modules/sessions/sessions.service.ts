@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateSessionProfileDto } from './dto/update-session-profile.dto';
@@ -8,6 +8,8 @@ import { AssessmentFlowService } from './services/assessment-flow.service';
 
 @Injectable()
 export class SessionsService {
+    private readonly logger = new Logger(SessionsService.name);
+
     constructor(
         private readonly lifecycleService: SessionLifecycleService,
         private readonly flowService: AssessmentFlowService,

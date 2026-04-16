@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
@@ -7,6 +7,8 @@ import { CacheService } from '../../common/cache/cache.service';
 
 @Injectable()
 export class RecommendationsService {
+    private readonly logger = new Logger(RecommendationsService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly resultsService: ResultsService,

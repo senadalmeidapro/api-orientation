@@ -553,21 +553,26 @@ model Phase2Response {
 // =====================================================
 
 model QuestionProfile {
-  id          Int        @id @default(autoincrement())
-  question_id Int
-  phase       PhaseType // PHASE1 ou PHASE2
-  riasec_type RiasecType
-  weight      Float // 0.0 à 1.0 (ex: 0.8 = forte contribution, 0.2 = faible contribution)
+  id                  Int        @id @default(autoincrement())
+  phase               PhaseType
 
-  // Relations polymorphiques (selon le phase)
-  phase1_question Phase1Question? @relation("Phase1QuestionProfiles", fields: [question_id], references: [id], onDelete: Cascade, map: "fk_question_profile_phase1")
-  phase2_question Phase2Question? @relation("Phase2QuestionProfiles", fields: [question_id], references: [id], onDelete: Cascade, map: "fk_question_profile_phase2")
+  phase1_question_id  Int?
+  phase2_question_id  Int?
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  riasec_type         RiasecType
+  weight              Float
 
-  @@unique([question_id, phase, riasec_type])
-  @@index([question_id])
+  phase1_question     Phase1Question? @relation("Phase1QuestionProfiles", fields: [phase1_question_id], references: [id], onDelete: Cascade)
+  phase2_question     Phase2Question? @relation("Phase2QuestionProfiles", fields: [phase2_question_id], references: [id], onDelete: Cascade)
+
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+
+  // Contrainte d'intégrité : une seule des deux colonnes doit être remplie selon la phase
+  @@unique([phase1_question_id, phase, riasec_type])
+  @@unique([phase2_question_id, phase, riasec_type])
+  @@index([phase1_question_id])
+  @@index([phase2_question_id])
   @@index([phase])
   @@index([riasec_type])
   @@map("question_profiles")

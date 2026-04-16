@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePhase1ResponsesDto } from './dto/create-phase1-responses.dto';
 import { CreatePhase2ResponsesDto } from './dto/create-phase2-responses.dto';
@@ -25,6 +25,8 @@ const PHASE2_ORDER: Phase2Type[] = [
 
 @Injectable()
 export class ResponsesService {
+    private readonly logger = new Logger(ResponsesService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly badges: BadgesService,

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateUserDto, UserResponseDto } from './dto';
@@ -28,6 +28,8 @@ type UserInternal = Prisma.UserGetPayload<{ select: typeof userInternalSelect }>
 
 @Injectable()
 export class UsersService {
+    private readonly logger = new Logger(UsersService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async createUser(data: {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ResultsService } from './results.service';
 import { AssessmentStatus, RiasecType, Prisma } from '@prisma/client';
@@ -9,6 +9,8 @@ import { randomUUID } from 'crypto';
 
 @Injectable()
 export class TreasureMapService {
+    private readonly logger = new Logger(TreasureMapService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly resultsService: ResultsService,

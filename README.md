@@ -824,29 +824,46 @@ npm run build
 npm run start:prod
 ```
 
-### Docker (exemple minimal)
+### Docker / Compose
 
-```dockerfile
-FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY dist/ ./dist/
-COPY prisma/ ./prisma/
-RUN npx prisma generate
-EXPOSE 3000
-CMD ["node", "dist/main"]
+Le dépôt inclut un `Dockerfile` multi-stage (build + runtime non-root) et un `docker-compose.yml` avec profils :
+
+```bash
+# Développement (watch mode)
+docker compose --profile dev up --build
+
+# Production locale
+docker compose --profile prod up --build -d
+```
+
+Variables Docker dédiées (optionnelles) dans `.env` :
+
+```env
+API_PORT=3000
+DATABASE_URL_DOCKER=postgresql://postgres:postgres@db:5432/orientation
+REDIS_URL_DOCKER=redis://redis:6379
+DOCKER_POSTGRES_DB=orientation
+DOCKER_POSTGRES_USER=postgres
+DOCKER_POSTGRES_PASSWORD=postgres
+API_IMAGE=ghcr.io/owner/api-orientation
 ```
 
 ### CI/CD (GitHub Actions)
 
-Pour un pipeline type :
-1. `npm ci`
-2. `npx prisma generate`
-3. `npx prisma db push`
-4. `npm run test`
-5. `npm run build`
-6. `npm run test:e2e`
+Le workflow `.github/workflows/ci.yml` exécute des jobs séparés :
+1. `lint`
+2. `unit-tests` (PostgreSQL + Redis)
+3. `e2e-tests` (PostgreSQL + Redis)
+4. `build`
+5. `docker` (build systématique, push conditionnel)
+
+Push image Docker activable via variables GitHub :
+
+```text
+DOCKER_PUSH_ENABLED=true
+DOCKER_REGISTRY=ghcr.io
+DOCKER_IMAGE_NAME=owner/api-orientation
+```
 
 ---
 

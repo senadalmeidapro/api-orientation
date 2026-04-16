@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConsistencyLevel, Phase2Type, ProfileStrength, RiasecType } from '@prisma/client';
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';
@@ -8,6 +8,8 @@ const RIASEC_ORDER: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
 
 @Injectable()
 export class ScoringService {
+    private readonly logger = new Logger(ScoringService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly adaptiveService: AdaptiveSelectionService,
