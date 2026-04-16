@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AssessmentStatus, Phase2Type, PhaseType, RiasecType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecommendationsService } from '../recommendations/recommendations.service';
@@ -22,6 +22,8 @@ const DEFAULT_DEPTH = 5;
 
 @Injectable()
 export class AiService {
+    private readonly logger = new Logger(AiService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly resultsService: ResultsService,

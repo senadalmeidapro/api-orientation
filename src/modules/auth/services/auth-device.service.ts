@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { Request } from 'express';
 import { UAParser } from 'ua-parser-js';
@@ -16,6 +16,8 @@ export type AuthClientDeviceInfo = {
 
 @Injectable()
 export class AuthDeviceService {
+    private readonly logger = new Logger(AuthDeviceService.name);
+
     getClientIp(request?: Request): string | null {
         if (!request) return null;
 

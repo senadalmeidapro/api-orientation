@@ -1,10 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
 
 @Injectable()
 export class ResourcesService {
+    private readonly logger = new Logger(ResourcesService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async list(dto: ListResourcesDto) {

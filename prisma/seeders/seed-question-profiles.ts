@@ -1534,7 +1534,9 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
         // Supprimer les anciens profils de cette question
         await prisma.questionProfile.deleteMany({
             where: {
-                question_id: item.questionId,
+                ...(item.phase === PhaseType.PHASE1
+                    ? { phase1_question_id: item.questionId }
+                    : { phase2_question_id: item.questionId }),
                 phase: item.phase,
             },
         });
@@ -1543,10 +1545,12 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
         for (const profile of item.profiles) {
             await prisma.questionProfile.create({
                 data: {
-                    question_id: item.questionId,
                     phase: item.phase,
                     riasec_type: profile.riasecType,
                     weight: profile.weight,
+                    ...(item.phase === PhaseType.PHASE1
+                        ? { phase1_question_id: item.questionId }
+                        : { phase2_question_id: item.questionId }),
                 },
             });
             created++;

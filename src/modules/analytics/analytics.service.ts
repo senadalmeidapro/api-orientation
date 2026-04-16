@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, AssessmentStatus, FeedbackType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -10,6 +10,8 @@ import {
 
 @Injectable()
 export class AnalyticsService {
+    private readonly logger = new Logger(AnalyticsService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     private parseDate(value?: string) {

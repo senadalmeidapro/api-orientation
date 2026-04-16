@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { RiasecScores, MultiProfileQuestion } from '../../../common/utils/multi-profile.util';
 import { BehavioralIndicatorData } from '../../../common/utils/behavioral.util';
 import { AiClient } from '../ai.client';
@@ -25,6 +25,8 @@ export interface AIBehavioralInsights {
 
 @Injectable()
 export class AIAdaptiveService {
+    private readonly logger = new Logger(AIAdaptiveService.name);
+
     constructor(private readonly aiClient: AiClient) {}
 
     async analyzeIntermediateProfile(

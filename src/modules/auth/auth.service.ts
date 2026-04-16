@@ -4,6 +4,7 @@ import {
     ForbiddenException,
     Injectable,
     InternalServerErrorException,
+    Logger,
     UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma, User, UserRole, UserStatus } from '@prisma/client';
@@ -11,16 +12,19 @@ import { Request } from 'express';
 import { EmailService } from '../../common/email/email.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailDto, LoginDto, LogoutDto, RefreshDto, RegisterDto, ResetPasswordDto } from './dto';
-import { JwtPayload } from './interfaces';
 import { AuthTokenService, AUTH_TOKEN_TYPES } from './services/auth-token.service';
 import { PasswordService } from './services/password.service';
+import { ConfigService } from '../../common/config/config.service';
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly token: AuthTokenService,
         private readonly password: PasswordService,
+        private readonly config: ConfigService,
         private readonly email: EmailService,
     ) {}
 
@@ -73,14 +77,18 @@ export class AuthService {
             throw new InternalServerErrorException('Unable to create user');
         }
 
-        // if (user.email) {
-        //     await this.email.sendVerificationEmail({
-        //         to: user.email,
-        //         firstName: user.first_name,
-        //         token: verificationToken,
-        //         userId: user.id,
-        //     });
-        // }
+        if (user.email) {
+            await this.email.sendVerificationEmail(
+                {
+                    email: user.email,
+                    subject: 'Vérification de votre email',
+                    firstName: user.first_name ?? '',
+                    lastName: user.last_name ?? '',
+                    fullName: user.first_name + ' ' + user.last_name,
+                },
+                `${this.config.app.url}/verify-email?token=${verificationToken}`,
+            );
+        }
 
         return {
             message: 'Registration successful. Please check your email to verify your account.',
@@ -206,7 +214,14 @@ export class AuthService {
         const email = this.normalizeEmail(dto.email);
         const user = await this.prisma.user.findUnique({
             where: { email },
-            select: { id: true, email: true, first_name: true, status: true, is_deleted: true },
+            select: {
+                id: true,
+                email: true,
+                first_name: true,
+                last_name: true,
+                status: true,
+                is_deleted: true,
+            },
         });
 
         if (!user || user.is_deleted || user.status === UserStatus.DELETED) {
@@ -230,12 +245,16 @@ export class AuthService {
         );
 
         if (user.email) {
-            await this.email.sendPasswordResetEmail({
-                to: user.email,
-                firstName: user.first_name,
-                token,
-                userId: user.id,
-            });
+            await this.email.sendPasswordResetEmail(
+                {
+                    email: user.email,
+                    subject: 'Réinitialisation de mot de passe',
+                    firstName: user.first_name ?? '',
+                    lastName: user.last_name ?? '',
+                    fullName: user.first_name + ' ' + user.last_name,
+                },
+                `${this.config.app.url}/reset-password?token=${token}`,
+            );
         }
 
         return {
@@ -299,13 +318,13 @@ export class AuthService {
     }
 
     async validateUserFromJwt(payload: any) {
-        if (!payload.iss || payload.iss !== this.token.jwtIssuer) {
+        if (!payload.iss || payload.iss !== this.config.jwt.issuer) {
             throw new UnauthorizedException('Invalid token');
         }
 
         const audienceMatches = Array.isArray(payload.aud)
-            ? payload.aud.includes(this.token.jwtAudience)
-            : payload.aud === this.token.jwtAudience;
+            ? payload.aud.includes(this.config.jwt.audience)
+            : payload.aud === this.config.jwt.audience;
 
         if (!audienceMatches) {
             throw new UnauthorizedException('Invalid token');

@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { randomUUID, createHash } from 'crypto';
 
 @Injectable()
 export class SessionLifecycleService {
+    private readonly logger = new Logger(SessionLifecycleService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async createSession(userId?: string) {

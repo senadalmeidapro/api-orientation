@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PhaseType, RiasecType } from '@prisma/client';
 import {
@@ -25,6 +25,8 @@ export interface QuestionWithProfiles {
 
 @Injectable()
 export class AdaptiveSelectionService {
+    private readonly logger = new Logger(AdaptiveSelectionService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async selectNextBatch(

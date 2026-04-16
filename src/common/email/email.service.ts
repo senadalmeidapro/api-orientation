@@ -1,457 +1,374 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { EMAIL_CONFIG, EMAIL_PROVIDER } from './email.constants';
-import type { EmailConfig } from './email.config';
-import { EmailSendError, EmailValidationError } from './email.errors';
-import type { EmailProvider } from './email.provider';
 import {
-    EmailAddress,
-    EmailAddressInput,
-    EmailPayload,
-    EmailProviderSendOptions,
-    EmailSendResult,
-    SendEmailOptions,
-    SendEmailPayload,
-    SendTemplateEmailPayload,
-    TemplateEmailPayload,
-} from './email.types';
-import {
-    ensureEmailAddress,
-    ensureRecipientList,
-    renderTemplate,
-    sanitizeHeaders,
-    sanitizeSubject,
-    sanitizeTags,
-    sanitizeTemplateParams,
-} from './email.utils';
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+} from '@nestjs/common';
+import * as nodemailer from 'nodemailer';
+import { SentMessageInfo } from 'nodemailer';
+import * as handlebars from 'handlebars';
+import * as fs from 'fs';
+import * as path from 'path';
+import { ConfigService } from '../config/config.service';
 
-/**
- * EmailService provides a high-level API for sending emails
- *
- * Features:
- * - Template-based emails with parameter substitution
- * - Direct HTML/text emails
- * - Validation and sanitization of all inputs
- * - Comprehensive logging
- * - Pre-configured templates (verification, password reset)
- *
- * SOLID Principles:
- * - Single Responsibility: Email sending orchestration
- * - Open/Closed: Extensible via EmailProvider interface
- * - Liskov Substitution: Any EmailProvider implementation works
- * - Interface Segregation: Clean provider interface
- * - Dependency Inversion: Depends on abstractions (EmailProvider)
- */
+export interface MailAttachment {
+    filename: string;
+    path?: string;
+    content?: Buffer | string;
+    contentType?: string;
+    encoding?: string;
+}
+
+export interface MailRecipient<T = any> {
+    email: string;
+    subject: string;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    metadata?: T;
+    tenantId?: string;
+}
+
+export interface MailSendOptions {
+    to: string | string[];
+    subject: string;
+    html?: string;
+    text?: string;
+    template?: string;
+    templateData?: Record<string, any>;
+    from?: string;
+    replyTo?: string;
+    cc?: string | string[];
+    bcc?: string | string[];
+    attachments?: MailAttachment[];
+    headers?: Record<string, string>;
+    priority?: 'high' | 'normal' | 'low';
+}
+
+export interface MailSendResult {
+    email: string;
+    success: boolean;
+    messageId?: string;
+    error?: string;
+}
+
+export interface EmailTemplate {
+    subject: string;
+    html: string;
+    text?: string;
+}
+
 @Injectable()
 export class EmailService {
     private readonly logger = new Logger(EmailService.name);
+    private readonly transporter: nodemailer.Transporter;
+    private readonly templates: Map<string, EmailTemplate> = new Map();
+    private readonly templateSubjects: Map<string, string> = new Map();
+    private readonly templatesPath: string;
 
-    constructor(
-        @Inject(EMAIL_PROVIDER) private readonly provider: EmailProvider,
-        @Inject(EMAIL_CONFIG) private readonly config: EmailConfig,
-    ) {}
+    constructor(private readonly config: ConfigService) {
+        this.templatesPath = path.isAbsolute(this.config.email.templatePath)
+            ? this.config.email.templatePath
+            : path.join(process.cwd(), this.config.email.templatePath);
+        this.transporter = this.createTransporter();
+        this.initializeTransporter();
+        this.loadSubjects();
+        this.loadTemplates();
+    }
 
-    /**
-     * Send a standard email with HTML or text content
-     *
-     * @param payload - Email content and recipients
-     * @param options - Optional configuration (from, cc, bcc, retry, etc.)
-     * @returns Result with provider name and message ID
-     *
-     * @example
-     * ```typescript
-     * await emailService.sendEmail({
-     *   to: 'user@example.com',
-     *   subject: 'Welcome!',
-     *   html: '<h1>Welcome to our platform</h1>',
-     *   text: 'Welcome to our platform'
-     * });
-     * ```
-     */
-    async sendEmail(
-        payload: SendEmailPayload,
-        options?: SendEmailOptions,
-    ): Promise<EmailSendResult> {
-        const startTime = Date.now();
+    getTemplate(templateName: string): EmailTemplate {
+        const template = this.templates.get(templateName);
+        if (!template) throw new BadRequestException(`Email template "${templateName}" not found`);
+        return template;
+    }
 
+    async sendEmail(options: MailSendOptions & { tenantId?: string }): Promise<SentMessageInfo> {
         try {
-            // Validate and sanitize payload
-            const emailPayload = this.buildEmailPayload(payload, options);
-
-            // Build provider options
-            const providerOptions = this.buildProviderOptions(options);
-
-            // Send email through provider
-            const result = await this.provider.sendEmail(emailPayload, providerOptions);
-
-            const duration = Date.now() - startTime;
-            const recipients = Array.isArray(payload.to)
-                ? payload.to.map((r) => (typeof r === 'string' ? r : r.email)).join(', ')
-                : typeof payload.to === 'string'
-                  ? payload.to
-                  : payload.to.email;
-            this.logger.log(`Email sent to ${recipients} in ${duration}ms via ${result.provider}`);
-
-            return result;
-        } catch (error) {
-            const duration = Date.now() - startTime;
-            const recipients = Array.isArray(payload.to)
-                ? payload.to.map((r) => (typeof r === 'string' ? r : r.email)).join(', ')
-                : typeof payload.to === 'string'
-                  ? payload.to
-                  : payload.to.email;
-            this.logger.error(
-                `Failed to send email to ${recipients} after ${duration}ms: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
-            throw error;
-        }
-    }
-
-    /**
-     * Send an email using a pre-configured template
-     *
-     * @param payload - Template ID, recipients, and parameters
-     * @param options - Optional configuration (from, cc, bcc, retry, etc.)
-     * @returns Result with provider name and message ID
-     *
-     * @example
-     * ```typescript
-     * await emailService.sendTemplateEmail({
-     *   to: 'user@example.com',
-     *   templateId: 1,
-     *   params: { firstName: 'John', verificationUrl: 'https://...' }
-     * });
-     * ```
-     */
-    async sendTemplateEmail(
-        payload: SendTemplateEmailPayload,
-        options?: SendEmailOptions,
-    ): Promise<EmailSendResult> {
-        const startTime = Date.now();
-
-        try {
-            // Validate and sanitize payload
-            const templatePayload = this.buildTemplateEmailPayload(payload, options);
-
-            // Build provider options
-            const providerOptions = this.buildProviderOptions(options);
-
-            // Send email through provider
-            const result = await this.provider.sendTemplateEmail(templatePayload, providerOptions);
-
-            const duration = Date.now() - startTime;
-            const recipients = Array.isArray(payload.to)
-                ? payload.to.map((r) => (typeof r === 'string' ? r : r.email)).join(', ')
-                : typeof payload.to === 'string'
-                  ? payload.to
-                  : payload.to.email;
-            this.logger.log(
-                `Template email (ID: ${payload.templateId}) sent to ${recipients} in ${duration}ms via ${result.provider}`,
-            );
-
-            return result;
-        } catch (error) {
-            const duration = Date.now() - startTime;
-            const recipients = Array.isArray(payload.to)
-                ? payload.to.map((r) => (typeof r === 'string' ? r : r.email)).join(', ')
-                : typeof payload.to === 'string'
-                  ? payload.to
-                  : payload.to.email;
-            this.logger.error(
-                `Failed to send template email to ${recipients} after ${duration}ms: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            );
-            throw error;
-        }
-    }
-
-    /**
-     * Send verification email using configured template
-     *
-     * @param data - Recipient info and verification token
-     * @returns Result with provider name and message ID
-     */
-    async sendVerificationEmail(data: {
-        to: string;
-        firstName?: string | null;
-        token: string;
-        userId: string;
-    }): Promise<EmailSendResult> {
-        // #region agent log
-        void fetch('http://127.0.0.1:7242/ingest/acdc9a68-6d41-41ca-9274-181ae653d00d', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                runId: 'initial-debug',
-                hypothesisId: 'H3',
-                location: 'src/common/email/email.service.ts:177',
-                message: 'sendVerificationEmail template config check',
-                data: {
-                    hasVerificationTemplate: Boolean(this.config.templates.verificationId),
-                    hasFrontendUrlEnv: Boolean(process.env.FRONTEND_URL),
-                },
-                timestamp: Date.now(),
-            }),
-        }).catch(() => {});
-        // #endregion
-        if (!this.config.templates.verificationId) {
-            throw new EmailSendError('Verification email template not configured', {
-                code: 'template_not_configured',
-            });
-        }
-
-        const verificationUrl = this.buildVerificationUrl(data.token, data.userId);
-
-        return this.sendTemplateEmail({
-            to: data.to,
-            templateId: this.config.templates.verificationId,
-            params: {
-                firstName: data.firstName ?? 'User',
-                verificationUrl,
-                token: data.token,
-            },
-        });
-    }
-
-    /**
-     * Send password reset email using configured template
-     *
-     * @param data - Recipient info and reset token
-     * @returns Result with provider name and message ID
-     */
-    async sendPasswordResetEmail(data: {
-        to: string;
-        firstName?: string | null;
-        token: string;
-        userId: string;
-    }): Promise<EmailSendResult> {
-        if (!this.config.templates.passwordResetId) {
-            throw new EmailSendError('Password reset email template not configured', {
-                code: 'template_not_configured',
-            });
-        }
-
-        const resetUrl = this.buildPasswordResetUrl(data.token, data.userId);
-
-        return this.sendTemplateEmail({
-            to: data.to,
-            templateId: this.config.templates.passwordResetId,
-            params: {
-                firstName: data.firstName ?? 'User',
-                resetUrl,
-                token: data.token,
-            },
-        });
-    }
-
-    /**
-     * Send email using an HTML template string with parameter substitution
-     *
-     * @param payload - Email content with template and parameters
-     * @param options - Optional configuration
-     * @returns Result with provider name and message ID
-     *
-     * @example
-     * ```typescript
-     * await emailService.sendEmailFromTemplate({
-     *   to: 'user@example.com',
-     *   subject: 'Welcome {{firstName}}!',
-     *   htmlTemplate: '<h1>Hello {{firstName}}</h1>',
-     *   textTemplate: 'Hello {{firstName}}',
-     *   params: { firstName: 'John' }
-     * });
-     * ```
-     */
-    async sendEmailFromTemplate(
-        payload: {
-            to: string | string[];
-            subject: string;
-            htmlTemplate?: string;
-            textTemplate?: string;
-            params: Record<string, string | number | boolean>;
-        },
-        options?: SendEmailOptions,
-    ): Promise<EmailSendResult> {
-        const escapeHtml = !options?.allowUnsafeHtml;
-
-        const html = payload.htmlTemplate
-            ? renderTemplate(payload.htmlTemplate, payload.params, { escapeHtml })
-            : undefined;
-
-        const text = payload.textTemplate
-            ? renderTemplate(payload.textTemplate, payload.params, { escapeHtml: false })
-            : undefined;
-
-        const subject = renderTemplate(payload.subject, payload.params, { escapeHtml: false });
-
-        return this.sendEmail(
-            {
-                to: payload.to,
-                subject,
-                html,
-                text,
-            },
-            options,
-        );
-    }
-
-    /**
-     * Build and validate email payload
-     */
-    private buildEmailPayload(payload: SendEmailPayload, options?: SendEmailOptions): EmailPayload {
-        const to = ensureRecipientList(payload.to, 'to');
-        const from = this.resolveFromAddress(options?.from);
-        const subject = sanitizeSubject(payload.subject);
-
-        if (!payload.html && !payload.text) {
-            throw new EmailValidationError('Either html or text content is required', 'content');
-        }
-
-        const emailPayload: EmailPayload = {
-            to,
-            from,
-            subject,
-            html: payload.html,
-            text: payload.text,
-        };
-
-        if (options?.replyTo) {
-            emailPayload.replyTo = ensureEmailAddress(options.replyTo, 'replyTo');
-        }
-        if (options?.cc) {
-            emailPayload.cc = ensureRecipientList(options.cc, 'cc');
-        }
-        if (options?.bcc) {
-            emailPayload.bcc = ensureRecipientList(options.bcc, 'bcc');
-        }
-        if (options?.headers) {
-            emailPayload.headers = sanitizeHeaders(options.headers);
-        }
-        if (options?.tags) {
-            emailPayload.tags = sanitizeTags(options.tags);
-        }
-
-        return emailPayload;
-    }
-
-    /**
-     * Build and validate template email payload
-     */
-    private buildTemplateEmailPayload(
-        payload: SendTemplateEmailPayload,
-        options?: SendEmailOptions,
-    ): TemplateEmailPayload {
-        const to = ensureRecipientList(payload.to, 'to');
-        const from = this.resolveFromAddress(options?.from);
-
-        if (!Number.isInteger(payload.templateId) || payload.templateId <= 0) {
-            throw new EmailValidationError('Invalid template ID', 'templateId');
-        }
-
-        const templatePayload: TemplateEmailPayload = {
-            to,
-            from,
-            templateId: payload.templateId,
-        };
-
-        if (payload.params) {
-            templatePayload.params = sanitizeTemplateParams(payload.params, {
-                escapeHtml: !options?.allowUnsafeHtml,
-            });
-        }
-
-        if (options?.replyTo) {
-            templatePayload.replyTo = ensureEmailAddress(options.replyTo, 'replyTo');
-        }
-        if (options?.cc) {
-            templatePayload.cc = ensureRecipientList(options.cc, 'cc');
-        }
-        if (options?.bcc) {
-            templatePayload.bcc = ensureRecipientList(options.bcc, 'bcc');
-        }
-        if (options?.headers) {
-            templatePayload.headers = sanitizeHeaders(options.headers);
-        }
-        if (options?.tags) {
-            templatePayload.tags = sanitizeTags(options.tags);
-        }
-
-        return templatePayload;
-    }
-
-    /**
-     * Build provider-specific options
-     */
-    private buildProviderOptions(options?: SendEmailOptions): EmailProviderSendOptions {
-        const providerOptions: EmailProviderSendOptions = {};
-
-        if (options?.timeoutMs) {
-            providerOptions.timeoutMs = options.timeoutMs;
-        }
-        if (options?.retry) {
-            providerOptions.retry = options.retry;
-        }
-
-        // #region agent log
-        void fetch('http://127.0.0.1:7242/ingest/acdc9a68-6d41-41ca-9274-181ae653d00d', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                runId: 'initial-debug',
-                hypothesisId: 'H1',
-                location: 'src/common/email/email.service.ts:375',
-                message: 'buildProviderOptions result',
-                data: {
-                    timeoutMs: providerOptions.timeoutMs ?? null,
-                    retryMaxAttempts: providerOptions.retry?.maxAttempts ?? null,
-                },
-                timestamp: Date.now(),
-            }),
-        }).catch(() => {});
-        // #endregion
-
-        return providerOptions;
-    }
-
-    /**
-     * Resolve from address (use provided or default)
-     */
-    private resolveFromAddress(from?: EmailAddressInput): EmailAddress {
-        if (!from) {
-            return {
-                email: this.config.defaultFromEmail,
-                name: this.config.defaultFromName,
+            const mailOptions: nodemailer.SendMailOptions = {
+                from: options.from || this.config.email.from,
+                to: options.to,
+                subject: options.subject,
+                html: options.html,
+                text: options.text,
+                replyTo: options.replyTo,
+                cc: options.cc,
+                bcc: options.bcc,
+                attachments: options.attachments,
+                headers: options.headers,
+                priority: options.priority,
             };
+
+            if (options.template) {
+                const template = this.getTemplate(options.template);
+                mailOptions.subject = this.resolveSubject(
+                    options.subject,
+                    template.subject,
+                    options.template,
+                );
+                mailOptions.html = template.html
+                    ? this.compileTemplate(template.html, options.templateData || {})
+                    : options.html;
+                mailOptions.text = template.text
+                    ? this.compileTemplate(template.text, options.templateData || {})
+                    : options.text;
+            } else {
+                mailOptions.subject = this.resolveSubject(options.subject, '', '');
+            }
+
+            const recipientStr = Array.isArray(options.to) ? options.to.join(', ') : options.to;
+            this.logger.debug(`Sending email to: ${recipientStr}`);
+
+            const result = await this.transporter.sendMail(mailOptions);
+            this.logger.debug(`Email sent successfully: ${result.messageId}`);
+            return result;
+        } catch (err: any) {
+            this.logger.error('Failed to send email:', err);
+            throw new InternalServerErrorException(`Failed to send email: ${err.message}`);
+        }
+    }
+
+    async sendWelcomeEmail(recipient: MailRecipient, verificationLink?: string) {
+        const data = this.buildTemplateData(recipient, { verificationLink });
+        return this.sendEmail({
+            to: recipient.email,
+            subject: recipient.subject,
+            template: 'welcome',
+            templateData: data,
+            tenantId: recipient.tenantId,
+        });
+    }
+
+    async sendVerificationEmail(
+        recipient: MailRecipient,
+        verificationLink: string,
+        expiresIn = '24 hours',
+    ) {
+        const data = this.buildTemplateData(recipient, { verificationLink, expiresIn });
+        return this.sendEmail({
+            to: recipient.email,
+            subject: recipient.subject,
+            template: 'email-verification',
+            templateData: data,
+            tenantId: recipient.tenantId,
+        });
+    }
+
+    async sendPasswordResetEmail(
+        recipient: MailRecipient,
+        resetLink: string,
+        expiresIn = '1 hour',
+    ) {
+        const data = this.buildTemplateData(recipient, {
+            resetLink,
+            expiresIn,
+            ipAddress: recipient.metadata?.ipAddress,
+        });
+        return this.sendEmail({
+            to: recipient.email,
+            subject: recipient.subject,
+            template: 'password-reset',
+            templateData: data,
+            tenantId: recipient.tenantId,
+        });
+    }
+
+    async sendBulkEmails<T>(
+        recipients: MailRecipient<T>[],
+        templateName: string,
+        templateDataMapper?: (recipient: MailRecipient<T>) => Record<string, any>,
+        options?: { batchSize?: number; delayBetweenBatches?: number },
+    ): Promise<MailSendResult[]> {
+        const batchSize = options?.batchSize || 50;
+        const delay = options?.delayBetweenBatches || 1000;
+        const results: MailSendResult[] = [];
+
+        for (let i = 0; i < recipients.length; i += batchSize) {
+            const batch = recipients.slice(i, i + batchSize);
+            const batchResults = await Promise.all(
+                batch.map(async (recipient) => {
+                    try {
+                        const data = templateDataMapper
+                            ? templateDataMapper(recipient)
+                            : this.buildTemplateData(recipient);
+                        const result = await this.sendEmail({
+                            to: recipient.email,
+                            subject: recipient.subject,
+                            template: templateName,
+                            templateData: data,
+                            tenantId: recipient.tenantId,
+                        });
+                        return {
+                            email: recipient.email,
+                            success: true,
+                            messageId: result.messageId,
+                        };
+                    } catch (err: any) {
+                        this.logger.error(`Failed to send email to ${recipient.email}:`, err);
+                        return { email: recipient.email, success: false, error: err.message };
+                    }
+                }),
+            );
+            results.push(...batchResults);
+            if (i + batchSize < recipients.length) await new Promise((r) => setTimeout(r, delay));
         }
 
-        return ensureEmailAddress(from, 'from');
+        return results;
     }
 
-    /**
-     * Build verification URL (customize based on your frontend)
-     */
-    private buildVerificationUrl(token: string, userId: string): string {
-        const baseUrl = this.config.frontendUrl;
-        // #region agent log
-        void fetch('http://127.0.0.1:7242/ingest/acdc9a68-6d41-41ca-9274-181ae653d00d', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                runId: 'post-fix',
-                hypothesisId: 'H3',
-                location: 'src/common/email/email.service.ts:399',
-                message: 'buildVerificationUrl base URL decision',
-                data: { usesConfiguredFrontendUrl: Boolean(this.config.frontendUrl), baseUrl },
-                timestamp: Date.now(),
-            }),
-        }).catch(() => {});
-        // #endregion
-        return `${baseUrl}/verify-email?token=${encodeURIComponent(token)}&userId=${encodeURIComponent(userId)}`;
+    async testConnection(): Promise<boolean> {
+        try {
+            await this.transporter.verify();
+            return true;
+        } catch (err: any) {
+            this.logger.error('Email connection test failed:', err);
+            return false;
+        }
     }
 
-    /**
-     * Build password reset URL (customize based on your frontend)
-     */
-    private buildPasswordResetUrl(token: string, userId: string): string {
-        const baseUrl = this.config.frontendUrl;
-        return `${baseUrl}/reset-password?token=${encodeURIComponent(token)}&userId=${encodeURIComponent(userId)}`;
+    async close(): Promise<void> {
+        try {
+            this.transporter.close();
+            this.logger.log('Email transporter closed');
+        } catch (err: any) {
+            this.logger.error('Failed to close email transporter:', err);
+        }
+    }
+
+    private createTransporter(): nodemailer.Transporter {
+        const emailConfig = {
+            host: this.config.email.host,
+            port: this.config.email.port,
+            secure: this.config.email.secure,
+            auth: {
+                user: this.config.email.user,
+                pass: this.config.email.password,
+            },
+            tls: { rejectUnauthorized: this.config.email.useTLS },
+            connectionTimeout: this.config.email.connectionTimeout,
+            greetingTimeout: this.config.email.greetingTimeout,
+            socketTimeout: this.config.email.socketTimeout,
+        };
+        return nodemailer.createTransport(emailConfig);
+    }
+
+    private async initializeTransporter(): Promise<void> {
+        try {
+            await this.transporter.verify();
+            this.logger.log('Email transporter configured successfully');
+        } catch (error: any) {
+            this.logger.error('Failed to configure email transporter:', error);
+        }
+    }
+
+    private loadTemplates(): void {
+        if (!fs.existsSync(this.templatesPath)) {
+            this.logger.warn(`Templates directory not found: ${this.templatesPath}`);
+            fs.mkdirSync(this.templatesPath, { recursive: true });
+            return;
+        }
+
+        const templateFiles = fs
+            .readdirSync(this.templatesPath)
+            .filter(
+                (file) =>
+                    file.endsWith('.json') ||
+                    file.endsWith('.template.json') ||
+                    file.endsWith('.hbs'),
+            );
+        const filteredFiles = templateFiles.filter((file) => file !== 'subjects.json');
+
+        filteredFiles.forEach((file) => {
+            try {
+                const templatePath = path.join(this.templatesPath, file);
+                const templateContent = fs.readFileSync(templatePath, 'utf-8');
+
+                const templateName = file.replace(/\.template\.json$|\.json$|\.hbs$/, '');
+                if (file.endsWith('.hbs')) {
+                    this.templates.set(templateName, {
+                        subject: this.templateSubjects.get(templateName) || '',
+                        html: templateContent,
+                    });
+                } else {
+                    const template = JSON.parse(templateContent);
+                    this.templates.set(templateName, {
+                        subject: template.subject || this.templateSubjects.get(templateName) || '',
+                        html: template.html,
+                        text: template.text,
+                    });
+                }
+
+                this.logger.debug(`Loaded email template: ${templateName}`);
+            } catch (err: any) {
+                this.logger.error(`Failed to load template ${file}:`, err);
+            }
+        });
+    }
+
+    private loadSubjects(): void {
+        const subjectsPath = path.join(this.templatesPath, 'subjects.json');
+        if (!fs.existsSync(subjectsPath)) {
+            return;
+        }
+        try {
+            const raw = fs.readFileSync(subjectsPath, 'utf-8');
+            const data = JSON.parse(raw) as Record<string, string>;
+            Object.entries(data).forEach(([key, value]) => {
+                this.templateSubjects.set(key, value);
+            });
+        } catch (err: any) {
+            this.logger.error(`Failed to load subjects:`, err);
+        }
+    }
+
+    private compileTemplate(template: string, context: Record<string, any>): string {
+        try {
+            return handlebars.compile(template)(context);
+        } catch (err: any) {
+            this.logger.error('Template compilation failed:', err);
+            throw new BadRequestException(`Failed to compile email template: ${err.message}`);
+        }
+    }
+
+    /** Méthodes utilitaires pour les emails standards */
+    private buildTemplateData(
+        recipient: MailRecipient,
+        extra: Record<string, any> = {},
+    ): Record<string, any> {
+        return {
+            firstName: recipient.firstName,
+            lastName: recipient.lastName,
+            fullName: recipient.fullName || `${recipient.firstName} ${recipient.lastName}`.trim(),
+            email: recipient.email,
+            appName: this.config.app.name,
+            supportEmail: this.config.app.supportEmail,
+            currentYear: new Date().getFullYear(),
+            ...extra,
+        };
+    }
+
+    private resolveSubject(
+        explicit: string | undefined,
+        templateSubject: string,
+        templateName: string,
+    ): string {
+        if (explicit && explicit.trim().length > 0) {
+            return explicit;
+        }
+        if (templateSubject && templateSubject.trim().length > 0) {
+            return templateSubject;
+        }
+        if (templateName) {
+            return this.humanizeTemplateName(templateName);
+        }
+        return `${this.config.app.name}`;
+    }
+
+    private humanizeTemplateName(name: string): string {
+        return (
+            name
+                .replace(/[-_]+/g, ' ')
+                .replace(/\b\w/g, (c) => c.toUpperCase())
+                .trim() || 'Notification'
+        );
     }
 }

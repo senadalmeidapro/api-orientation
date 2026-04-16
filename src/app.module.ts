@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { PrismaModule } from './prisma/prisma.module';
 import { SessionsModule } from './modules/sessions/sessions.module';
@@ -27,19 +26,16 @@ import { EmailModule } from './common/email/email.module';
 import { CacheModule as NestCacheModule } from '@nestjs/cache-manager';
 import { createKeyv } from '@keyv/redis';
 import { AppCacheModule } from './common/cache/cache.module';
+import { ConfigModule } from './common/config/config.module';
+import { ConfigService } from './common/config/config.service';
 
 @Module({
     imports: [
-        ConfigModule.forRoot({
-            isGlobal: true, // Rend le module disponible partout sans l'importer
-            envFilePath: '.env', // Chemin vers votre fichier .env (par défaut c'est '.env')
-            cache: true, // Met en cache les variables pour de meilleures performances
-        }),
         NestCacheModule.registerAsync({
             isGlobal: true,
             imports: [ConfigModule],
             useFactory: async (config: ConfigService) => {
-                const redisUrl = config.get('REDIS_URL') || 'redis://localhost:6379';
+                const redisUrl = config.redis.url;
                 return {
                     stores: [createKeyv(redisUrl)],
                     ttl: 0,
@@ -54,6 +50,7 @@ import { AppCacheModule } from './common/cache/cache.module';
             },
         ]),
         PrismaModule,
+        ConfigModule,
         SessionsModule,
         QuestionsModule,
         ResponsesModule,

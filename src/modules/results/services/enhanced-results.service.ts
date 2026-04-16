@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { BehavioralAnalysisService } from '../../responses/services/behavioral-analysis.service';
 import { AdaptiveSelectionService } from '../../questions/services/adaptive-selection.service';
@@ -37,6 +37,8 @@ export interface EnhancedReport {
 
 @Injectable()
 export class EnhancedResultsService {
+    private readonly logger = new Logger(EnhancedResultsService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly behavioralService: BehavioralAnalysisService,

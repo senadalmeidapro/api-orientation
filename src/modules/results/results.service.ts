@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ScoringService } from '../scoring/scoring.service';
 import { ComputeResultDto } from './dto/compute-result.dto';
@@ -8,6 +8,8 @@ import { EnhancedResultsService } from './services/enhanced-results.service';
 
 @Injectable()
 export class ResultsService {
+    private readonly logger = new Logger(ResultsService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly scoring: ScoringService,

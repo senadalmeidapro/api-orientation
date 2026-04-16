@@ -313,8 +313,9 @@ CREATE TABLE "phase2_responses" (
 -- CreateTable
 CREATE TABLE "question_profiles" (
     "id" SERIAL NOT NULL,
-    "question_id" INTEGER NOT NULL,
     "phase" "PhaseType" NOT NULL,
+    "phase1_question_id" INTEGER,
+    "phase2_question_id" INTEGER,
     "riasec_type" "RiasecType" NOT NULL,
     "weight" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -808,7 +809,10 @@ CREATE INDEX "phase2_responses_question_id_idx" ON "phase2_responses"("question_
 CREATE UNIQUE INDEX "phase2_responses_assessment_id_question_id_key" ON "phase2_responses"("assessment_id", "question_id");
 
 -- CreateIndex
-CREATE INDEX "question_profiles_question_id_idx" ON "question_profiles"("question_id");
+CREATE INDEX "question_profiles_phase1_question_id_idx" ON "question_profiles"("phase1_question_id");
+
+-- CreateIndex
+CREATE INDEX "question_profiles_phase2_question_id_idx" ON "question_profiles"("phase2_question_id");
 
 -- CreateIndex
 CREATE INDEX "question_profiles_phase_idx" ON "question_profiles"("phase");
@@ -817,7 +821,10 @@ CREATE INDEX "question_profiles_phase_idx" ON "question_profiles"("phase");
 CREATE INDEX "question_profiles_riasec_type_idx" ON "question_profiles"("riasec_type");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "question_profiles_question_id_phase_riasec_type_key" ON "question_profiles"("question_id", "phase", "riasec_type");
+CREATE UNIQUE INDEX "question_profiles_phase1_question_id_phase_riasec_type_key" ON "question_profiles"("phase1_question_id", "phase", "riasec_type");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "question_profiles_phase2_question_id_phase_riasec_type_key" ON "question_profiles"("phase2_question_id", "phase", "riasec_type");
 
 -- CreateIndex
 CREATE INDEX "batch_history_assessment_id_idx" ON "batch_history"("assessment_id");
@@ -1048,10 +1055,10 @@ ALTER TABLE "phase2_responses" ADD CONSTRAINT "phase2_responses_assessment_id_fk
 ALTER TABLE "phase2_responses" ADD CONSTRAINT "phase2_responses_question_id_fkey" FOREIGN KEY ("question_id") REFERENCES "phase2_questions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "question_profiles" ADD CONSTRAINT "fk_question_profile_phase1" FOREIGN KEY ("question_id") REFERENCES "phase1_questions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "question_profiles" ADD CONSTRAINT "question_profiles_phase1_question_id_fkey" FOREIGN KEY ("phase1_question_id") REFERENCES "phase1_questions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "question_profiles" ADD CONSTRAINT "fk_question_profile_phase2" FOREIGN KEY ("question_id") REFERENCES "phase2_questions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "question_profiles" ADD CONSTRAINT "question_profiles_phase2_question_id_fkey" FOREIGN KEY ("phase2_question_id") REFERENCES "phase2_questions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "batch_history" ADD CONSTRAINT "batch_history_assessment_id_fkey" FOREIGN KEY ("assessment_id") REFERENCES "assessments"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -4,11 +4,12 @@ import {
     UnauthorizedException,
     InternalServerErrorException,
     Inject,
+    Logger,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Prisma, User, UserStatus } from '@prisma/client';
 import * as crypto from 'crypto';
+import { ConfigService } from '../../../common/config/config.service';
 import { Request } from 'express';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { JwtPayload } from '../interfaces';
@@ -32,8 +33,6 @@ export type SignedTokens = {
 
 export type JwtUser = Pick<User, 'id' | 'email' | 'role'>;
 
-const DEFAULT_ACCESS_TTL = '15m';
-const DEFAULT_REFRESH_TTL = '7d';
 const DEFAULT_EMAIL_VERIFICATION_TTL = '24h';
 const DEFAULT_PASSWORD_RESET_TTL = '1h';
 
@@ -95,15 +94,11 @@ type StringValue = `${number}` | `${number}${UnitAnyCase}` | `${number} ${UnitAn
 
 @Injectable()
 export class AuthTokenService {
-    public readonly jwtIssuer: string;
-    public readonly jwtAudience: string;
-    private readonly accessTokenTtl: StringValue | number;
-    private readonly refreshTokenTtl: StringValue | number;
+    private readonly logger = new Logger(AuthTokenService.name);
+
     public readonly refreshTokenTtlMs: number;
     private readonly emailVerificationTtlMs: number;
     private readonly passwordResetTtlMs: number;
-    private readonly jwtAccessSecret: string;
-    private readonly jwtRefreshSecret: string;
 
     private readonly PREFIX = 'blacklist:token:';
 
@@ -115,39 +110,15 @@ export class AuthTokenService {
         private readonly prisma: PrismaService,
         private readonly deviceService: AuthDeviceService,
     ) {
-        this.jwtIssuer = this.config.get<string>('JWT_ISSUER') ?? 'api-orientation-issue';
-        this.jwtAudience = this.config.get<string>('JWT_AUDIENCE') ?? 'api-orientation-audience';
-
-        this.accessTokenTtl = this.getDurationValue(
-            'JWT_ACCESS_TTL',
-            'JWT_ACCESS_TLL',
-            DEFAULT_ACCESS_TTL,
-        ) as StringValue | number;
-        this.refreshTokenTtl = this.getDurationValue(
-            'JWT_REFRESH_TTL',
-            'JWT_REFRESH_TLL',
-            DEFAULT_REFRESH_TTL,
-        ) as StringValue | number;
-
-        this.refreshTokenTtlMs = this.durationToMs(this.refreshTokenTtl, 7 * 24 * 60 * 60 * 1000);
+        this.refreshTokenTtlMs = this.durationToMs(
+            config.jwt.refreshExpiresIn,
+            7 * 24 * 60 * 60 * 1000,
+        );
         this.emailVerificationTtlMs = this.durationToMs(
-            this.config.get<string | number>('EMAIL_VERIFICATION_TTL') ??
-                DEFAULT_EMAIL_VERIFICATION_TTL,
+            DEFAULT_EMAIL_VERIFICATION_TTL,
             24 * 60 * 60 * 1000,
         );
-        this.passwordResetTtlMs = this.durationToMs(
-            this.config.get<string | number>('RESET_PASSWORD_TTL') ?? DEFAULT_PASSWORD_RESET_TTL,
-            60 * 60 * 1000,
-        );
-
-        this.jwtAccessSecret = this.readJwtSecret(
-            this.config.get<string>('JWT_ACCESS_SECRET'),
-            this.config.get<string>('JWT_SECRET'),
-        );
-        this.jwtRefreshSecret = this.readJwtSecret(
-            this.config.get<string>('JWT_REFRESH_SECRET'),
-            this.config.get<string>('JWT_SECRET'),
-        );
+        this.passwordResetTtlMs = this.durationToMs(DEFAULT_PASSWORD_RESET_TTL, 60 * 60 * 1000);
     }
 
     async hashToken(token: string): Promise<string> {
@@ -182,9 +153,9 @@ export class AuthTokenService {
         let payload: JwtPayload;
         try {
             payload = await this.jwt.verifyAsync<JwtPayload>(refreshToken, {
-                secret: this.jwtRefreshSecret,
-                issuer: this.jwtIssuer,
-                audience: this.jwtAudience,
+                secret: this.config.jwt.refreshSecret,
+                issuer: this.config.jwt.issuer,
+                audience: this.config.jwt.audience,
             });
         } catch {
             throw new UnauthorizedException('Invalid refresh token');
@@ -386,31 +357,13 @@ export class AuthTokenService {
 
     private getJwtSignOptions(tokenType: 'access' | 'refresh'): JwtSignOptions {
         return {
-            secret: tokenType === 'access' ? this.jwtAccessSecret : this.jwtRefreshSecret,
-            expiresIn: (tokenType === 'access' ? this.accessTokenTtl : this.refreshTokenTtl) as any,
-            issuer: this.jwtIssuer,
-            audience: this.jwtAudience,
+            secret: tokenType === 'access' ? this.config.jwt.secret : this.config.jwt.refreshSecret,
+            expiresIn: (tokenType === 'access'
+                ? this.config.jwt.expiresIn
+                : this.config.jwt.refreshExpiresIn) as any,
+            issuer: this.config.jwt.issuer,
+            audience: this.config.jwt.audience,
         };
-    }
-
-    private readJwtSecret(primary?: string, fallback?: string): string {
-        const secret = primary ?? fallback;
-        if (!secret) {
-            throw new InternalServerErrorException('JWT secret not configured');
-        }
-        return secret;
-    }
-
-    private getDurationValue(
-        primaryKey: string,
-        legacyKey: string,
-        fallback: string,
-    ): string | number {
-        return (
-            this.config.get<string | number>(primaryKey) ??
-            this.config.get<string | number>(legacyKey) ??
-            fallback
-        );
     }
 
     private durationToMs(value: string | number, fallbackMs: number): number {

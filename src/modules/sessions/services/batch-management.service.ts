@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { PhaseType } from '@prisma/client';
 
@@ -25,6 +25,8 @@ export interface BatchProgress {
 
 @Injectable()
 export class BatchManagementService {
+    private readonly logger = new Logger(BatchManagementService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async startNewBatch(

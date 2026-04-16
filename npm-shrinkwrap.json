@@ -21,6 +21,7 @@
                 "@nestjs/platform-express": "^11.0.1",
                 "@nestjs/swagger": "^11.2.7",
                 "@nestjs/throttler": "^6.0.0",
+                "@openrouter/sdk": "^0.12.9",
                 "@prisma/adapter-pg": "^7.5.0",
                 "@prisma/client": "^7.5.0",
                 "axios": "^1.14.0",
@@ -31,6 +32,7 @@
                 "dotenv": "^17.4.1",
                 "helmet": "^7.1.0",
                 "keyv": "^5.6.0",
+                "nodemailer": "^8.0.5",
                 "passport": "^0.7.0",
                 "passport-google-oauth20": "^2.0.0",
                 "passport-jwt": "^4.0.1",
@@ -3928,6 +3930,16 @@
             "engines": {
                 "node": "^14.18.0 || >=16.10.0",
                 "npm": ">=5.10.0"
+            }
+        },
+        "node_modules/@openrouter/sdk": {
+            "version": "0.12.9",
+            "resolved": "https://registry.npmjs.org/@openrouter/sdk/-/sdk-0.12.9.tgz",
+            "integrity": "sha512-3fXgNfenUA0MVAMMfCOD3qw0V0S2Uy5abGa2K0CyqOU7ZDST9sqZaXWZDKG7Cx6zB2LrCjsufB3nWR5qgu+Plw==",
+            "hasInstallScript": true,
+            "license": "Apache-2.0",
+            "dependencies": {
+                "zod": "^3.25.0 || ^4.0.0"
             }
         },
         "node_modules/@paralleldrive/cuid2": {
@@ -9580,9 +9592,9 @@
             }
         },
         "node_modules/hono": {
-            "version": "4.12.12",
-            "resolved": "https://registry.npmjs.org/hono/-/hono-4.12.12.tgz",
-            "integrity": "sha512-p1JfQMKaceuCbpJKAPKVqyqviZdS0eUxH9v82oWo1kb9xjQ5wA6iP3FNVAPDFlz5/p7d45lO+BpSk1tuSZMF4Q==",
+            "version": "4.12.14",
+            "resolved": "https://registry.npmjs.org/hono/-/hono-4.12.14.tgz",
+            "integrity": "sha512-am5zfg3yu6sqn5yjKBNqhnTX7Cv+m00ox+7jbaKkrLMRJ4rAdldd1xPd/JzbBWspqaQv6RSTrgFN95EsfhC+7w==",
             "devOptional": true,
             "license": "MIT",
             "engines": {
@@ -11845,6 +11857,15 @@
             "integrity": "sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==",
             "dev": true,
             "license": "MIT"
+        },
+        "node_modules/nodemailer": {
+            "version": "8.0.5",
+            "resolved": "https://registry.npmjs.org/nodemailer/-/nodemailer-8.0.5.tgz",
+            "integrity": "sha512-0PF8Yb1yZuQfQbq+5/pZJrtF6WQcjTd5/S4JOHs9PGFxuTqoB/icwuB44pOdURHJbRKX1PPoJZtY7R4VUoCC8w==",
+            "license": "MIT-0",
+            "engines": {
+                "node": ">=6.0.0"
+            }
         },
         "node_modules/nopt": {
             "version": "5.0.0",
@@ -15394,6 +15415,15 @@
             "dependencies": {
                 "grammex": "^3.1.11",
                 "graphmatch": "^1.1.0"
+            }
+        },
+        "node_modules/zod": {
+            "version": "4.3.6",
+            "resolved": "https://registry.npmjs.org/zod/-/zod-4.3.6.tgz",
+            "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==",
+            "license": "MIT",
+            "funding": {
+                "url": "https://github.com/sponsors/colinhacks"
             }
         }
     }

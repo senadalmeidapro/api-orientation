@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAssessmentDto } from '../dto/create-assessment.dto';
@@ -7,6 +7,8 @@ const DEFAULT_DEPTH = 5;
 
 @Injectable()
 export class AssessmentFlowService {
+    private readonly logger = new Logger(AssessmentFlowService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async resolveTestVersionId(explicitId?: number) {

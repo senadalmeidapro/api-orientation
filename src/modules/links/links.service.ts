@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
     CreateLinkCategoryDto,
@@ -10,6 +10,8 @@ import {
 
 @Injectable()
 export class LinksService {
+    private readonly logger = new Logger(LinksService.name);
+
     constructor(private readonly prisma: PrismaService) {}
 
     async list(dto: ListLinksDto) {
