@@ -10,16 +10,16 @@ import {
 } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Analytics')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
-@ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+// @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/analytics')
 export class AnalyticsController {
     constructor(private readonly analytics: AnalyticsService) {}
@@ -32,16 +32,16 @@ export class AnalyticsController {
         type: CreateInteractionDto,
         description: 'Événement d’interaction utilisateur lié à une session/assessment.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Interaction enregistrée.',
-        dataExample: {
-            id: 'clx-interaction-id',
-            type: 'CLICK',
-            entity_type: 'career',
-            entity_id: '12',
-            value: 1,
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Interaction enregistrée.',
+    //     dataExample: {
+    //         id: 'clx-interaction-id',
+    //         type: 'CLICK',
+    //         entity_type: 'career',
+    //         entity_id: '12',
+    //         value: 1,
+    //     },
+    // })
     @Throttle({ default: { limit: 60, ttl: 60 } })
     @Post('interactions')
     createInteraction(@Body() dto: CreateInteractionDto) {
@@ -56,15 +56,15 @@ export class AnalyticsController {
         type: CreateFeedbackDto,
         description: 'Feedback utilisateur sur une recommandation ou un parcours.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Feedback enregistré.',
-        dataExample: {
-            id: 'clx-feedback-id',
-            type: 'LIKED',
-            recommendationId: 'clx-recommendation-id',
-            value: 1,
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Feedback enregistré.',
+    //     dataExample: {
+    //         id: 'clx-feedback-id',
+    //         type: 'LIKED',
+    //         recommendationId: 'clx-recommendation-id',
+    //         value: 1,
+    //     },
+    // })
     @Throttle({ default: { limit: 60, ttl: 60 } })
     @Post('feedbacks')
     createFeedback(@Body() dto: CreateFeedbackDto) {
@@ -79,16 +79,16 @@ export class AnalyticsController {
         type: CreateOutcomeDto,
         description: 'Outcome (résultat réel) associé à une recommandation ou carrière cible.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Outcome enregistré.',
-        dataExample: {
-            id: 'clx-outcome-id',
-            career_id: 24,
-            status: 'ENROLLED',
-            sector: 'Engineering',
-            delay_to_outcome: 90,
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Outcome enregistré.',
+    //     dataExample: {
+    //         id: 'clx-outcome-id',
+    //         career_id: 24,
+    //         status: 'ENROLLED',
+    //         sector: 'Engineering',
+    //         delay_to_outcome: 90,
+    //     },
+    // })
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Post('outcomes')
     createOutcome(@Body() dto: CreateOutcomeDto) {
@@ -118,15 +118,15 @@ export class AnalyticsController {
         description: 'Nombre maximum de carrières top.',
         example: 10,
     })
-    @ApiStandardOkResponse({
-        description: 'Synthèse analytics récupérée.',
-        dataExample: {
-            sessionsTotal: 1432,
-            assessmentsCompleted: 987,
-            topCareers: [{ careerId: 12, name: 'Ingénieur logiciel', count: 231 }],
-            feedbackSummary: { LIKED: 450, DISLIKED: 72 },
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Synthèse analytics récupérée.',
+    //     dataExample: {
+    //         sessionsTotal: 1432,
+    //         assessmentsCompleted: 987,
+    //         topCareers: [{ careerId: 12, name: 'Ingénieur logiciel', count: 231 }],
+    //         feedbackSummary: { LIKED: 450, DISLIKED: 72 },
+    //     },
+    // })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Get('summary')

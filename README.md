@@ -807,15 +807,13 @@ Configuration dans `test/jest-e2e.json`.
 ```env
 NODE_ENV=production
 DATABASE_URL=postgresql://...
-JWT_SECRET=<valeur longue et aléatoire>
-TRUST_PROXY=true
+JWT_ACCESS_SECRET=<valeur longue et aléatoire>
+JWT_REFRESH_SECRET=<valeur longue et aléatoire>
 CORS_ORIGIN=https://votre-frontend.com
-CORS_ALLOWED_HEADERS=Authorization,Content-Type,X-Device-Id,X-Metrics-Token
-REDIS_URL=redis://...
-S3_BUCKET=...
-OPENAI_API_KEY=...
-SMTP_HOST=...
+APP_URL=https://votre-api.up.railway.app
 ```
+
+La configuration complète prête pour Railway est fournie dans `.env.railway.example` (inclut toutes les variables requises par la `ConfigService` actuelle).
 
 ### Build et démarrage
 
@@ -823,6 +821,22 @@ SMTP_HOST=...
 npm run build
 npm run start:prod
 ```
+
+### Déploiement Railway (recommandé)
+
+Le dépôt contient un fichier `railway.json` prêt à l'emploi qui configure :
+- le build via `Dockerfile`
+- la commande de migration Prisma avant déploiement (`npm run db:migrate:deploy`)
+- la commande de démarrage (`npm run start:railway`)
+- le healthcheck (`/api/v1/health`)
+
+Étapes Railway :
+1. Créer un projet Railway et connecter le dépôt GitHub.
+2. Ajouter un service PostgreSQL Railway et renseigner `DATABASE_URL` dans le service API.
+3. Copier les variables de `.env.railway.example` dans Railway (en remplaçant les placeholders sensibles).
+4. Déployer : Railway exécutera automatiquement la migration puis démarrera l'API.
+
+Note : sur Railway, ne définissez pas `APP_PORT`. L'application lit automatiquement `PORT` injecté par Railway.
 
 ### Docker / Compose
 

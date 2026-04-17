@@ -21,11 +21,11 @@ import {
 } from './dto';
 import { LinksService } from './links.service';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Links')
 @ApiBearerAuth('access-token')
@@ -37,17 +37,17 @@ export class LinksController {
         summary: 'Lister les catégories de liens',
         description: 'Endpoint public qui retourne les catégories et leurs liens.',
     })
-    @ApiStandardOkResponse({
-        description: 'Catégories de liens récupérées.',
-        dataExample: [
-            {
-                id: 3,
-                name: 'Plateformes de formation',
-                links: [{ id: 11, title: 'OpenClassrooms', url: 'https://openclassrooms.com' }],
-            },
-        ],
-    })
-    @ApiStandardErrorResponses()
+    // @ApiStandardOkResponse({
+    //     description: 'Catégories de liens récupérées.',
+    //     dataExample: [
+    //         {
+    //             id: 3,
+    //             name: 'Plateformes de formation',
+    //             links: [{ id: 11, title: 'OpenClassrooms', url: 'https://openclassrooms.com' }],
+    //         },
+    //     ],
+    // })
+    // @ApiStandardErrorResponses()
     @Public()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
@@ -63,16 +63,16 @@ export class LinksController {
         type: CreateLinkDto,
         description: 'Données de création du lien (titre, URL, catégorie).',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Lien créé.',
-        dataExample: {
-            id: 21,
-            category_id: 3,
-            title: 'Coursera',
-            url: 'https://coursera.org',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Lien créé.',
+    //     dataExample: {
+    //         id: 21,
+    //         category_id: 3,
+    //         title: 'Coursera',
+    //         url: 'https://coursera.org',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
@@ -93,15 +93,15 @@ export class LinksController {
         type: UpdateLinkDto,
         description: 'Données partielles de mise à jour du lien.',
     })
-    @ApiStandardOkResponse({
-        description: 'Lien mis à jour.',
-        dataExample: {
-            id: 21,
-            title: 'Coursera (FR)',
-            category_id: 3,
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Lien mis à jour.',
+    //     dataExample: {
+    //         id: 21,
+    //         title: 'Coursera (FR)',
+    //         category_id: 3,
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
@@ -118,14 +118,14 @@ export class LinksController {
         description: 'Identifiant numérique du lien.',
         example: 21,
     })
-    @ApiStandardOkResponse({
-        description: 'Lien supprimé.',
-        dataExample: {
-            id: 21,
-            title: 'Coursera',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Lien supprimé.',
+    //     dataExample: {
+    //         id: 21,
+    //         title: 'Coursera',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')
@@ -141,14 +141,14 @@ export class LinksController {
         type: CreateLinkCategoryDto,
         description: 'Nom de la catégorie à créer.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Catégorie créée.',
-        dataExample: {
-            id: 8,
-            name: 'Bourses et financements',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Catégorie créée.',
+    //     dataExample: {
+    //         id: 8,
+    //         name: 'Bourses et financements',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Post('categories')
@@ -169,14 +169,14 @@ export class LinksController {
         type: UpdateLinkCategoryDto,
         description: 'Nom partiel ou complet de la catégorie.',
     })
-    @ApiStandardOkResponse({
-        description: 'Catégorie mise à jour.',
-        dataExample: {
-            id: 8,
-            name: 'Bourses étudiantes',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Catégorie mise à jour.',
+    //     dataExample: {
+    //         id: 8,
+    //         name: 'Bourses étudiantes',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Patch('categories/:id')
@@ -193,14 +193,14 @@ export class LinksController {
         description: 'Identifiant numérique de la catégorie.',
         example: 8,
     })
-    @ApiStandardOkResponse({
-        description: 'Catégorie supprimée.',
-        dataExample: {
-            id: 8,
-            name: 'Bourses étudiantes',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Catégorie supprimée.',
+    //     dataExample: {
+    //         id: 8,
+    //         name: 'Bourses étudiantes',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete('categories/:id')

@@ -19,8 +19,8 @@ export class ConfigService {
     readonly app = {
         name: this.str('APP_NAME'),
         env: this.str('APP_ENV'),
-        host: this.str('APP_HOST'),
-        port: this.num('APP_PORT'),
+        host: this.strFrom(['APP_HOST', 'HOST'], '0.0.0.0'),
+        port: this.numFrom(['APP_PORT', 'PORT'], 3000),
         url: this.str('APP_URL'),
         debug: this.bool('APP_DEBUG'),
         local: this.str('APP_LOCAL'),
@@ -109,20 +109,20 @@ export class ConfigService {
     /* =====================================================
      * STORAGE / CLOUD CONFIGURATION
      * ===================================================== */
-    readonly storage = {
-        uploadDir: this.str('UPLOAD_DIR'),
-        maxFileSizeMb: this.num('MAX_FILE_SIZE_MB'),
-        cloudinary: {
-            url: this.str('CLOUDINARY_URL'),
-            cloudName: this.str('CLOUDINARY_CLOUD_NAME'),
-            apiKey: this.str('CLOUDINARY_API_KEY'),
-            apiSecret: this.str('CLOUDINARY_API_SECRET'),
-            secure: this.bool('CLOUDINARY_SECURE'),
-            validate: this.bool('CLOUDINARY_VALIDATE'),
-            optimize: this.bool('CLOUDINARY_OPTIMIZE'),
-            transformations: this.bool('CLOUDINARY_TRANSFORMATIONS'),
-        },
-    };
+    // readonly storage = {
+    //     uploadDir: this.str('UPLOAD_DIR'),
+    //     maxFileSizeMb: this.num('MAX_FILE_SIZE_MB'),
+    //     cloudinary: {
+    //         url: this.str('CLOUDINARY_URL'),
+    //         cloudName: this.str('CLOUDINARY_CLOUD_NAME'),
+    //         apiKey: this.str('CLOUDINARY_API_KEY'),
+    //         apiSecret: this.str('CLOUDINARY_API_SECRET'),
+    //         secure: this.bool('CLOUDINARY_SECURE'),
+    //         validate: this.bool('CLOUDINARY_VALIDATE'),
+    //         optimize: this.bool('CLOUDINARY_OPTIMIZE'),
+    //         transformations: this.bool('CLOUDINARY_TRANSFORMATIONS'),
+    //     },
+    // };
     /* =====================================================
      * CACHE / REDIS CONFIGURATION
      * ===================================================== */
@@ -228,5 +228,55 @@ export class ConfigService {
             return undefined;
         }
         return value;
+    }
+
+    private strFrom(keys: string[], def?: string): string {
+        for (const [index, key] of keys.entries()) {
+            const value = process.env[key];
+            if (!value) {
+                continue;
+            }
+            if (index > 0) {
+                this.logger.warn(`ENV ${keys[0]} missing, using ${key}`);
+            }
+            return value;
+        }
+
+        if (def !== undefined) {
+            this.logger.warn(`ENV ${keys.join(' / ')} missing, defaulting to ${def}`);
+            return def;
+        }
+
+        const msg = `CONFIG → Missing env var: ${keys.join(' / ')}`;
+        this.logger.error(msg);
+        throw new Error(msg);
+    }
+
+    private numFrom(keys: string[], def?: number): number {
+        for (const [index, key] of keys.entries()) {
+            const raw = process.env[key];
+            if (raw === undefined || raw.trim() === '') {
+                continue;
+            }
+            const value = Number(raw);
+            if (Number.isNaN(value)) {
+                const msg = `CONFIG → Invalid number for ${key}: ${raw}`;
+                this.logger.error(msg);
+                throw new Error(msg);
+            }
+            if (index > 0) {
+                this.logger.warn(`ENV ${keys[0]} missing, using ${key}`);
+            }
+            return value;
+        }
+
+        if (def !== undefined) {
+            this.logger.warn(`ENV ${keys.join(' / ')} missing, defaulting to ${def}`);
+            return def;
+        }
+
+        const msg = `CONFIG → Missing numeric env var: ${keys.join(' / ')}`;
+        this.logger.error(msg);
+        throw new Error(msg);
     }
 }

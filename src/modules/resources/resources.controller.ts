@@ -15,11 +15,11 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Resources')
 @ApiBearerAuth('access-token')
@@ -32,18 +32,18 @@ export class ResourcesController {
         description:
             'Endpoint public de consultation des ressources. `publishedOnly` est forcé à `true` si absent.',
     })
-    @ApiStandardOkResponse({
-        description: 'Liste des ressources publiques récupérée.',
-        dataExample: [
-            {
-                id: 101,
-                title: 'Guide de découverte des métiers',
-                category: 'guides',
-                is_published: true,
-            },
-        ],
-    })
-    @ApiStandardErrorResponses()
+    // @ApiStandardOkResponse({
+    //     description: 'Liste des ressources publiques récupérée.',
+    //     dataExample: [
+    //         {
+    //             id: 101,
+    //             title: 'Guide de découverte des métiers',
+    //             category: 'guides',
+    //             is_published: true,
+    //         },
+    //     ],
+    // })
+    // @ApiStandardErrorResponses()
     @Public()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
@@ -55,17 +55,17 @@ export class ResourcesController {
         summary: 'Lister les ressources (admin)',
         description: 'Liste complète des ressources, publiées ou non (endpoint réservé ADMIN).',
     })
-    @ApiStandardOkResponse({
-        description: 'Liste des ressources (admin) récupérée.',
-        dataExample: [
-            {
-                id: 101,
-                title: 'Guide de découverte des métiers',
-                is_published: false,
-            },
-        ],
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Liste des ressources (admin) récupérée.',
+    //     dataExample: [
+    //         {
+    //             id: 101,
+    //             title: 'Guide de découverte des métiers',
+    //             is_published: false,
+    //         },
+    //     ],
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 60, ttl: 60 } })
     @Get('admin')
@@ -82,16 +82,16 @@ export class ResourcesController {
         description: 'Identifiant numérique de la ressource.',
         example: 101,
     })
-    @ApiStandardOkResponse({
-        description: 'Ressource récupérée.',
-        dataExample: {
-            id: 101,
-            title: 'Guide de découverte des métiers',
-            content_type: 'article',
-            related_careers: [],
-        },
-    })
-    @ApiStandardErrorResponses({ includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Ressource récupérée.',
+    //     dataExample: {
+    //         id: 101,
+    //         title: 'Guide de découverte des métiers',
+    //         content_type: 'article',
+    //         related_careers: [],
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeNotFound: true })
     @Public()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get(':id')
@@ -107,15 +107,15 @@ export class ResourcesController {
         type: CreateResourceDto,
         description: 'Données de création ressource.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Ressource créée.',
-        dataExample: {
-            id: 201,
-            title: 'Fiche métier Développeur backend',
-            is_published: false,
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Ressource créée.',
+    //     dataExample: {
+    //         id: 201,
+    //         title: 'Fiche métier Développeur backend',
+    //         is_published: false,
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
@@ -136,15 +136,15 @@ export class ResourcesController {
         type: UpdateResourceDto,
         description: 'Données partielles de mise à jour.',
     })
-    @ApiStandardOkResponse({
-        description: 'Ressource mise à jour.',
-        dataExample: {
-            id: 101,
-            title: 'Guide de découverte des métiers (édition 2026)',
-            is_published: true,
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Ressource mise à jour.',
+    //     dataExample: {
+    //         id: 101,
+    //         title: 'Guide de découverte des métiers (édition 2026)',
+    //         is_published: true,
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
@@ -162,14 +162,14 @@ export class ResourcesController {
         description: 'Identifiant numérique de la ressource.',
         example: 101,
     })
-    @ApiStandardOkResponse({
-        description: 'Ressource supprimée.',
-        dataExample: {
-            id: 101,
-            title: 'Guide de découverte des métiers',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Ressource supprimée.',
+    //     dataExample: {
+    //         id: 101,
+    //         title: 'Guide de découverte des métiers',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')

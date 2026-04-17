@@ -88,4 +88,11 @@ custom_migration
 # OTHERS
 /test-question-response
 /storage
+/scripts
+/.github/agents
+/.github/hooks
+/.github/instructions
+/.github/prompts
+/.github/skills
+/.github/agents
 link-categories.json

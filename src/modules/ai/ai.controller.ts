@@ -5,7 +5,7 @@ import { AiChatDto, AiCoachDto, AiSummaryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { Public } from '../../common/decorators';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
+// import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
 
 @ApiTags('Ai')
 @Controller('api/v1/ai')
@@ -23,20 +23,20 @@ export class AiController {
         description:
             'Token de session requis, assessmentId optionnel et limite de recommandations.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Résumé IA généré.',
-        dataExample: {
-            summary: 'Vous présentez un profil RIASEC orienté Réaliste-Investigatif.',
-            recommendations: [
-                {
-                    name: 'Ingénierie industrielle',
-                    rationale: 'Forte adéquation avec vos scores R et I.',
-                },
-            ],
-            nextSteps: ['Explorer 3 parcours techniques', 'Planifier un stage découverte'],
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Résumé IA généré.',
+    //     dataExample: {
+    //         summary: 'Vous présentez un profil RIASEC orienté Réaliste-Investigatif.',
+    //         recommendations: [
+    //             {
+    //                 name: 'Ingénierie industrielle',
+    //                 rationale: 'Forte adéquation avec vos scores R et I.',
+    //             },
+    //         ],
+    //         nextSteps: ['Explorer 3 parcours techniques', 'Planifier un stage découverte'],
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @UseGuards(JwtAuthGuard)
     @Post('summary')
@@ -55,17 +55,17 @@ export class AiController {
         description:
             'Token de session, assessmentId optionnel, section éventuelle, maxQuestions et message utilisateur.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Suggestion de coaching générée.',
-        dataExample: {
-            profileGuess: { topCodes: ['R', 'I', 'S'], confidence: 0.79 },
-            nextQuestionIds: [45, 81, 94],
-            nextQuestions: [{ id: 45, text: 'Je préfère résoudre des problèmes techniques.' }],
-            message: 'Tes réponses indiquent un bon potentiel analytique.',
-            rationale: 'Les prochaines questions vont différencier I et R.',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Suggestion de coaching générée.',
+    //     dataExample: {
+    //         profileGuess: { topCodes: ['R', 'I', 'S'], confidence: 0.79 },
+    //         nextQuestionIds: [45, 81, 94],
+    //         nextQuestions: [{ id: 45, text: 'Je préfère résoudre des problèmes techniques.' }],
+    //         message: 'Tes réponses indiquent un bon potentiel analytique.',
+    //         rationale: 'Les prochaines questions vont différencier I et R.',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @UseGuards(JwtAuthGuard)
     @Post('coach')
@@ -82,13 +82,13 @@ export class AiController {
         type: AiChatDto,
         description: 'Token de session, message utilisateur et assessmentId optionnel.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Réponse conversationnelle générée.',
-        dataExample: {
-            reply: 'Tu sembles progresser vers un profil investigatif. Souhaites-tu explorer des métiers scientifiques ?',
-        },
-    })
-    @ApiStandardErrorResponses({ includeNotFound: true })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Réponse conversationnelle générée.',
+    //     dataExample: {
+    //         reply: 'Tu sembles progresser vers un profil investigatif. Souhaites-tu explorer des métiers scientifiques ?',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeNotFound: true })
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Public()
     @Post('chat')

@@ -4,8 +4,8 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { setupSecureSwagger } from './fastify-swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ApiSuccessResponseInterceptor } from './common/interceptors/api-success-response.interceptor';
-import { ApiExceptionFilter } from './common/filters/api-exception.filter';
+// import { ApiSuccessResponseInterceptor } from './common/interceptors/api-success-response.interceptor';
+// import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { ConfigService } from './common/config/config.service';
 
 async function bootstrap() {
@@ -61,8 +61,8 @@ async function bootstrap() {
             transform: true,
         }),
     );
-    app.useGlobalInterceptors(new ApiSuccessResponseInterceptor());
-    app.useGlobalFilters(new ApiExceptionFilter());
+    // app.useGlobalInterceptors(new ApiSuccessResponseInterceptor());
+    // app.useGlobalFilters(new ApiExceptionFilter());
     await app.listen(config.app.port, config.app.host);
 }
 
