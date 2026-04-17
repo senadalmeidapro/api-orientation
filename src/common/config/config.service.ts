@@ -55,14 +55,6 @@ export class ConfigService {
     readonly database = {
         postgresql: {
             url: this.str('DATABASE_URL'),
-            host: this.str('POSTGRES_HOST'),
-            port: this.num('POSTGRES_PORT'),
-            user: this.str('POSTGRES_USER'),
-            name: this.str('POSTGRES_NAME'),
-            ssl: this.bool('POSTGRES_SSL'),
-            password: this.str('POSTGRES_PASSWORD'),
-            idleTimeout: this.num('POSTGRES_IDLE_TIMEOUT'),
-            connectionTimeout: this.num('POSTGRES_CONNECTION_TIMEOUT'),
         },
         mongodb: {},
     };
