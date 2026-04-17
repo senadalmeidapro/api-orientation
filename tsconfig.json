@@ -13,7 +13,6 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         /* Sortie du build */
-        "outDir": "./dist",
         "declaration": true,
         "sourceMap": true,
         "incremental": true,
