@@ -5,16 +5,16 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { EnhancedReportDto } from './dto/enhanced-report.dto';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Results')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
-@ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+// @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/results')
 export class ResultsController {
     constructor(private readonly service: ResultsService) {}
@@ -31,16 +31,16 @@ export class ResultsController {
         description:
             'Token de session requis, assessmentId optionnel, options de recalcul (`force`) et ranking subjectif.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Résultat calculé.',
-        dataExample: {
-            id: 'clx-result-id',
-            assessment_id: 'clx-assessment-id',
-            phase1_code: 'RIA',
-            phase2_code: 'RIS',
-            consistency_level: 'HIGH',
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Résultat calculé.',
+    //     dataExample: {
+    //         id: 'clx-result-id',
+    //         assessment_id: 'clx-assessment-id',
+    //         phase1_code: 'RIA',
+    //         phase2_code: 'RIS',
+    //         consistency_level: 'HIGH',
+    //     },
+    // })
     compute(@Body() dto: ComputeResultDto) {
         return this.service.compute(dto);
     }
@@ -57,15 +57,15 @@ export class ResultsController {
         description: 'Token de session.',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
-    @ApiStandardOkResponse({
-        description: 'Résultat récupéré par session token.',
-        dataExample: {
-            id: 'clx-result-id',
-            assessment_id: 'clx-assessment-id',
-            phase2_code: 'RIS',
-            career_recommendations: [],
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Résultat récupéré par session token.',
+    //     dataExample: {
+    //         id: 'clx-result-id',
+    //         assessment_id: 'clx-assessment-id',
+    //         phase2_code: 'RIS',
+    //         career_recommendations: [],
+    //     },
+    // })
     getByToken(@Param('sessionToken') sessionToken: string) {
         return this.service.getByToken(sessionToken);
     }
@@ -81,15 +81,15 @@ export class ResultsController {
         description: "Identifiant de l'assessment.",
         example: 'clx-assessment-id',
     })
-    @ApiStandardOkResponse({
-        description: 'Résultat récupéré par assessment.',
-        dataExample: {
-            id: 'clx-result-id',
-            assessment_id: 'clx-assessment-id',
-            phase1_code: 'RIA',
-            phase2_code: 'RIS',
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Résultat récupéré par assessment.',
+    //     dataExample: {
+    //         id: 'clx-result-id',
+    //         assessment_id: 'clx-assessment-id',
+    //         phase1_code: 'RIA',
+    //         phase2_code: 'RIS',
+    //     },
+    // })
     getByAssessmentId(@Param('assessmentId') assessmentId: string) {
         return this.service.getByAssessmentId(assessmentId);
     }
@@ -106,14 +106,14 @@ export class ResultsController {
         description: 'Identifiant interne de session (string ID Prisma).',
         example: 'clx-session-id',
     })
-    @ApiStandardOkResponse({
-        description: 'Résultat récupéré par sessionId.',
-        dataExample: {
-            id: 'clx-result-id',
-            assessment_id: 'clx-assessment-id',
-            phase2_code: 'RIS',
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Résultat récupéré par sessionId.',
+    //     dataExample: {
+    //         id: 'clx-result-id',
+    //         assessment_id: 'clx-assessment-id',
+    //         phase2_code: 'RIS',
+    //     },
+    // })
     getBySessionId(@Param('sessionId') sessionId: string) {
         return this.service.getBySessionId(sessionId);
     }
@@ -130,10 +130,10 @@ export class ResultsController {
         description: "Identifiant de l'assessment.",
         example: 'clx-assessment-id',
     })
-    @ApiStandardOkResponse({
-        description: 'Rapport enrichi généré.',
-        model: EnhancedReportDto,
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Rapport enrichi généré.',
+    //     model: EnhancedReportDto,
+    // })
     getEnhancedReport(@Param('assessmentId') assessmentId: string) {
         return this.service.computeEnhancedResult(assessmentId);
     }
@@ -149,15 +149,15 @@ export class ResultsController {
         description: "Identifiant de l'assessment.",
         example: 'clx-assessment-id',
     })
-    @ApiStandardOkResponse({
-        description: 'Observations comportementales récupérées.',
-        dataExample: [
-            'Comportement dominant: confiant et décisif (confiance: 75%)',
-            'Temps moyen de réponse: 4.3s',
-            '5 réponses spontanées et enthousiastes',
-            '8 réponses cohérentes et réfléchies',
-        ],
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Observations comportementales récupérées.',
+    //     dataExample: [
+    //         'Comportement dominant: confiant et décisif (confiance: 75%)',
+    //         'Temps moyen de réponse: 4.3s',
+    //         '5 réponses spontanées et enthousiastes',
+    //         '8 réponses cohérentes et réfléchies',
+    //     ],
+    // })
     getBehavioralObservations(@Param('assessmentId') assessmentId: string) {
         return this.service.getBehavioralObservations(assessmentId);
     }

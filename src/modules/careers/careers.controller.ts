@@ -15,11 +15,11 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CreateCareerDto, ListCareersDto, UpdateCareerDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Careers')
 @ApiBearerAuth('access-token')
@@ -32,19 +32,19 @@ export class CareersController {
         description:
             'Endpoint public de consultation du catalogue de carrières avec filtres de recherche, pagination et catégorie.',
     })
-    @ApiStandardOkResponse({
-        description: 'Liste des carrières récupérée.',
-        dataExample: [
-            {
-                id: 12,
-                name: 'Ingénieur logiciel',
-                category: 'TECH',
-                riasec_codes: ['R', 'I', 'C'],
-                is_active: true,
-            },
-        ],
-    })
-    @ApiStandardErrorResponses()
+    // @ApiStandardOkResponse({
+    //     description: 'Liste des carrières récupérée.',
+    //     dataExample: [
+    //         {
+    //             id: 12,
+    //             name: 'Ingénieur logiciel',
+    //             category: 'TECH',
+    //             riasec_codes: ['R', 'I', 'C'],
+    //             is_active: true,
+    //         },
+    //     ],
+    // })
+    // @ApiStandardErrorResponses()
     @Public()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
@@ -61,18 +61,18 @@ export class CareersController {
         description: 'Identifiant numérique de la carrière.',
         example: 12,
     })
-    @ApiStandardOkResponse({
-        description: 'Détail carrière récupéré.',
-        dataExample: {
-            id: 12,
-            name: 'Ingénieur logiciel',
-            summary: 'Conçoit et développe des applications.',
-            institutions: [],
-            resources: [],
-            trainingPaths: [],
-        },
-    })
-    @ApiStandardErrorResponses({ includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Détail carrière récupéré.',
+    //     dataExample: {
+    //         id: 12,
+    //         name: 'Ingénieur logiciel',
+    //         summary: 'Conçoit et développe des applications.',
+    //         institutions: [],
+    //         resources: [],
+    //         trainingPaths: [],
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeNotFound: true })
     @Public()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get(':id')
@@ -88,15 +88,15 @@ export class CareersController {
         type: CreateCareerDto,
         description: 'Données de création carrière.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Carrière créée.',
-        dataExample: {
-            id: 45,
-            name: 'Data Analyst',
-            category: 'DATA',
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Carrière créée.',
+    //     dataExample: {
+    //         id: 45,
+    //         name: 'Data Analyst',
+    //         category: 'DATA',
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
@@ -117,15 +117,15 @@ export class CareersController {
         type: UpdateCareerDto,
         description: 'Données partielles de mise à jour.',
     })
-    @ApiStandardOkResponse({
-        description: 'Carrière mise à jour.',
-        dataExample: {
-            id: 12,
-            name: 'Ingénieur logiciel',
-            is_active: true,
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Carrière mise à jour.',
+    //     dataExample: {
+    //         id: 12,
+    //         name: 'Ingénieur logiciel',
+    //         is_active: true,
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
@@ -143,14 +143,14 @@ export class CareersController {
         description: 'Identifiant numérique de la carrière.',
         example: 12,
     })
-    @ApiStandardOkResponse({
-        description: 'Carrière désactivée.',
-        dataExample: {
-            id: 12,
-            is_active: false,
-        },
-    })
-    @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+    // @ApiStandardOkResponse({
+    //     description: 'Carrière désactivée.',
+    //     dataExample: {
+    //         id: 12,
+    //         is_active: false,
+    //     },
+    // })
+    // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')

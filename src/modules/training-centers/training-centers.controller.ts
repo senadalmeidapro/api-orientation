@@ -16,16 +16,16 @@ import { CreateTrainingCenterDto, ListTrainingCentersDto, UpdateTrainingCenterDt
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Training centers')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
-@ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+// @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/training-centers')
 export class TrainingCentersController {
     constructor(private readonly centers: TrainingCentersService) {}
@@ -35,18 +35,18 @@ export class TrainingCentersController {
         description:
             'Retourne les centres de formation avec filtres (texte, ville, département, actif).',
     })
-    @ApiStandardOkResponse({
-        description: 'Centres de formation récupérés.',
-        dataExample: [
-            {
-                id: 6,
-                name: 'Institut Supérieur Technique',
-                city: 'Dakar',
-                department: 'Informatique',
-                is_active: true,
-            },
-        ],
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Centres de formation récupérés.',
+    //     dataExample: [
+    //         {
+    //             id: 6,
+    //             name: 'Institut Supérieur Technique',
+    //             city: 'Dakar',
+    //             department: 'Informatique',
+    //             is_active: true,
+    //         },
+    //     ],
+    // })
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
     list(@Query() dto: ListTrainingCentersDto) {
@@ -62,15 +62,15 @@ export class TrainingCentersController {
         description: 'Identifiant numérique du centre.',
         example: 6,
     })
-    @ApiStandardOkResponse({
-        description: 'Centre de formation récupéré.',
-        dataExample: {
-            id: 6,
-            name: 'Institut Supérieur Technique',
-            careers: [],
-            trainingPaths: [],
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Centre de formation récupéré.',
+    //     dataExample: {
+    //         id: 6,
+    //         name: 'Institut Supérieur Technique',
+    //         careers: [],
+    //         trainingPaths: [],
+    //     },
+    // })
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get(':id')
     getById(@Param('id', ParseIntPipe) id: number) {
@@ -85,15 +85,15 @@ export class TrainingCentersController {
         type: CreateTrainingCenterDto,
         description: 'Données de création du centre.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Centre de formation créé.',
-        dataExample: {
-            id: 17,
-            name: 'Académie Numérique',
-            city: 'Abidjan',
-            is_active: true,
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Centre de formation créé.',
+    //     dataExample: {
+    //         id: 17,
+    //         name: 'Académie Numérique',
+    //         city: 'Abidjan',
+    //         is_active: true,
+    //     },
+    // })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
@@ -114,14 +114,14 @@ export class TrainingCentersController {
         type: UpdateTrainingCenterDto,
         description: 'Données partielles de mise à jour du centre.',
     })
-    @ApiStandardOkResponse({
-        description: 'Centre de formation mis à jour.',
-        dataExample: {
-            id: 6,
-            name: 'Institut Supérieur Technique',
-            is_active: true,
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Centre de formation mis à jour.',
+    //     dataExample: {
+    //         id: 6,
+    //         name: 'Institut Supérieur Technique',
+    //         is_active: true,
+    //     },
+    // })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
@@ -138,13 +138,13 @@ export class TrainingCentersController {
         description: 'Identifiant numérique du centre.',
         example: 6,
     })
-    @ApiStandardOkResponse({
-        description: 'Centre de formation désactivé.',
-        dataExample: {
-            id: 6,
-            is_active: false,
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Centre de formation désactivé.',
+    //     dataExample: {
+    //         id: 6,
+    //         is_active: false,
+    //     },
+    // })
     @Roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')

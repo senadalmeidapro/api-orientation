@@ -17,16 +17,16 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Sessions')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
-@ApiStandardErrorResponses({ includeUnauthorized: true })
+// @ApiStandardErrorResponses({ includeUnauthorized: true })
 @Controller('api/v1/sessions')
 export class SessionsController {
     constructor(private readonly service: SessionsService) {}
@@ -41,21 +41,21 @@ export class SessionsController {
         description:
             'Configuration initiale de session (version de test, type d’assessment, profondeur, profil utilisateur).',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Session créée avec son assessment initial.',
-        dataExample: {
-            sessionId: 'clx-session-id',
-            sessionToken: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
-            shareToken: '3c96a7a8-5ab8-4f2b-a62e-a6f44c37250d',
-            startedAt: '2026-04-15T07:37:14.360Z',
-            assessment: {
-                id: 'clx-assessment-id',
-                type: 'PHASE1',
-                status: 'IN_PROGRESS',
-                depth: 5,
-            },
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Session créée avec son assessment initial.',
+    //     dataExample: {
+    //         sessionId: 'clx-session-id',
+    //         sessionToken: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
+    //         shareToken: '3c96a7a8-5ab8-4f2b-a62e-a6f44c37250d',
+    //         startedAt: '2026-04-15T07:37:14.360Z',
+    //         assessment: {
+    //             id: 'clx-assessment-id',
+    //             type: 'PHASE1',
+    //             status: 'IN_PROGRESS',
+    //             depth: 5,
+    //         },
+    //     },
+    // })
     @ApiNotFoundResponse({
         description: 'Utilisateur introuvable ou version de test demandée absente.',
         type: ApiErrorResponseDto,
@@ -76,15 +76,15 @@ export class SessionsController {
         description: 'Token de session UUID.',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
-    @ApiStandardOkResponse({
-        description: 'Session récupérée.',
-        dataExample: {
-            id: 'clx-session-id',
-            session_token: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
-            share_token: '3c96a7a8-5ab8-4f2b-a62e-a6f44c37250d',
-            assessments: [],
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Session récupérée.',
+    //     dataExample: {
+    //         id: 'clx-session-id',
+    //         session_token: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
+    //         share_token: '3c96a7a8-5ab8-4f2b-a62e-a6f44c37250d',
+    //         assessments: [],
+    //     },
+    // })
     @ApiNotFoundResponse({
         description: 'Session introuvable.',
         type: ApiErrorResponseDto,
@@ -109,15 +109,15 @@ export class SessionsController {
         type: CreateAssessmentDto,
         description: 'Type d’assessment à créer et paramètres de profondeur/version.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Assessment créé.',
-        dataExample: {
-            id: 'clx-assessment-id',
-            session_id: 'clx-session-id',
-            type: 'PHASE2_OCCUPATIONS',
-            status: 'IN_PROGRESS',
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Assessment créé.',
+    //     dataExample: {
+    //         id: 'clx-assessment-id',
+    //         session_id: 'clx-session-id',
+    //         type: 'PHASE2_OCCUPATIONS',
+    //         status: 'IN_PROGRESS',
+    //     },
+    // })
     @ApiNotFoundResponse({
         description: 'Session introuvable ou prérequis de phase non satisfaits.',
         type: ApiErrorResponseDto,
@@ -137,16 +137,16 @@ export class SessionsController {
         description: 'Token de session UUID.',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
-    @ApiStandardOkResponse({
-        description: 'Liste des assessments récupérée.',
-        dataExample: [
-            {
-                id: 'clx-assessment-id',
-                type: 'PHASE1',
-                status: 'COMPLETED',
-            },
-        ],
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Liste des assessments récupérée.',
+    //     dataExample: [
+    //         {
+    //             id: 'clx-assessment-id',
+    //             type: 'PHASE1',
+    //             status: 'COMPLETED',
+    //         },
+    //     ],
+    // })
     @ApiNotFoundResponse({
         description: 'Session introuvable.',
         type: ApiErrorResponseDto,
@@ -171,14 +171,14 @@ export class SessionsController {
         type: UpdateSessionProfileDto,
         description: 'Objet `profile` contenant les informations à propager.',
     })
-    @ApiStandardOkResponse({
-        description: 'Profil de session mis à jour.',
-        dataExample: {
-            id: 'clx-session-id',
-            session_token: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
-            user_id: 'clx-user-id',
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Profil de session mis à jour.',
+    //     dataExample: {
+    //         id: 'clx-session-id',
+    //         session_token: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
+    //         user_id: 'clx-user-id',
+    //     },
+    // })
     @ApiNotFoundResponse({
         description: 'Session introuvable.',
         type: ApiErrorResponseDto,

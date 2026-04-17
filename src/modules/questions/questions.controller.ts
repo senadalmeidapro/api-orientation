@@ -4,12 +4,12 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { GetPhase1QuestionsDto, GetPhase2QuestionsDto, GetNextBatchDto } from './dto';
-import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
+// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
 
 @ApiTags('Questions')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
-@ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+// @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/questions')
 export class QuestionsController {
     constructor(private readonly service: QuestionsService) {}
@@ -27,20 +27,20 @@ export class QuestionsController {
         description: 'Token de session actif.',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
-    @ApiStandardOkResponse({
-        description: 'Questions phase 1 récupérées.',
-        dataExample: [
-            {
-                id: 42,
-                riasecType: 'R',
-                text: 'J’aime construire des objets concrets.',
-                short: 'Construire',
-                illustrationUrl: null,
-                pointsValue: 1,
-                displayOrder: 12,
-            },
-        ],
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Questions phase 1 récupérées.',
+    //     dataExample: [
+    //         {
+    //             id: 42,
+    //             riasecType: 'R',
+    //             text: 'J’aime construire des objets concrets.',
+    //             short: 'Construire',
+    //             illustrationUrl: null,
+    //             pointsValue: 1,
+    //             displayOrder: 12,
+    //         },
+    //     ],
+    // })
     getPhase1(@Query() query: GetPhase1QuestionsDto) {
         return this.service.getPhase1Questions(query);
     }
@@ -58,23 +58,23 @@ export class QuestionsController {
         description: 'Token de session actif.',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
-    @ApiStandardOkResponse({
-        description: 'Questions phase 2 récupérées.',
-        dataExample: [
-            {
-                id: 314,
-                riasecType: 'I',
-                sectionType: 'APTITUDES',
-                text: 'Évaluez votre aisance en résolution de problèmes complexes.',
-                subtext: '1 = faible, 5 = élevée',
-                minValue: 1,
-                maxValue: 5,
-                valueLabels: ['Faible', 'Moyen', 'Fort'],
-                pointsValue: 1,
-                displayOrder: 8,
-            },
-        ],
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Questions phase 2 récupérées.',
+    //     dataExample: [
+    //         {
+    //             id: 314,
+    //             riasecType: 'I',
+    //             sectionType: 'APTITUDES',
+    //             text: 'Évaluez votre aisance en résolution de problèmes complexes.',
+    //             subtext: '1 = faible, 5 = élevée',
+    //             minValue: 1,
+    //             maxValue: 5,
+    //             valueLabels: ['Faible', 'Moyen', 'Fort'],
+    //             pointsValue: 1,
+    //             displayOrder: 8,
+    //         },
+    //     ],
+    // })
     getPhase2(@Query() query: GetPhase2QuestionsDto) {
         return this.service.getPhase2Questions(query);
     }
@@ -92,20 +92,20 @@ export class QuestionsController {
         description: 'Token de session actif.',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
-    @ApiStandardOkResponse({
-        description: 'Lot adaptatif sélectionné.',
-        dataExample: [
-            {
-                id: 42,
-                riasecType: 'R',
-                text: 'Question text',
-                profiles: [
-                    { riasecType: 'R', weight: 0.8 },
-                    { riasecType: 'I', weight: 0.2 },
-                ],
-            },
-        ],
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Lot adaptatif sélectionné.',
+    //     dataExample: [
+    //         {
+    //             id: 42,
+    //             riasecType: 'R',
+    //             text: 'Question text',
+    //             profiles: [
+    //                 { riasecType: 'R', weight: 0.8 },
+    //                 { riasecType: 'I', weight: 0.2 },
+    //             ],
+    //         },
+    //     ],
+    // })
     getNextBatch(@Query() query: GetNextBatchDto) {
         return this.service.getNextBatchQuestions(query);
     }

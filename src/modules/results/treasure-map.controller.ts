@@ -26,16 +26,16 @@ import {
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger';
-import {
-    ApiStandardCreatedResponse,
-    ApiStandardErrorResponses,
-    ApiStandardOkResponse,
-} from '../../common/swagger';
+// import {
+//     ApiStandardCreatedResponse,
+//     ApiStandardErrorResponses,
+//     ApiStandardOkResponse,
+// } from '../../common/swagger';
 
 @ApiTags('Treasure map')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
-@ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
+// @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/treasure-map')
 export class TreasureMapController {
     constructor(private readonly service: TreasureMapService) {}
@@ -49,15 +49,15 @@ export class TreasureMapController {
         type: CreateTreasureMapDto,
         description: 'Token de session, assessmentId optionnel et drapeau `generatePdf`.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Treasure map générée.',
-        dataExample: {
-            id: 'clx-map-id',
-            assessment_id: 'clx-assessment-id',
-            share_token: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
-            pdf_url: 'storage/treasure-maps/clx-map-id.pdf',
-        },
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Treasure map générée.',
+    //     dataExample: {
+    //         id: 'clx-map-id',
+    //         assessment_id: 'clx-assessment-id',
+    //         share_token: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
+    //         pdf_url: 'storage/treasure-maps/clx-map-id.pdf',
+    //     },
+    // })
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Post()
     generate(@Body() dto: CreateTreasureMapDto) {
@@ -73,14 +73,14 @@ export class TreasureMapController {
         description: 'Token de session.',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
-    @ApiStandardOkResponse({
-        description: 'Treasure map récupérée.',
-        dataExample: {
-            id: 'clx-map-id',
-            share_token: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
-            map_data: { phase1_code: 'RIA', phase2_code: 'RIS' },
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Treasure map récupérée.',
+    //     dataExample: {
+    //         id: 'clx-map-id',
+    //         share_token: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
+    //         map_data: { phase1_code: 'RIA', phase2_code: 'RIS' },
+    //     },
+    // })
     @Throttle({ default: { limit: 60, ttl: 60 } })
     @Get('by-token/:sessionToken')
     getBySessionToken(@Param('sessionToken') sessionToken: string) {
@@ -142,14 +142,14 @@ export class TreasureMapController {
         description: 'Token de partage de la treasure map.',
         example: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
     })
-    @ApiStandardOkResponse({
-        description: 'Treasure map récupérée via share token.',
-        dataExample: {
-            id: 'clx-map-id',
-            share_token: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
-            view_count: 12,
-        },
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Treasure map récupérée via share token.',
+    //     dataExample: {
+    //         id: 'clx-map-id',
+    //         share_token: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
+    //         view_count: 12,
+    //     },
+    // })
     @Throttle({ default: { limit: 60, ttl: 60 } })
     @Get(':shareToken')
     getByShareToken(@Param('shareToken') shareToken: string) {

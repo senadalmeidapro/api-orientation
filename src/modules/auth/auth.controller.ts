@@ -30,14 +30,14 @@ import {
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
-import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
+// import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
 
 const THROTTLE_AUTH_DEFAULT = { default: { limit: 20, ttl: 60 } } as const;
 const THROTTLE_AUTH_REFRESH = { default: { limit: 30, ttl: 60 } } as const;
 const THROTTLE_AUTH_SENSITIVE = { default: { limit: 10, ttl: 60 } } as const;
 
 @ApiTags('Auth')
-@ApiStandardErrorResponses()
+// @ApiStandardErrorResponses()
 @Controller('api/v1/auth')
 export class AuthController {
     constructor(private readonly auth: AuthService) {}
@@ -55,11 +55,11 @@ export class AuthController {
         description:
             'Données d’inscription: email valide, prénom/nom, mot de passe fort, acceptation des conditions.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Compte créé avec succès.',
-        model: AuthRegisterResponseDto,
-        message: 'Ressource créée avec succès.',
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Compte créé avec succès.',
+    //     model: AuthRegisterResponseDto,
+    //     message: 'Ressource créée avec succès.',
+    // })
     @ApiResponse({
         status: 403,
         description: 'Conditions d’utilisation non acceptées.',
@@ -87,11 +87,11 @@ export class AuthController {
         type: LoginDto,
         description: 'Identifiants de connexion (email et mot de passe).',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Connexion réussie.',
-        model: AuthLoginResponseDto,
-        message: 'Connexion réussie.',
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Connexion réussie.',
+    //     model: AuthLoginResponseDto,
+    //     message: 'Connexion réussie.',
+    // })
     @ApiUnauthorizedResponse({
         description: 'Identifiants invalides.',
         type: ApiErrorResponseDto,
@@ -129,11 +129,11 @@ export class AuthController {
         type: RefreshDto,
         description: 'Refresh token JWT valide non révoqué.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Tokens renouvelés.',
-        model: AuthRefreshResponseDto,
-        message: 'Tokens renouvelés.',
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Tokens renouvelés.',
+    //     model: AuthRefreshResponseDto,
+    //     message: 'Tokens renouvelés.',
+    // })
     @ApiUnauthorizedResponse({
         description: 'Refresh token invalide ou expiré.',
         type: ApiErrorResponseDto,
@@ -174,11 +174,11 @@ export class AuthController {
         type: LogoutDto,
         description: 'Refresh token à invalider.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Déconnexion effectuée.',
-        model: AuthActionResponseDto,
-        message: 'Déconnexion effectuée.',
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Déconnexion effectuée.',
+    //     model: AuthActionResponseDto,
+    //     message: 'Déconnexion effectuée.',
+    // })
     @ApiUnauthorizedResponse({
         description: 'Token manquant, invalide ou refresh token non valide.',
         type: ApiErrorResponseDto,
@@ -220,11 +220,11 @@ export class AuthController {
         type: EmailDto,
         description: 'Email du compte cible.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Demande de réinitialisation traitée.',
-        model: AuthActionResponseDto,
-        message: 'Demande de réinitialisation traitée.',
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Demande de réinitialisation traitée.',
+    //     model: AuthActionResponseDto,
+    //     message: 'Demande de réinitialisation traitée.',
+    // })
     @Public()
     @Throttle(THROTTLE_AUTH_SENSITIVE)
     @Post('password-reset/request')
@@ -245,11 +245,11 @@ export class AuthController {
         description:
             'Token de réinitialisation (hex 64 chars), ancien mot de passe (champ historique) et nouveau mot de passe fort.',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Mot de passe réinitialisé.',
-        model: AuthActionResponseDto,
-        message: 'Mot de passe réinitialisé.',
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Mot de passe réinitialisé.',
+    //     model: AuthActionResponseDto,
+    //     message: 'Mot de passe réinitialisé.',
+    // })
     @ApiUnauthorizedResponse({
         description: 'Token de réinitialisation invalide ou expiré.',
         type: ApiErrorResponseDto,
@@ -273,11 +273,11 @@ export class AuthController {
         type: TokenDto,
         description: 'Token de vérification email (hexadécimal 64 caractères).',
     })
-    @ApiStandardCreatedResponse({
-        description: 'Email vérifié.',
-        model: AuthActionResponseDto,
-        message: 'Email vérifié.',
-    })
+    // @ApiStandardCreatedResponse({
+    //     description: 'Email vérifié.',
+    //     model: AuthActionResponseDto,
+    //     message: 'Email vérifié.',
+    // })
     @ApiUnauthorizedResponse({
         description: 'Token invalide ou expiré.',
         type: ApiErrorResponseDto,

@@ -15,12 +15,12 @@ import {
     ApiTags,
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
-import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
+// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
 
 @ApiTags('Users')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
-@ApiStandardErrorResponses({ includeUnauthorized: true })
+// @ApiStandardErrorResponses({ includeUnauthorized: true })
 @Controller('api/v1/users')
 export class UsersController {
     constructor(private readonly users: UsersService) {}
@@ -30,11 +30,11 @@ export class UsersController {
         description:
             'Retourne les informations du compte associé au token JWT courant. Aucun paramètre de route, query ou body.',
     })
-    @ApiStandardOkResponse({
-        description: 'Profil utilisateur courant récupéré.',
-        model: UserResponseDto,
-        message: 'Profil utilisateur récupéré.',
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Profil utilisateur courant récupéré.',
+    //     model: UserResponseDto,
+    //     message: 'Profil utilisateur récupéré.',
+    // })
     @ApiNotFoundResponse({
         description: 'Utilisateur introuvable.',
         type: ApiErrorResponseDto,
@@ -59,12 +59,12 @@ export class UsersController {
         summary: 'Lister les utilisateurs',
         description: 'Retourne la liste des utilisateurs visibles. Endpoint réservé au rôle ADMIN.',
     })
-    @ApiStandardOkResponse({
-        description: 'Liste des utilisateurs récupérée.',
-        model: UserResponseDto,
-        isArray: true,
-        message: 'Liste des utilisateurs récupérée.',
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Liste des utilisateurs récupérée.',
+    //     model: UserResponseDto,
+    //     isArray: true,
+    //     message: 'Liste des utilisateurs récupérée.',
+    // })
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Roles(UserRole.ADMIN)
     @Get()
@@ -82,11 +82,11 @@ export class UsersController {
         description: 'Identifiant unique de l’utilisateur.',
         example: 'clx123abc0001',
     })
-    @ApiStandardOkResponse({
-        description: 'Utilisateur récupéré.',
-        model: UserResponseDto,
-        message: 'Utilisateur récupéré.',
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Utilisateur récupéré.',
+    //     model: UserResponseDto,
+    //     message: 'Utilisateur récupéré.',
+    // })
     @ApiNotFoundResponse({
         description: 'Utilisateur introuvable.',
         type: ApiErrorResponseDto,
@@ -122,11 +122,11 @@ export class UsersController {
         type: UpdateUserDto,
         description: 'Données partielles de mise à jour de l’utilisateur.',
     })
-    @ApiStandardOkResponse({
-        description: 'Utilisateur mis à jour.',
-        model: UserResponseDto,
-        message: 'Utilisateur mis à jour.',
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Utilisateur mis à jour.',
+    //     model: UserResponseDto,
+    //     message: 'Utilisateur mis à jour.',
+    // })
     @ApiNotFoundResponse({
         description: 'Utilisateur introuvable.',
         type: ApiErrorResponseDto,
@@ -162,11 +162,11 @@ export class UsersController {
         type: UpdateUserRolesDto,
         description: 'Liste de rôles à affecter (un seul rôle autorisé).',
     })
-    @ApiStandardOkResponse({
-        description: 'Rôles utilisateur mis à jour.',
-        model: UserResponseDto,
-        message: 'Rôles utilisateur mis à jour.',
-    })
+    // @ApiStandardOkResponse({
+    //     description: 'Rôles utilisateur mis à jour.',
+    //     model: UserResponseDto,
+    //     message: 'Rôles utilisateur mis à jour.',
+    // })
     @ApiNotFoundResponse({
         description: 'Utilisateur introuvable.',
         type: ApiErrorResponseDto,

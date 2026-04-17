@@ -15,8 +15,8 @@ export class BadgesService {
             description: 'Tu as termine la phase 1 du test.',
             emoji: 'compass',
             rarity: BadgeRarity.COMMON,
-            pointsValue: 20,
-            unlockCondition: { type: 'phase_completion', phase: 1 },
+            points_value: 20,
+            unlock_condition: { type: 'phase_completion', phase: 1 },
         },
         {
             code: 'PHASE2_COMPLETED',
@@ -24,8 +24,8 @@ export class BadgesService {
             description: 'Tu as termine la phase 2 du test.',
             emoji: 'brain',
             rarity: BadgeRarity.RARE,
-            pointsValue: 30,
-            unlockCondition: { type: 'phase_completion', phase: 2 },
+            points_value: 30,
+            unlock_condition: { type: 'phase_completion', phase: 2 },
         },
         {
             code: 'TEST_COMPLETED',
@@ -33,8 +33,8 @@ export class BadgesService {
             description: 'Tu as obtenu ton profil complet.',
             emoji: 'flag',
             rarity: BadgeRarity.EPIC,
-            pointsValue: 50,
-            unlockCondition: { type: 'test_completed' },
+            points_value: 50,
+            unlock_condition: { type: 'test_completed' },
         },
         {
             code: 'TREASURE_MAP',
@@ -42,8 +42,8 @@ export class BadgesService {
             description: 'Tu as genere ta carte au tresor.',
             emoji: 'map',
             rarity: BadgeRarity.RARE,
-            pointsValue: 20,
-            unlockCondition: { type: 'treasure_map' },
+            points_value: 20,
+            unlock_condition: { type: 'treasure_map' },
         },
     ];
 
