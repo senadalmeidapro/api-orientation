@@ -28,6 +28,8 @@
         "isolatedModules": true,
         "removeComments": true,
         "skipLibCheck": true,
+        "rootDir": "./src",
+        "outDir": "./dist",
         "types": [
             "node"
         ],
