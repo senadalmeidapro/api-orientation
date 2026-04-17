@@ -10,8 +10,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 COPY package.json npm-shrinkwrap.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci
-
+RUN --mount=type=cache,id=npm-cache,target=/root/.npm npm ci
 FROM deps AS build
 COPY prisma ./prisma
 RUN npx prisma generate
