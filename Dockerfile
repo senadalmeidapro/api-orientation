@@ -10,9 +10,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 COPY package.json npm-shrinkwrap.json ./
-RUN --mount=type=cache,id=cache-npm,target=/root/.npm \
-    --mount=type=cache,id=cache-node-gyp,target=/root/.cache \
-    npm ci
+RUN npm ci
+
 FROM deps AS build
 COPY prisma ./prisma
 RUN npx prisma generate
@@ -25,16 +24,14 @@ RUN npm prune --omit=dev && npm cache clean --force
 
 FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
-ENV NODE_ENV=production \
-    PORT=3000
+ENV NODE_ENV=production
 RUN mkdir -p /app/storage && chown -R node:node /app
+
 COPY --from=production-deps --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/node_modules/prisma ./node_modules/prisma
-COPY --from=build --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
-COPY --from=build --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/package.json ./package.json
+
 USER node
 EXPOSE 3000
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]
