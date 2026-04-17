@@ -35,4 +35,4 @@ COPY --from=build --chown=node:node /app/package.json ./package.json
 USER node
 EXPOSE 3000
 RUN ls -R dist
-CMD ["node", "dist/src/main.js"]
+CMD ["node", "dist/main.js"]
