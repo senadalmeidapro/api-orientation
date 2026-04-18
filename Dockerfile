@@ -27,11 +27,12 @@ FROM deps AS build
 COPY prisma ./prisma
 
 COPY nest-cli.json tsconfig.json tsconfig.build.json ./
-COPY prisma.config.ts ./prisma.config.ts
 COPY templates ./templates
 COPY src ./src
 
 RUN npx prisma generate
+
+COPY prisma.config.ts ./prisma.config.ts
 RUN npm run build
 
 # -------------------------
