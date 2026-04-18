@@ -826,15 +826,19 @@ npm run start:prod
 
 Le dépôt contient un fichier `railway.json` prêt à l'emploi qui configure :
 - le build via `Dockerfile`
-- la commande de migration Prisma avant déploiement (`npm run db:migrate:deploy`)
+- la pré-release Railway (`npm run railway:predeploy`) qui :
+  - vérifie la connexion à la base
+  - applique les migrations Prisma
+  - exécute le seed
+  - revérifie la connexion à la base
 - la commande de démarrage (`npm run start:railway`)
-- le healthcheck (`/api/v1/health`)
+- le healthcheck (`/api/v1/health`) avec vérification DB et erreur HTTP 503 si indisponible
 
 Étapes Railway :
 1. Créer un projet Railway et connecter le dépôt GitHub.
 2. Ajouter un service PostgreSQL Railway et renseigner `DATABASE_URL` dans le service API.
 3. Copier les variables de `.env.railway.example` dans Railway (en remplaçant les placeholders sensibles).
-4. Déployer : Railway exécutera automatiquement la migration puis démarrera l'API.
+4. Déployer : Railway exécutera automatiquement le flux pré-déploiement (check DB, migration, seed) puis démarrera l'API avec un check DB avant boot.
 
 Note : sur Railway, ne définissez pas `APP_PORT`. L'application lit automatiquement `PORT` injecté par Railway.
 

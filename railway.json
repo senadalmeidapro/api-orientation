@@ -4,8 +4,8 @@
       "builder": "DOCKERFILE"
     },
     "deploy": {
-      "preDeployCommand": null,
-      "startCommand": "node dist/main.js",
+      "preDeployCommand": "npx prisma migrate deploy && npx prisma db seed",
+      "startCommand": "npm run start:prod",
       "healthcheckPath": "/api/v1/health",
       "healthcheckTimeout": 300,
       "restartPolicyType": "ON_FAILURE",

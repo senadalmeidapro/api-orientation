@@ -25,11 +25,13 @@ RUN npm ci
 FROM deps AS build
 
 COPY prisma ./prisma
-RUN npx prisma generate
 
 COPY nest-cli.json tsconfig.json tsconfig.build.json ./
+COPY prisma.config.ts ./prisma.config.ts
+COPY templates ./templates
 COPY src ./src
 
+RUN npx prisma generate
 RUN npm run build
 
 # -------------------------
@@ -53,12 +55,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /app/storage && chown -R node:node /app
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=build --chown=node:node /app/node_modules/prisma ./node_modules/prisma
-COPY --from=build --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+# COPY --from=build --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
+# COPY --from=build --chown=node:node /app/node_modules/prisma ./node_modules/prisma
+# COPY --from=build --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
+COPY --from=build --chown=node:node /app/templates ./templates
 COPY --from=build --chown=node:node /app/package.json ./package.json
+COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 
 USER node
 
