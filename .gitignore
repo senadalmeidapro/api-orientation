@@ -95,5 +95,4 @@ custom_migration
 /.github/prompts
 /.github/skills
 /.github/agents
-link-categories.json
 tsconfig.build.tsbuildinfo

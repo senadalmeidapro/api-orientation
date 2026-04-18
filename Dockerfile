@@ -33,6 +33,7 @@ COPY src ./src
 RUN npx prisma generate
 
 COPY prisma.config.ts ./prisma.config.ts
+COPY link-categories.json ./link-categories.json
 RUN npm run build
 
 # -------------------------
@@ -64,6 +65,7 @@ COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/templates ./templates
 COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
+COPY --from=build --chown=node:node /app/link-categories.json ./link-categories.json
 
 USER node
 

@@ -18,7 +18,7 @@ type LinkSeedItem = {
 };
 
 export async function seedLinkCategories(prisma: PrismaService) {
-    const filePath = path.resolve(__dirname, '..', '..', 'link-categories.json');
+    const filePath = path.resolve(__dirname, '..', '..', '..', 'link-categories.json');
     const raw = await readFile(filePath, 'utf-8');
     const data = JSON.parse(raw) as LinkSeedFile;
 
