@@ -245,4 +245,76 @@ export class EmailService {
         }
         return this.config.app.name;
     }
+
+    /* =====================================================
+     * MÉTHODES MÉTIER (RESTAURÉES)
+     * ===================================================== */
+
+    async sendWelcomeEmail(recipient: MailRecipient, verificationLink?: string) {
+        const data = this.buildTemplateData(recipient, { verificationLink });
+
+        return this.sendEmail({
+            to: recipient.email,
+            subject: recipient.subject,
+            template: 'welcome',
+            templateData: data,
+            tenantId: recipient.tenantId,
+        });
+    }
+
+    async sendVerificationEmail(
+        recipient: MailRecipient,
+        verificationLink: string,
+        expiresIn = '24 hours',
+    ) {
+        const data = this.buildTemplateData(recipient, {
+            verificationLink,
+            expiresIn,
+        });
+
+        return this.sendEmail({
+            to: recipient.email,
+            subject: recipient.subject,
+            template: 'email-verification',
+            templateData: data,
+            tenantId: recipient.tenantId,
+        });
+    }
+
+    async sendPasswordResetEmail(
+        recipient: MailRecipient,
+        resetLink: string,
+        expiresIn = '1 hour',
+    ) {
+        const data = this.buildTemplateData(recipient, {
+            resetLink,
+            expiresIn,
+            ipAddress: recipient.metadata?.ipAddress,
+        });
+
+        return this.sendEmail({
+            to: recipient.email,
+            subject: recipient.subject,
+            template: 'password-reset',
+            templateData: data,
+            tenantId: recipient.tenantId,
+        });
+    }
+    private buildTemplateData(
+        recipient: MailRecipient,
+        extra: Record<string, any> = {},
+    ): Record<string, any> {
+        return {
+            firstName: recipient.firstName,
+            lastName: recipient.lastName,
+            fullName:
+                recipient.fullName ||
+                `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim(),
+            email: recipient.email,
+            appName: this.config.app.name,
+            supportEmail: this.config.app.supportEmail,
+            currentYear: new Date().getFullYear(),
+            ...extra,
+        };
+    }
 }
