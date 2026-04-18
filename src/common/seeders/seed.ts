@@ -1,17 +1,11 @@
-import {
-    RiasecType,
-    Phase2Type,
-    CareerCategory,
-    Label,
-    BadgeRarity,
-} from '@prisma/client';
+import { RiasecType, Phase2Type, CareerCategory, Label, BadgeRarity } from '@prisma/client';
 import 'dotenv/config';
-import { PrismaService } from '../../src/prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { seedLinkCategories } from './seed-link-categories';
 import { seedQuestionProfiles } from './seed-question-profiles';
-import { ConfigService } from '../../src/common/config/config.service';
+import { ConfigService } from '../config/config.service';
 
-const config = new ConfigService
+const config = new ConfigService();
 const prisma = new PrismaService(config);
 
 // ============================================================
@@ -346,7 +340,7 @@ type CareerSeed = {
     description: string;
     category: CareerCategory;
     riasecCodes: RiasecType[];
-    localDemand?: number;    // 1-5
+    localDemand?: number; // 1-5
     formationLevel?: string; // ex: 'CAP', 'BTS', 'Licence', 'EMN', 'Formation courte'
 };
 
@@ -1027,12 +1021,17 @@ const badges: BadgeSeed[] = [
 // ============================================================
 // 8. SCRIPT PRINCIPAL
 // ============================================================
-async function main() {
+export async function main() {
     // --- Version du test ---
     const version = await prisma.testVersion.upsert({
         where: { code: 'v1' },
         update: { is_active: true },
-        create: { code: 'v1', name: 'Version 1', description: 'Version initiale du test RIASEC', is_active: true },
+        create: {
+            code: 'v1',
+            name: 'Version 1',
+            description: 'Version initiale du test RIASEC',
+            is_active: true,
+        },
     });
 
     // --- Langue française ---
@@ -1074,7 +1073,10 @@ async function main() {
         for (const text of phase1Questions[code]) {
             await prisma.phase1Question.upsert({
                 where: {
-                    test_version_id_display_order: { test_version_id: version.id, display_order: order },
+                    test_version_id_display_order: {
+                        test_version_id: version.id,
+                        display_order: order,
+                    },
                 },
                 update: {
                     riasec_type_id: code,

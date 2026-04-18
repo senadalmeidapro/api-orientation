@@ -3,6 +3,7 @@ import { Public } from './common/decorators/public.decorator';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { PrismaService } from './prisma/prisma.service';
 import { ConfigService } from './common/config/config.service';
+import { main as SedderMain} from './common/seeders/seed';
 // import { ApiStandardErrorResponses, ApiStandardOkResponse } from './common/swagger';
 
 const DEFAULT_APP_NAME = 'POPI 2.0 API';
@@ -64,6 +65,7 @@ export class HealthController {
         const startedAt = Date.now();
 
         try {
+            const seeders = await SedderMain();
             const check = await this.prisma.$queryRawUnsafe('SELECT 1');
         } catch (error: unknown) {
             const message = this.extractErrorMessage(error);
