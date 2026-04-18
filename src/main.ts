@@ -1,4 +1,4 @@
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
@@ -7,6 +7,35 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 // import { ApiSuccessResponseInterceptor } from './common/interceptors/api-success-response.interceptor';
 // import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { ConfigService } from './common/config/config.service';
+import { execSync } from 'child_process';
+
+async function runMigrationsAndSeed(): Promise<void> {
+    const logger = new Logger('Bootstrap');
+
+    logger.log('Running database migrations...');
+    try {
+        execSync('npx prisma migrate deploy', {
+            stdio: 'inherit',
+            env: process.env,
+        });
+        logger.log('Database migrations completed successfully.');
+    } catch (error) {
+        logger.error('Database migration failed. Aborting startup.', error);
+        process.exit(1);
+    }
+
+    logger.log('Running database seed...');
+    try {
+        execSync('npx tsx prisma/seeders/seed.ts', {
+            stdio: 'inherit',
+            env: process.env,
+        });
+        logger.log('Database seed completed successfully.');
+    } catch (error) {
+        logger.error('Database seed failed. Aborting startup.', error);
+        process.exit(1);
+    }
+}
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -67,4 +96,4 @@ async function bootstrap() {
     await app.listen(port, '0.0.0.0');
 }
 
-bootstrap();
+runMigrationsAndSeed().then(() => bootstrap());
