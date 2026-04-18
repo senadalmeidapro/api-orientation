@@ -63,7 +63,7 @@ async function bootstrap() {
     );
     // app.useGlobalInterceptors(new ApiSuccessResponseInterceptor());
     // app.useGlobalFilters(new ApiExceptionFilter());
-    const port = Number(process.env.PORT) || config.app.port;
+    const port = process.env.PORT || 3000;
     await app.listen(port, '0.0.0.0');
 }
 
