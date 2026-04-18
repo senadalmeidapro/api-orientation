@@ -84,6 +84,7 @@ export class ConfigService {
      * EMAIL / SMTP CONFIGURATION
      * ===================================================== */
     readonly email = {
+        apiKey: this.str('BREVO_API_KEY'),
         host: this.str('EMAIL_HOST'),
         port: this.num('EMAIL_PORT'),
         useTLS: this.bool('EMAIL_USE_TLS'),
