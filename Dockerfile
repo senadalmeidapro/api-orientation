@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY package.json package-lock.json ./
+COPY package.json npm-shrinkwrap.json ./
 RUN npm ci
 
 # -------------------------
@@ -44,8 +44,7 @@ RUN npm prune --omit=dev && npm cache clean --force
 FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 
-ENV NODE_ENV=production \
-    PRISMA_CLI_BINARY_TARGETS=debian-openssl-3.0.x
+ENV NODE_ENV=production
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl ca-certificates \
@@ -62,5 +61,4 @@ USER node
 
 EXPOSE 3000
 
-# ✅ migrations au runtime (PAS build)
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
