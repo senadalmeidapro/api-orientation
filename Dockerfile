@@ -53,8 +53,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /app/storage && chown -R node:node /app
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
-# 👇 Le client Prisma généré (absent de prod-deps)
 COPY --from=build --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build --chown=node:node /app/node_modules/prisma ./node_modules/prisma
+COPY --from=build --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/package.json ./package.json
@@ -63,4 +64,4 @@ USER node
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy; echo 'migrate exit: '$?;"]
+CMD ["node", "dist/main.js"]
