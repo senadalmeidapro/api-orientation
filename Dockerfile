@@ -2,56 +2,30 @@
 
 FROM node:20-bookworm-slim AS base
 WORKDIR /app
-
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
     NPM_CONFIG_FUND=false
 
-# -------------------------
-# DEPENDENCIES
-# -------------------------
 FROM base AS deps
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    openssl \
-    ca-certificates \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
-
-COPY package.json package-lock.json ./
+RUN apt-get update -y && apt-get install -y openssl
+COPY package.json npm-shrinkwrap.json ./
 RUN npm ci
 
-# -------------------------
-# BUILD
-# -------------------------
 FROM deps AS build
-
 COPY prisma ./prisma
+RUN npx prisma generate
 COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 COPY src ./src
-
-RUN npx prisma generate
 RUN npm run build
 
-# -------------------------
-# PRODUCTION DEPS
-# -------------------------
-FROM deps AS production-deps
+FROM build AS production-deps
 RUN npm prune --omit=dev && npm cache clean --force
 
-# -------------------------
-# RUNTIME
-# -------------------------
 FROM node:20-bookworm-slim AS runtime
-
 WORKDIR /app
-
 ENV NODE_ENV=production
-
-RUN apt-get update && apt-get install -y --no-install-recommends openssl \
-    && rm -rf /var/lib/apt/lists/*
-
 RUN mkdir -p /app/storage && chown -R node:node /app
 
 COPY --from=production-deps --chown=node:node /app/node_modules ./node_modules
@@ -60,8 +34,7 @@ COPY --from=build --chown=node:node /app/prisma ./prisma
 COPY --from=build --chown=node:node /app/package.json ./package.json
 
 USER node
-
 EXPOSE 3000
-
-# ⚠️ IMPORTANT : migrations SAFE au démarrage runtime
-CMD sh -c "npx prisma migrate deploy && node dist/main.js"
+RUN npx prisma migrate deploy
+RUN npx prisma db seed
+CMD ["node", "dist/main.js"]
