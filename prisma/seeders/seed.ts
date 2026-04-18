@@ -9,8 +9,10 @@ import 'dotenv/config';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { seedLinkCategories } from './seed-link-categories';
 import { seedQuestionProfiles } from './seed-question-profiles';
+import { ConfigService } from '../../src/common/config/config.service';
 
-const prisma = new PrismaService();
+const config = new ConfigService
+const prisma = new PrismaService(config);
 
 // ============================================================
 // 1. TYPES RIASEC

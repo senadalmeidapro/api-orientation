@@ -39,7 +39,9 @@ export async function seedLinkCategories(prisma: PrismaService) {
 
         for (const link of category.links) {
             if (!link?.title) {
-                throw new Error(`Invalid link entry in category "${category.name}": missing title.`);
+                throw new Error(
+                    `Invalid link entry in category "${category.name}": missing title.`,
+                );
             }
 
             await prisma.link.upsert({
