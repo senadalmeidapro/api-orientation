@@ -1,29 +1,21 @@
 {
     "compilerOptions": {
-        /* Modules et compatibilité Node */
-        "module": "nodenext",
-        "moduleResolution": "nodenext",
-        "target": "ESNEXT",
-        "noEmitOnError": true,
+        "module": "commonjs", // ← fix
+        "moduleResolution": "node", // ← fix
+        "target": "ES2023",
+        "noEmitOnError": false, // ← safer for dev watch mode
         "esModuleInterop": true,
-        "noImplicitOverride": true,
-        "resolvePackageJsonExports": true,
-        "allowSyntheticDefaultImports": true,
-        /* Décorateurs et métadonnées (NestJS) */
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        /* Sortie du build */
         "declaration": true,
         "sourceMap": true,
         "incremental": true,
-        /* Contrôle strict du typage */
+        "tsBuildInfoFile": "./dist/.tsbuildinfo", // ← keeps root clean
         "strict": true,
         "strictNullChecks": true,
         "forceConsistentCasingInFileNames": true,
         "noImplicitAny": false,
-        "strictBindCallApply": false,
         "noFallthroughCasesInSwitch": true,
-        /* Optimisations */
         "isolatedModules": true,
         "removeComments": true,
         "skipLibCheck": true,

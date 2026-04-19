@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { JwtAuthGuard } from './guards/jwt.guard';
@@ -30,6 +30,7 @@ import {
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
+import { ConfigService } from '../../common/config/config.service';
 // import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
 
 const THROTTLE_AUTH_DEFAULT = { default: { limit: 20, ttl: 60 } } as const;
@@ -40,7 +41,7 @@ const THROTTLE_AUTH_SENSITIVE = { default: { limit: 10, ttl: 60 } } as const;
 // @ApiStandardErrorResponses()
 @Controller('api/v1/auth')
 export class AuthController {
-    constructor(private readonly auth: AuthService) {}
+    constructor(private readonly auth: AuthService, private readonly config: ConfigService) {}
 
     // =========================
     // REGISTER
@@ -284,8 +285,8 @@ export class AuthController {
     })
     @Public()
     @Throttle(THROTTLE_AUTH_REFRESH)
-    @Post('verify-email')
-    verifyEmail(@Body() dto: TokenDto) {
+    @Get('verify-email')
+    verifyEmail(@Query() dto: TokenDto) {
         return this.auth.verifyEmail(dto.token);
     }
 }

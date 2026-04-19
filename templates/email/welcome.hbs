@@ -1,0 +1,192 @@
+<html lang='{{lang}}'>
+    <head>
+        <meta charset='UTF-8' />
+        <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+        <meta http-equiv='X-UA-Compatible' content='ie=edge' />
+        <title>{{title}}</title>
+        <style>
+            .email-container {
+                max-width: 600px;
+                margin: 0 auto;
+                font-family: Arial, Helvetica, sans-serif;
+                background-color: #ffffff;
+                border: 1px solid #eaeaea;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 30px 20px;
+                text-align: center;
+                color: white;
+            }
+            .content {
+                padding: 30px 20px;
+                color: #333333;
+                line-height: 1.6;
+            }
+            .button {
+                display: inline-block;
+                background-color: #667eea;
+                color: #ffffff !important;
+                text-decoration: none;
+                padding: 14px 30px;
+                border-radius: 6px;
+                font-weight: bold;
+                margin: 20px 0;
+                border: 1px solid #5a67d8;
+            }
+            .footer {
+                background-color: #f8f9fa;
+                padding: 20px;
+                text-align: center;
+                font-size: 13px;
+                color: #6c757d;
+                border-top: 1px solid #dee2e6;
+            }
+            .link {
+                color: #667eea;
+                word-break: break-all;
+            }
+            .feature-box {
+                background-color: #f0f4ff;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 20px 0;
+            }
+            .feature-item {
+                margin: 10px 0;
+            }
+            @media only screen and (max-width: 480px) {
+                .email-container {
+                    width: 100% !important;
+                }
+                .button {
+                    display: block;
+                    text-align: center;
+                }
+            }
+        </style>
+    </head>
+    <body
+        style='margin: 0; padding: 20px; background-color: #f4f6f9; font-family: Arial, Helvetica, sans-serif;'
+    >
+        <table
+            width='100%'
+            cellpadding='0'
+            cellspacing='0'
+            border='0'
+            style='background-color: #f4f6f9;'
+        >
+            <tr>
+                <td align='center' style='padding: 20px;'>
+                    <div class='email-container'>
+                        <!-- En-tête -->
+                        <div class='header'>
+                            <h1 style='margin: 0; font-size: 28px;'>Bienvenue chez
+                                {{appName}}
+                                !</h1>
+                            <p style='margin: 10px 0 0; opacity: 0.9;'>Nous sommes ravis de vous
+                                compter parmi nous</p>
+                        </div>
+
+                        <!-- Contenu principal -->
+                        <div class='content'>
+                            {{#if fullName}}
+                                <p>Bonjour <strong>{{fullName}}</strong>,</p>
+                            {{else}}
+                                <p>Bonjour,</p>
+                            {{/if}}
+
+                            <p>Merci d'avoir rejoint
+                                {{appName}}
+                                ! Votre compte a été créé avec succès et vous pouvez dès maintenant
+                                profiter de tous nos services.</p>
+
+                            <!-- Bouton d'accès -->
+                            <div style='text-align: center;'>
+                                <a
+                                    href='{{dashboardUrl}}'
+                                    class='button'
+                                    style='color: #ffffff;'
+                                >Accéder à mon compte</a>
+                            </div>
+
+                            <!-- Section fonctionnalités (optionnelle) -->
+                            {{#if features}}
+                                <div class='feature-box'>
+                                    <h3 style='margin-top: 0; color: #2c3e50;'>🎯 Découvrez ce que
+                                        vous pouvez faire :</h3>
+                                    {{#each features}}
+                                        <div class='feature-item'>
+                                            <strong>✓ {{this.title}}</strong><br />
+                                            <span
+                                                style='font-size: 14px; color: #555;'
+                                            >{{this.description}}</span>
+                                        </div>
+                                    {{/each}}
+                                </div>
+                            {{/if}}
+
+                            {{#if verificationLink}}
+                                <p>Pour sécuriser votre compte, veuillez vérifier votre adresse
+                                    email :</p>
+                                <div style='text-align: center;'>
+                                    <a
+                                        href='{{verificationLink}}'
+                                        style='color: #667eea; text-decoration: underline;'
+                                    >Vérifier mon email</a>
+                                </div>
+                            {{/if}}
+
+                            <hr
+                                style='border: none; border-top: 1px solid #eaeaea; margin: 30px 0;'
+                            />
+
+                            <p style='font-size: 14px;'>
+                                {{#if supportEmail}}
+                                    Si vous avez des questions, n'hésitez pas à nous contacter à
+                                    <a
+                                        href='mailto:{{supportEmail}}'
+                                        style='color: #667eea;'
+                                    >{{supportEmail}}</a>.
+                                {{else}}
+                                    N'hésitez pas à explorer votre espace personnel et à nous faire
+                                    part de vos retours.
+                                {{/if}}
+                            </p>
+                        </div>
+
+                        <!-- Pied de page -->
+                        <div class='footer'>
+                            <p style='margin: 5px 0;'>&copy;
+                                {{currentYear}}
+                                {{appName}}. Tous droits réservés.</p>
+                            <p style='margin: 5px 0;'>
+                                <a href='{{privacyPolicyUrl}}' style='color: #667eea;'>Politique de
+                                    confidentialité</a>
+                                |
+                                <a href='{{contactUrl}}' style='color: #667eea;'>Contact</a>
+                            </p>
+                            <p style='margin: 15px 0 0; font-size: 12px;'>
+                                Vous recevez cet email car vous venez de créer un compte sur
+                                {{appName}}.<br />
+                                {{#if unsubscribeUrl}}<a
+                                        href='{{unsubscribeUrl}}'
+                                        style='color: #667eea;'
+                                    >Se désabonner</a>{{/if}}
+                            </p>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div style='display: none; max-height: 0; overflow: hidden;'>
+            Bienvenue chez
+            {{appName}}
+            ! Accédez à votre compte :
+            {{dashboardUrl}}
+        </div>
+    </body>
+</html>

@@ -3,6 +3,7 @@ import {
     Injectable,
     InternalServerErrorException,
     Logger,
+    OnModuleInit,
 } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { SentMessageInfo } from 'nodemailer';
@@ -13,7 +14,7 @@ import SibApiV3Sdk from 'sib-api-v3-sdk';
 import { ConfigService } from '../config/config.service';
 
 /* =====================================================
- * INTERFACES (INCHANGÉES)
+ * INTERFACES
  * ===================================================== */
 
 export interface MailAttachment {
@@ -40,7 +41,7 @@ export interface MailSendOptions {
     html?: string;
     text?: string;
     template?: string;
-    templateData?: Record<string, any>;
+    context?: Record<string, any>;
     from?: string;
     replyTo?: string;
     cc?: string | string[];
@@ -68,32 +69,42 @@ export interface EmailTemplate {
  * ===================================================== */
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleInit {
     private readonly logger = new Logger(EmailService.name);
     private transporter?: nodemailer.Transporter;
     private readonly templates: Map<string, EmailTemplate> = new Map();
     private readonly templateSubjects: Map<string, string> = new Map();
     private readonly templatesPath: string;
     private readonly brevoClient: SibApiV3Sdk.TransactionalEmailsApi;
+    private readonly isProduction: boolean;
 
     constructor(private readonly config: ConfigService) {
+        this.isProduction = this.config.engine.nodeEnv === 'production';
+
         this.templatesPath = path.isAbsolute(this.config.email.templatePath)
             ? this.config.email.templatePath
             : path.join(process.cwd(), this.config.email.templatePath);
 
-        // === BREVO API INIT ===
         const client = SibApiV3Sdk.ApiClient.instance;
-        client.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+        client.authentications['api-key'].apiKey = config.email.apiKey;
         this.brevoClient = new SibApiV3Sdk.TransactionalEmailsApi();
 
-        // === SMTP seulement en dev ===
-        if (this.config.engine.nodeEnv !== 'production') {
+        if (!this.isProduction) {
             this.transporter = this.createTransporter();
-            this.initializeTransporter();
         }
+    }
 
+    /* =====================================================
+     * LIFECYCLE
+     * ===================================================== */
+
+    async onModuleInit(): Promise<void> {
         this.loadSubjects();
         this.loadTemplates();
+
+        if (!this.isProduction) {
+            await this.verifyTransporter();
+        }
     }
 
     /* =====================================================
@@ -103,19 +114,25 @@ export class EmailService {
     async sendEmail(
         options: MailSendOptions & { tenantId?: string },
     ): Promise<SentMessageInfo | any> {
+        const html = this.resolveTemplate(options);
+
+        const templateSubject = options.template
+            ? (this.templates.get(options.template)?.subject ?? '')
+            : '';
+        const subject = this.resolveSubject(
+            options.subject,
+            templateSubject,
+            options.template ?? '',
+        );
+
         try {
-            const subject = this.resolveSubject(options.subject, '', options.template || '');
-
-            const html = this.resolveTemplate(options);
-
-            if (this.config.engine.nodeEnv === 'production') {
+            if (this.isProduction) {
                 return await this.sendWithBrevo(options.to, subject, html);
             }
-
             return await this.sendWithSMTP(options, subject, html);
         } catch (err: any) {
-            this.logger.error('Failed to send email:', err);
-            throw new InternalServerErrorException(err.message);
+            this.logger.error(`Failed to send email to ${options.to}: ${err.message}`, err.stack);
+            throw new InternalServerErrorException('Failed to send email');
         }
     }
 
@@ -127,16 +144,13 @@ export class EmailService {
         const recipients = Array.isArray(to) ? to.map((email) => ({ email })) : [{ email: to }];
 
         const response = await this.brevoClient.sendTransacEmail({
-            sender: {
-                email: this.config.email.from,
-                name: this.config.app.name,
-            },
+            sender: { email: this.config.email.from, name: this.config.app.name },
             to: recipients,
             subject,
             htmlContent: html,
         });
 
-        this.logger.debug(`Brevo email sent: ${response.messageId}`);
+        this.logger.log(`Email sent via Brevo, messageId: ${response.messageId}`);
         return response;
     }
 
@@ -153,7 +167,7 @@ export class EmailService {
             throw new Error('SMTP transporter not initialized');
         }
 
-        return await this.transporter.sendMail({
+        const info = await this.transporter.sendMail({
             from: options.from || this.config.email.from,
             to: options.to,
             subject,
@@ -165,30 +179,38 @@ export class EmailService {
             headers: options.headers,
             priority: options.priority,
         });
+
+        this.logger.log(`Email sent via SMTP, messageId: ${info.messageId}`);
+        return info;
     }
 
     private createTransporter(): nodemailer.Transporter {
+        const port = this.config.email.port;
+        const secure = port === 465;
+
         return nodemailer.createTransport({
             host: this.config.email.host,
-            port: this.config.email.port,
-            secure: this.config.email.port === 465,
+            port,
+            secure,
             auth: {
                 user: this.config.email.user,
                 pass: this.config.email.password,
             },
-            requireTLS: true,
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 10000,
+            requireTLS: !secure,
+            connectionTimeout: 15_000,
+            greetingTimeout: 15_000,
+            socketTimeout: 30_000,
+            pool: true,
+            maxConnections: 3,
         });
     }
 
-    private async initializeTransporter(): Promise<void> {
+    private async verifyTransporter(): Promise<void> {
         try {
             await this.transporter?.verify();
-            this.logger.log('SMTP transporter ready');
-        } catch {
-            this.logger.warn('SMTP unavailable (ignored)');
+            this.logger.log('SMTP transporter ready ✓');
+        } catch (err: any) {
+            this.logger.error(`SMTP connection failed: ${err.message}`);
         }
     }
 
@@ -197,32 +219,38 @@ export class EmailService {
      * ===================================================== */
 
     private resolveTemplate(options: MailSendOptions): string {
-        if (!options.template) return options.html || '';
+        if (!options.template) return options.html ?? '';
 
         const template = this.templates.get(options.template);
         if (!template) {
-            throw new BadRequestException(`Template ${options.template} not found`);
+            throw new BadRequestException(`Template "${options.template}" not found`);
         }
 
-        return handlebars.compile(template.html)(options.templateData || {});
+        return handlebars.compile(template.html)(options.context ?? {});
     }
 
     private loadTemplates(): void {
-        if (!fs.existsSync(this.templatesPath)) return;
+        if (!fs.existsSync(this.templatesPath)) {
+            this.logger.error(`Templates directory not found: ${this.templatesPath}`);
+            return;
+        }
 
         const files = fs.readdirSync(this.templatesPath);
+        let count = 0;
 
         files.forEach((file) => {
             if (file.endsWith('.hbs')) {
                 const content = fs.readFileSync(path.join(this.templatesPath, file), 'utf-8');
-
                 const name = file.replace('.hbs', '');
                 this.templates.set(name, {
-                    subject: this.templateSubjects.get(name) || '',
+                    subject: this.templateSubjects.get(name) ?? '',
                     html: content,
                 });
+                count++;
             }
         });
+
+        this.logger.log(`Loaded ${count} email template(s)`);
     }
 
     private loadSubjects(): void {
@@ -247,17 +275,15 @@ export class EmailService {
     }
 
     /* =====================================================
-     * MÉTHODES MÉTIER (RESTAURÉES)
+     * BUSINESS METHODS
      * ===================================================== */
 
     async sendWelcomeEmail(recipient: MailRecipient, verificationLink?: string) {
-        const data = this.buildTemplateData(recipient, { verificationLink });
-
         return this.sendEmail({
             to: recipient.email,
             subject: recipient.subject,
             template: 'welcome',
-            templateData: data,
+            context: this.buildTemplateData(recipient, { verificationLink }),
             tenantId: recipient.tenantId,
         });
     }
@@ -267,16 +293,11 @@ export class EmailService {
         verificationLink: string,
         expiresIn = '24 hours',
     ) {
-        const data = this.buildTemplateData(recipient, {
-            verificationLink,
-            expiresIn,
-        });
-
         return this.sendEmail({
             to: recipient.email,
             subject: recipient.subject,
             template: 'email-verification',
-            templateData: data,
+            context: this.buildTemplateData(recipient, { verificationLink, expiresIn }),
             tenantId: recipient.tenantId,
         });
     }
@@ -286,20 +307,19 @@ export class EmailService {
         resetLink: string,
         expiresIn = '1 hour',
     ) {
-        const data = this.buildTemplateData(recipient, {
-            resetLink,
-            expiresIn,
-            ipAddress: recipient.metadata?.ipAddress,
-        });
-
         return this.sendEmail({
             to: recipient.email,
             subject: recipient.subject,
             template: 'password-reset',
-            templateData: data,
+            context: this.buildTemplateData(recipient, {
+                resetLink,
+                expiresIn,
+                ipAddress: recipient.metadata?.ipAddress,
+            }),
             tenantId: recipient.tenantId,
         });
     }
+
     private buildTemplateData(
         recipient: MailRecipient,
         extra: Record<string, any> = {},
@@ -309,7 +329,7 @@ export class EmailService {
             lastName: recipient.lastName,
             fullName:
                 recipient.fullName ||
-                `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim(),
+                `${recipient.firstName ?? ''} ${recipient.lastName ?? ''}`.trim(),
             email: recipient.email,
             appName: this.config.app.name,
             supportEmail: this.config.app.supportEmail,

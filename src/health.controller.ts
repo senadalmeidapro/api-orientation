@@ -65,7 +65,7 @@ export class HealthController {
         const startedAt = Date.now();
 
         try {
-            const seeders = await SedderMain();
+            // const seeders = await SedderMain();
             const check = await this.prisma.$queryRawUnsafe('SELECT 1');
         } catch (error: unknown) {
             const message = this.extractErrorMessage(error);

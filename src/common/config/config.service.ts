@@ -22,6 +22,7 @@ export class ConfigService {
         host: this.strFrom(['APP_HOST', 'HOST'], '0.0.0.0'),
         port: this.numFrom(['APP_PORT', 'PORT'], 3000),
         url: this.str('APP_URL'),
+        frontUrl: this.str('FRONT_URL'),
         debug: this.bool('APP_DEBUG'),
         local: this.str('APP_LOCAL'),
         backUrl: this.str('BACK_URL'),

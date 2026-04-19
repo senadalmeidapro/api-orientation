@@ -77,18 +77,18 @@ export class AuthService {
             throw new InternalServerErrorException('Unable to create user');
         }
 
-        // if (user.email) {
-        //     await this.email.sendVerificationEmail(
-        //         {
-        //             email: user.email,
-        //             subject: 'Vérification de votre email',
-        //             firstName: user.first_name ?? '',
-        //             lastName: user.last_name ?? '',
-        //             fullName: user.first_name + ' ' + user.last_name,
-        //         },
-        //         `${this.config.app.url}/verify-email?token=${verificationToken}`,
-        //     );
-        // }
+        if (user.email) {
+            await this.email.sendVerificationEmail(
+                {
+                    email: user.email,
+                    subject: 'Vérification de votre email',
+                    firstName: user.first_name ?? '',
+                    lastName: user.last_name ?? '',
+                    fullName: user.first_name + ' ' + user.last_name,
+                },
+                `${this.config.app.frontUrl}/auth/check-email?token=${verificationToken}`,
+            );
+        }
 
         return {
             message: 'Registration successful. Please check your email to verify your account.',
