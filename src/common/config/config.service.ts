@@ -128,11 +128,11 @@ export class ConfigService {
      * ───────────────────────────────────────── */
     readonly redis = {
         url: this.str('REDIS_URL'),
-        host: this.str('REDIS_HOST'),
-        port: this.num('REDIS_PORT'),
-        password: this.str('REDIS_PASSWORD'),
-        db: this.num('REDIS_DB', 0),
-        ttl: this.num('REDIS_TTL'),
+        // host: this.str('REDIS_HOST'),
+        // port: this.num('REDIS_PORT'),
+        // password: this.str('REDIS_PASSWORD'),
+        // db: this.num('REDIS_DB', 0),
+        // ttl: this.num('REDIS_TTL'),
     };
 
     /* ─────────────────────────────────────────
