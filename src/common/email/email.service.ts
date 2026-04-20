@@ -91,9 +91,9 @@ export class EmailService implements OnModuleInit {
         client.authentications['api-key'].apiKey = this.config.email.brevo.apiKey;
         this.brevoClient = new SibApiV3Sdk.TransactionalEmailsApi();
 
-        if (!this.isProduction) {
-            this.transporter = this.createSmtpTransporter();
-        }
+        // if (!this.isProduction) {
+        this.transporter = this.createSmtpTransporter();
+        // }
     }
 
     /* ─────────────────────────────────────────
@@ -104,9 +104,9 @@ export class EmailService implements OnModuleInit {
         this.loadSubjects();
         this.loadTemplates();
 
-        if (!this.isProduction) {
-            await this.verifySmtpTransporter();
-        }
+        // if (!this.isProduction) {
+        //     await this.verifySmtpTransporter();
+        // }
     }
 
     /* ─────────────────────────────────────────
@@ -122,9 +122,7 @@ export class EmailService implements OnModuleInit {
         );
 
         try {
-            return this.isProduction
-                ? await this.sendWithBrevo(options.to, subject, html)
-                : await this.sendWithSmtp(options, subject, html);
+            return await this.sendWithSmtp(options, subject, html);
         } catch (err: any) {
             this.logger.error(`Failed to send email to ${options.to}: ${err.message}`, err.stack);
             throw new InternalServerErrorException('Failed to send email');
@@ -242,7 +240,7 @@ export class EmailService implements OnModuleInit {
                 });
                 count++;
             });
-        this.logger.log("DEBUG TEMPLATES: ", this.config.email.brevo.apiKey);
+        this.logger.log('DEBUG TEMPLATES: ', this.config.email.brevo.apiKey);
         this.logger.log(`${count} template(s) email chargé(s)`);
     }
 
