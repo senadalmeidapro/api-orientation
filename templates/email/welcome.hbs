@@ -1,192 +1,189 @@
-<html lang='{{lang}}'>
+<!DOCTYPE html>
+<html lang='{{#if lang}}{{lang}}{{else}}fr{{/if}}'>
     <head>
         <meta charset='UTF-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1.0' />
         <meta http-equiv='X-UA-Compatible' content='ie=edge' />
-        <title>{{title}}</title>
+        <title>{{#if title}}{{title}}{{else}}Bienvenue sur {{appName}}{{/if}}</title>
         <style>
-            .email-container {
-                max-width: 600px;
-                margin: 0 auto;
-                font-family: Arial, Helvetica, sans-serif;
-                background-color: #ffffff;
-                border: 1px solid #eaeaea;
-                border-radius: 8px;
-                overflow: hidden;
+            body,
+            table,
+            td,
+            a {
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
             }
-            .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 30px 20px;
-                text-align: center;
-                color: white;
+            table,
+            td {
+                mso-table-lspace: 0pt;
+                mso-table-rspace: 0pt;
             }
-            .content {
-                padding: 30px 20px;
-                color: #333333;
-                line-height: 1.6;
+            table {
+                border-collapse: collapse !important;
             }
-            .button {
-                display: inline-block;
-                background-color: #667eea;
-                color: #ffffff !important;
+            img {
+                border: 0;
+                outline: none;
                 text-decoration: none;
-                padding: 14px 30px;
-                border-radius: 6px;
-                font-weight: bold;
-                margin: 20px 0;
-                border: 1px solid #5a67d8;
+                -ms-interpolation-mode: bicubic;
             }
-            .footer {
-                background-color: #f8f9fa;
-                padding: 20px;
-                text-align: center;
-                font-size: 13px;
-                color: #6c757d;
-                border-top: 1px solid #dee2e6;
-            }
-            .link {
-                color: #667eea;
-                word-break: break-all;
-            }
-            .feature-box {
-                background-color: #f0f4ff;
-                border-radius: 8px;
-                padding: 20px;
-                margin: 20px 0;
-            }
-            .feature-item {
-                margin: 10px 0;
-            }
-            @media only screen and (max-width: 480px) {
-                .email-container {
+            @media only screen and (max-width: 640px) {
+                .email-shell {
                     width: 100% !important;
                 }
-                .button {
-                    display: block;
-                    text-align: center;
+                .mobile-padding {
+                    padding-left: 20px !important;
+                    padding-right: 20px !important;
+                }
+                .button-block {
+                    display: block !important;
+                    width: 100% !important;
+                    box-sizing: border-box;
                 }
             }
         </style>
     </head>
-    <body
-        style='margin: 0; padding: 20px; background-color: #f4f6f9; font-family: Arial, Helvetica, sans-serif;'
-    >
+    <body style='margin: 0; padding: 0; background-color: #f7f9fc;'>
+        <div style='display: none; max-height: 0; overflow: hidden; opacity: 0;'>
+            Bienvenue sur {{appName}}. Votre compte est pret.
+        </div>
+
         <table
+            role='presentation'
             width='100%'
             cellpadding='0'
             cellspacing='0'
             border='0'
-            style='background-color: #f4f6f9;'
+            style='background-color: #f7f9fc;'
         >
             <tr>
-                <td align='center' style='padding: 20px;'>
-                    <div class='email-container'>
-                        <!-- En-tête -->
-                        <div class='header'>
-                            <h1 style='margin: 0; font-size: 28px;'>Bienvenue chez
-                                {{appName}}
-                                !</h1>
-                            <p style='margin: 10px 0 0; opacity: 0.9;'>Nous sommes ravis de vous
-                                compter parmi nous</p>
-                        </div>
+                <td align='center' style='padding: 24px 12px;'>
+                    <table
+                        role='presentation'
+                        width='100%'
+                        cellpadding='0'
+                        cellspacing='0'
+                        border='0'
+                        class='email-shell'
+                        style='max-width: 640px; border: 1px solid #e2e8f0; background-color: #ffffff; border-radius: 18px; overflow: hidden;'
+                    >
+                        <tr>
+                            <td
+                                class='mobile-padding'
+                                style='padding: 32px 36px; text-align: center; color: #ffffff; background-color: #00478d; background-image: linear-gradient(135deg, #00478d 0%, #005eb8 100%);'
+                            >
+                                <p style='margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 14px; letter-spacing: 0.4px; color: #dbeafe;'>{{appName}}</p>
+                                <h1 style='margin: 12px 0 0; font-family: Arial, Helvetica, sans-serif; font-size: 30px; line-height: 1.2; font-weight: 700; color: #ffffff;'>Bienvenue !</h1>
+                                <p style='margin: 10px 0 0; font-family: Arial, Helvetica, sans-serif; font-size: 15px; line-height: 1.6; color: #d9e7ff;'>Votre espace est pret, passons a la premiere etape.</p>
+                            </td>
+                        </tr>
 
-                        <!-- Contenu principal -->
-                        <div class='content'>
-                            {{#if fullName}}
-                                <p>Bonjour <strong>{{fullName}}</strong>,</p>
-                            {{else}}
-                                <p>Bonjour,</p>
-                            {{/if}}
-
-                            <p>Merci d'avoir rejoint
-                                {{appName}}
-                                ! Votre compte a été créé avec succès et vous pouvez dès maintenant
-                                profiter de tous nos services.</p>
-
-                            <!-- Bouton d'accès -->
-                            <div style='text-align: center;'>
-                                <a
-                                    href='{{dashboardUrl}}'
-                                    class='button'
-                                    style='color: #ffffff;'
-                                >Accéder à mon compte</a>
-                            </div>
-
-                            <!-- Section fonctionnalités (optionnelle) -->
-                            {{#if features}}
-                                <div class='feature-box'>
-                                    <h3 style='margin-top: 0; color: #2c3e50;'>🎯 Découvrez ce que
-                                        vous pouvez faire :</h3>
-                                    {{#each features}}
-                                        <div class='feature-item'>
-                                            <strong>✓ {{this.title}}</strong><br />
-                                            <span
-                                                style='font-size: 14px; color: #555;'
-                                            >{{this.description}}</span>
-                                        </div>
-                                    {{/each}}
-                                </div>
-                            {{/if}}
-
-                            {{#if verificationLink}}
-                                <p>Pour sécuriser votre compte, veuillez vérifier votre adresse
-                                    email :</p>
-                                <div style='text-align: center;'>
-                                    <a
-                                        href='{{verificationLink}}'
-                                        style='color: #667eea; text-decoration: underline;'
-                                    >Vérifier mon email</a>
-                                </div>
-                            {{/if}}
-
-                            <hr
-                                style='border: none; border-top: 1px solid #eaeaea; margin: 30px 0;'
-                            />
-
-                            <p style='font-size: 14px;'>
-                                {{#if supportEmail}}
-                                    Si vous avez des questions, n'hésitez pas à nous contacter à
-                                    <a
-                                        href='mailto:{{supportEmail}}'
-                                        style='color: #667eea;'
-                                    >{{supportEmail}}</a>.
+                        <tr>
+                            <td
+                                class='mobile-padding'
+                                style='padding: 34px 36px 24px; font-family: Arial, Helvetica, sans-serif; color: #1f2937; font-size: 16px; line-height: 1.65;'
+                            >
+                                {{#if fullName}}
+                                    <p style='margin: 0 0 16px;'>Bonjour <strong>{{fullName}}</strong>,</p>
                                 {{else}}
-                                    N'hésitez pas à explorer votre espace personnel et à nous faire
-                                    part de vos retours.
+                                    <p style='margin: 0 0 16px;'>Bonjour,</p>
                                 {{/if}}
-                            </p>
-                        </div>
 
-                        <!-- Pied de page -->
-                        <div class='footer'>
-                            <p style='margin: 5px 0;'>&copy;
-                                {{currentYear}}
-                                {{appName}}. Tous droits réservés.</p>
-                            <p style='margin: 5px 0;'>
-                                <a href='{{privacyPolicyUrl}}' style='color: #667eea;'>Politique de
-                                    confidentialité</a>
-                                |
-                                <a href='{{contactUrl}}' style='color: #667eea;'>Contact</a>
-                            </p>
-                            <p style='margin: 15px 0 0; font-size: 12px;'>
-                                Vous recevez cet email car vous venez de créer un compte sur
-                                {{appName}}.<br />
-                                {{#if unsubscribeUrl}}<a
-                                        href='{{unsubscribeUrl}}'
-                                        style='color: #667eea;'
-                                    >Se désabonner</a>{{/if}}
-                            </p>
-                        </div>
-                    </div>
+                                <p style='margin: 0 0 20px;'>Merci d'avoir rejoint {{appName}}. Votre compte est actif et vous pouvez maintenant acceder a votre espace personnel.</p>
+
+                                {{#if dashboardUrl}}
+                                    <table role='presentation' cellpadding='0' cellspacing='0' border='0' align='center' style='margin: 10px auto 26px;'>
+                                        <tr>
+                                            <td align='center' style='border-radius: 999px; background-color: #00478d;'>
+                                                <a
+                                                    href='{{dashboardUrl}}'
+                                                    class='button-block'
+                                                    style='display: inline-block; padding: 14px 30px; border-radius: 999px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; line-height: 1.2; text-decoration: none; color: #ffffff; background-color: #00478d; background-image: linear-gradient(135deg, #00478d 0%, #005eb8 100%);'
+                                                >Acceder a mon compte</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                {{/if}}
+
+                                {{#if features}}
+                                    <table
+                                        role='presentation'
+                                        width='100%'
+                                        cellpadding='0'
+                                        cellspacing='0'
+                                        border='0'
+                                        style='margin: 0 0 24px; background-color: #f2f4f7; border: 1px solid #dbe2ea; border-radius: 12px;'
+                                    >
+                                        <tr>
+                                            <td style='padding: 18px 18px 8px;'>
+                                                <p style='margin: 0 0 10px; font-family: Arial, Helvetica, sans-serif; font-size: 15px; font-weight: 700; color: #0f172a;'>Decouvrez vos prochaines etapes :</p>
+                                                {{#each features}}
+                                                    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='margin: 0 0 10px;'>
+                                                        <tr>
+                                                            <td style='font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.55; color: #334155;'>
+                                                                <strong style='color: #0f172a;'>{{this.title}}</strong><br />
+                                                                {{this.description}}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                {{/each}}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                {{/if}}
+
+                                {{#if verificationLink}}
+                                    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='margin: 0 0 22px;'>
+                                        <tr>
+                                            <td style='padding: 14px 16px; background-color: #f8fafc; border: 1px solid #dbe2ea; border-radius: 10px;'>
+                                                <p style='margin: 0 0 8px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #334155;'>Pour securiser votre compte, vous pouvez aussi verifier votre adresse email :</p>
+                                                <p style='margin: 0; font-family: Arial, Helvetica, sans-serif; font-size: 13px; word-break: break-all;'>
+                                                    <a href='{{verificationLink}}' style='color: #005eb8; text-decoration: underline;'>{{verificationLink}}</a>
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                {{/if}}
+
+                                <p style='margin: 0; font-size: 14px; color: #475569;'>
+                                    {{#if supportEmail}}
+                                        Besoin d'aide ? Ecrivez-nous a
+                                        <a href='mailto:{{supportEmail}}' style='color: #005eb8; text-decoration: none;'>{{supportEmail}}</a>.
+                                    {{else}}
+                                        N'hesitez pas a explorer votre espace et a nous partager vos retours.
+                                    {{/if}}
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td
+                                class='mobile-padding'
+                                style='padding: 22px 36px 28px; text-align: center; background-color: #f2f4f7; border-top: 1px solid #e2e8f0; font-family: Arial, Helvetica, sans-serif;'
+                            >
+                                <p style='margin: 0; font-size: 13px; line-height: 1.6; color: #64748b;'>&copy; {{currentYear}} {{appName}}. Tous droits reserves.</p>
+
+                                <p style='margin: 10px 0 0; font-size: 13px; line-height: 1.6; color: #64748b;'>
+                                    {{#if privacyPolicyUrl}}
+                                        <a href='{{privacyPolicyUrl}}' style='color: #005eb8; text-decoration: none;'>Politique de confidentialite</a>
+                                    {{/if}}
+                                    {{#if contactUrl}}
+                                        {{#if privacyPolicyUrl}} <span style='color: #94a3b8;'>&bull;</span> {{/if}}
+                                        <a href='{{contactUrl}}' style='color: #005eb8; text-decoration: none;'>Contact</a>
+                                    {{/if}}
+                                </p>
+
+                                {{#if unsubscribeUrl}}
+                                    <p style='margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: #64748b;'>
+                                        Vous recevez cet email suite a la creation de votre compte.
+                                        <a href='{{unsubscribeUrl}}' style='color: #005eb8; text-decoration: none;'>Se desabonner</a>
+                                    </p>
+                                {{/if}}
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
         </table>
-
-        <div style='display: none; max-height: 0; overflow: hidden;'>
-            Bienvenue chez
-            {{appName}}
-            ! Accédez à votre compte :
-            {{dashboardUrl}}
-        </div>
     </body>
 </html>

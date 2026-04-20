@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Post, Query, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Get,
+    Post,
+    Query,
+    Req,
+    Res,
+    UnauthorizedException,
+    UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
 
 import { JwtAuthGuard } from './guards/jwt.guard';
@@ -41,7 +51,10 @@ const THROTTLE_AUTH_SENSITIVE = { default: { limit: 10, ttl: 60 } } as const;
 // @ApiStandardErrorResponses()
 @Controller('api/v1/auth')
 export class AuthController {
-    constructor(private readonly auth: AuthService, private readonly config: ConfigService) {}
+    constructor(
+        private readonly auth: AuthService,
+        private readonly config: ConfigService,
+    ) {}
 
     // =========================
     // REGISTER

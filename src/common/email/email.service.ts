@@ -332,7 +332,10 @@ export class EmailService implements OnModuleInit {
                 `${recipient.firstName ?? ''} ${recipient.lastName ?? ''}`.trim(),
             email: recipient.email,
             appName: this.config.app.name,
+            // appLogo: this.config.app.appLogo,
             supportEmail: this.config.app.supportEmail,
+            privacyPolicyUrl: this.config.app.frontUrl + '/privacy-policy',
+            contactUrl: this.config.app.frontUrl + '/contact',
             currentYear: new Date().getFullYear(),
             ...extra,
         };

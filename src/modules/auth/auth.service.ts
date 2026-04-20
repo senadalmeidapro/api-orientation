@@ -253,7 +253,7 @@ export class AuthService {
                     lastName: user.last_name ?? '',
                     fullName: user.first_name + ' ' + user.last_name,
                 },
-                `${this.config.app.url}/reset-password?token=${token}`,
+                `${this.config.app.frontUrl}/auth/reset-password?token=${token}`,
             );
         }
 
