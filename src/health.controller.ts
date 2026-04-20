@@ -3,12 +3,13 @@ import {
     Get,
     Logger,
     ServiceUnavailableException,
+    HttpCode,
     HttpStatus,
     Res,
     Inject,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import type { Cache } from 'cache-manager';
 import * as os from 'os';
@@ -18,7 +19,7 @@ import { PrismaService } from './prisma/prisma.service';
 import { ConfigService } from './common/config/config.service';
 
 /* ─────────────────────────────────────────
- * TYPES
+ * TYPES — réponses
  * ───────────────────────────────────────── */
 
 type ServiceStatus = 'ok' | 'degraded' | 'down';
@@ -61,6 +62,27 @@ interface HealthResponse {
     system: SystemInfo;
 }
 
+interface LiveResponse {
+    status: 'alive';
+    timestamp: string;
+}
+
+interface ReadyResponse {
+    status: 'ready';
+    timestamp: string;
+}
+
+/* ─────────────────────────────────────────
+ * TYPES — erreurs
+ * ───────────────────────────────────────── */
+
+interface NotReadyError {
+    status: 'not_ready';
+    reason: 'database_unavailable';
+    message: string | undefined;
+    timestamp: string;
+}
+
 /* ─────────────────────────────────────────
  * CONSTANTES
  * ───────────────────────────────────────── */
@@ -68,7 +90,7 @@ interface HealthResponse {
 const MEMORY_WARN_THRESHOLD = 0.8;
 const MEMORY_CRIT_THRESHOLD = 0.95;
 const DB_WARN_LATENCY_MS = 200;
-const DB_CRIT_LATENCY_MS = 1000;
+const DB_CRIT_LATENCY_MS = 1_000;
 const CACHE_WARN_LATENCY_MS = 50;
 const CACHE_CRIT_LATENCY_MS = 500;
 const CACHE_PROBE_KEY = '__health_probe__';
@@ -94,15 +116,18 @@ export class HealthController {
 
     /* ─────────────────────────────────────
      * GET /api/v1/health
+     * Status 200 → ok | degraded
+     * Status 503 → down
      * ───────────────────────────────────── */
 
     @ApiOperation({
         summary: 'Health check complet',
-        description:
-            "Retourne l'état opérationnel de l'API : DB, cache, mémoire et métriques système.",
+        description: "État opérationnel de l'API : DB, cache, mémoire et métriques système.",
     })
+    @ApiResponse({ status: 200, description: 'Service opérationnel ou dégradé.' })
+    @ApiResponse({ status: 503, description: 'Service indisponible.' })
     @Get()
-    async health(@Res() res: Response): Promise<void> {
+    async health(@Res({ passthrough: true }) res: Response): Promise<HealthResponse> {
         const [dbCheck, cacheCheck, memCheck] = await Promise.all([
             this.checkDatabase(),
             this.checkCache(),
@@ -130,60 +155,62 @@ export class HealthController {
             system: this.getSystemInfo(),
         };
 
-        const httpStatus =
-            overallStatus === 'down' ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.OK;
-
         if (overallStatus === 'down') {
             this.logger.error('Healthcheck FAILED', JSON.stringify(payload, null, 2));
+            res.status(HttpStatus.SERVICE_UNAVAILABLE);
         } else if (overallStatus === 'degraded') {
             this.logger.warn('Healthcheck DEGRADED', JSON.stringify(payload, null, 2));
         }
 
-        res.status(httpStatus).json(payload);
+        return payload;
     }
 
     /* ─────────────────────────────────────
      * GET /api/v1/health/live
+     * Status 200 → process Node vivant
      * ───────────────────────────────────── */
 
     @ApiOperation({
         summary: 'Liveness probe',
-        description:
-            'Railway / Kubernetes liveness probe. Répond 200 si le process Node est vivant.',
+        description: 'Railway / Kubernetes liveness probe. 200 si le process Node est vivant.',
     })
+    @ApiResponse({ status: 200, description: 'Process vivant.' })
+    @HttpCode(HttpStatus.OK)
     @Get('live')
-    live(): { status: 'alive'; timestamp: string } {
+    live(): LiveResponse {
         return { status: 'alive', timestamp: new Date().toISOString() };
     }
 
     /* ─────────────────────────────────────
      * GET /api/v1/health/ready
+     * Status 200 → DB joignable
+     * Status 503 → DB injoignable (NotReadyError)
      * ───────────────────────────────────── */
 
     @ApiOperation({
         summary: 'Readiness probe',
-        description: 'Railway / Kubernetes readiness probe. Répond 200 si la DB est joignable.',
+        description: 'Railway / Kubernetes readiness probe. 200 si la DB est joignable.',
     })
+    @ApiResponse({ status: 200, description: 'Service prêt.' })
+    @ApiResponse({ status: 503, description: 'Base de données injoignable.' })
+    @HttpCode(HttpStatus.OK)
     @Get('ready')
-    async ready(@Res() res: Response): Promise<void> {
+    async ready(): Promise<ReadyResponse> {
         const db = await this.checkDatabase();
 
-        // ← Ajoute ça temporairement pour voir l'erreur exacte dans les logs Railway
-        this.logger.log(`Ready check → DB status: ${db.status}, message: ${db.message}`);
+        this.logger.log(`Ready check → status: ${db.status}, message: ${db.message ?? 'none'}`);
 
         if (db.status === 'down') {
-            throw new ServiceUnavailableException({
+            const error: NotReadyError = {
                 status: 'not_ready',
                 reason: 'database_unavailable',
                 message: db.message,
                 timestamp: new Date().toISOString(),
-            });
+            };
+            throw new ServiceUnavailableException(error);
         }
 
-        res.status(HttpStatus.OK).json({
-            status: 'ready',
-            timestamp: new Date().toISOString(),
-        });
+        return { status: 'ready', timestamp: new Date().toISOString() };
     }
 
     /* ─────────────────────────────────────
@@ -220,10 +247,7 @@ export class HealthController {
     private async checkCache(): Promise<CheckResult> {
         const t0 = Date.now();
         try {
-            // SET
             await this.cache.set(CACHE_PROBE_KEY, CACHE_PROBE_VALUE, CACHE_PROBE_TTL_MS);
-
-            // GET + vérification round-trip
             const value = await this.cache.get<string>(CACHE_PROBE_KEY);
             const latencyMs = Date.now() - t0;
 
@@ -247,7 +271,6 @@ export class HealthController {
             return { status: 'ok', latencyMs };
         } catch (err: unknown) {
             this.logger.warn(`Cache check failed: ${this.extractMessage(err)}`);
-            // Cache dégradé ≠ down (non bloquant)
             return { status: 'degraded', latencyMs: Date.now() - t0, message: 'Cache unreachable' };
         }
     }
