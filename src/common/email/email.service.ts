@@ -242,7 +242,7 @@ export class EmailService implements OnModuleInit {
                 });
                 count++;
             });
-        this.logger.log("DEBUG TEMPLATES: ", this.templates);
+        this.logger.log("DEBUG TEMPLATES: ", this.config.email.brevo.apiKey);
         this.logger.log(`${count} template(s) email chargé(s)`);
     }
 
