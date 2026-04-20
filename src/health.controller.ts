@@ -168,6 +168,9 @@ export class HealthController {
     async ready(@Res() res: Response): Promise<void> {
         const db = await this.checkDatabase();
 
+        // ← Ajoute ça temporairement pour voir l'erreur exacte dans les logs Railway
+        this.logger.log(`Ready check → DB status: ${db.status}, message: ${db.message}`);
+
         if (db.status === 'down') {
             throw new ServiceUnavailableException({
                 status: 'not_ready',
