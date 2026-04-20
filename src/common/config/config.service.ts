@@ -5,75 +5,82 @@ import 'dotenv/config';
 export class ConfigService {
     private readonly logger = new Logger(ConfigService.name);
 
-    /* =====================================================
-     * ENGINE / NODE CONFIGURATION
-     * ===================================================== */
+    /* ─────────────────────────────────────────
+     * ENGINE
+     * ───────────────────────────────────────── */
     readonly engine = {
         nodeEnv: this.str('NODE_ENV'),
         nodeVersion: this.str('NODE_VERSION'),
         npmVersion: this.str('NPM_VERSION'),
     };
-    /* =====================================================
-     * APP / SERVER CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * APP / SERVER
+     * ───────────────────────────────────────── */
     readonly app = {
         name: this.str('APP_NAME'),
         env: this.str('APP_ENV'),
-        host: this.strFrom(['APP_HOST', 'HOST'], '0.0.0.0'),
-        port: this.numFrom(['APP_PORT', 'PORT'], 3000),
+        version: this.str('APP_VERSION'),
+        description: this.str('APP_DESCRIPTION'),
+        host: this.str('APP_HOST', '0.0.0.0'),
+        port: this.num('APP_PORT', 3000),
         url: this.str('APP_URL'),
-        frontUrl: this.str('FRONT_URL'),
+        frontendUrl: this.str('FRONTEND_URL'),
         debug: this.bool('APP_DEBUG'),
         local: this.str('APP_LOCAL'),
-        backUrl: this.str('BACK_URL'),
-        supportEmail: this.str('SUPPORT_EMAIL'),
         fakerLocal: this.str('APP_FAKER_LOCAL'),
         fallbackLocal: this.str('APP_FALLBACK_LOCAL'),
+        supportEmail: this.str('SUPPORT_EMAIL'),
+        trustProxy: this.bool('TRUST_PROXY'),
+        logLevel: this.str('LOG_LEVEL', 'info'),
     };
-    /* =====================================================
-     * SECURITY CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * SECURITY / CORS
+     * ───────────────────────────────────────── */
     readonly cors = {
         origin: this.list('CORS_ORIGIN'),
         credentials: this.bool('CORS_CREDENTIALS'),
-        sessionKey: this.str('SECURE_SESSION_KEY'),
+        maxAge: this.num('CORS_MAX_AGE', 600),
         rateLimit: {
             windowMs: this.num('RATE_LIMIT_WINDOW_MS'),
             max: this.num('RATE_LIMIT_MAX'),
         },
+        sessionKey: this.str('SECURE_SESSION_KEY'),
         csrfEnabled: this.bool('CSRF_ENABLED'),
     };
-    /* =====================================================
-     * SECURITY CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * ADMIN
+     * ───────────────────────────────────────── */
     readonly admin = {
         email: this.str('ADMIN_EMAIL'),
         key: this.str('ADMIN_KEY'),
     };
-    /* =====================================================
-     * DATABASE CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * DATABASE
+     * ───────────────────────────────────────── */
     readonly database = {
-        postgresql: {
-            url: this.str('DATABASE_URL'),
-        },
-        mongodb: {},
+        url: this.str('DATABASE_URL'),
     };
-    /* =====================================================
-     * AUTH / JWT CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * JWT
+     * ───────────────────────────────────────── */
     readonly jwt = {
-        secret: this.str('JWT_ACCESS_SECRET'),
-        expiresIn: this.num('JWT_ACCESS_EXPIRES_IN'),
-        saltRounds: this.num('JWT_SALT_ROUNDS'),
+        accessSecret: this.str('JWT_ACCESS_SECRET'),
+        accessExpiresIn: this.num('JWT_ACCESS_EXPIRES_IN'),
         refreshSecret: this.str('JWT_REFRESH_SECRET'),
         refreshExpiresIn: this.num('JWT_REFRESH_EXPIRES_IN'),
+        saltRounds: this.num('JWT_SALT_ROUNDS'),
         issuer: this.str('JWT_ISSUER'),
         audience: this.str('JWT_AUDIENCE'),
     };
-    /* =====================================================
-     * OAUTH PROVIDERS
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * OAUTH
+     * ───────────────────────────────────────── */
     readonly oauth = {
         google: {
             clientId: this.str('GOOGLE_CLIENT_ID'),
@@ -81,45 +88,44 @@ export class ConfigService {
             callbackUrl: this.str('GOOGLE_CALLBACK_URL'),
         },
     };
-    /* =====================================================
-     * EMAIL / SMTP CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * EMAIL — SMTP (dev) + Brevo (prod)
+     * ───────────────────────────────────────── */
     readonly email = {
-        apiKey: this.str('BREVO_API_KEY'),
+        // SMTP
         host: this.str('EMAIL_HOST'),
         port: this.num('EMAIL_PORT'),
-        useTLS: this.bool('EMAIL_USE_TLS'),
         secure: this.bool('EMAIL_SECURE'),
+        useTLS: this.bool('EMAIL_USE_TLS'),
         user: this.str('EMAIL_USER'),
         password: this.str('EMAIL_PASSWORD'),
-        from: this.str('EMAIL_FROM'),
-        connectionTimeout: this.num('EMAIL_CONNECTION_TIMEOUT'),
-        greetingTimeout: this.num('EMAIL_GREETING_TIMEOUT'),
-        socketTimeout: this.num('EMAIL_SOCKET_TIMEOUT'),
+        fromAddress: this.str('EMAIL_FROM_ADDRESS'),
+        fromName: this.str('EMAIL_FROM_NAME'),
+        // helper formatté pour nodemailer : "Orient BJ <email@...>"
+        get from() {
+            return `${this.fromName} <${this.fromAddress}>`;
+        },
         templatePath: this.str('EMAIL_TEMPLATE_PATH'),
         defaultLanguage: this.str('EMAIL_DEFAULT_LANGUAGE'),
         logging: this.bool('EMAIL_LOGGING'),
+        connectionTimeout: this.num('EMAIL_CONNECTION_TIMEOUT'),
+        greetingTimeout: this.num('EMAIL_GREETING_TIMEOUT'),
+        socketTimeout: this.num('EMAIL_SOCKET_TIMEOUT'),
+        // Brevo API
+        brevo: {
+            apiKey: this.str('BREVO_API_KEY'),
+            baseUrl: this.str('BREVO_BASE_URL'),
+            timeoutMs: this.num('BREVO_TIMEOUT_MS'),
+            retryMaxAttempts: this.num('BREVO_RETRY_MAX_ATTEMPTS'),
+            retryBaseDelayMs: this.num('BREVO_RETRY_BASE_DELAY_MS'),
+            retryMaxDelayMs: this.num('BREVO_RETRY_MAX_DELAY_MS'),
+        },
     };
-    /* =====================================================
-     * STORAGE / CLOUD CONFIGURATION
-     * ===================================================== */
-    // readonly storage = {
-    //     uploadDir: this.str('UPLOAD_DIR'),
-    //     maxFileSizeMb: this.num('MAX_FILE_SIZE_MB'),
-    //     cloudinary: {
-    //         url: this.str('CLOUDINARY_URL'),
-    //         cloudName: this.str('CLOUDINARY_CLOUD_NAME'),
-    //         apiKey: this.str('CLOUDINARY_API_KEY'),
-    //         apiSecret: this.str('CLOUDINARY_API_SECRET'),
-    //         secure: this.bool('CLOUDINARY_SECURE'),
-    //         validate: this.bool('CLOUDINARY_VALIDATE'),
-    //         optimize: this.bool('CLOUDINARY_OPTIMIZE'),
-    //         transformations: this.bool('CLOUDINARY_TRANSFORMATIONS'),
-    //     },
-    // };
-    /* =====================================================
-     * CACHE / REDIS CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * REDIS
+     * ───────────────────────────────────────── */
     readonly redis = {
         url: this.str('REDIS_URL'),
         host: this.str('REDIS_HOST'),
@@ -128,9 +134,10 @@ export class ConfigService {
         db: this.num('REDIS_DB', 0),
         ttl: this.num('REDIS_TTL'),
     };
-    /* =====================================================
-     * PAYMENT PROVIDERS
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * PAIEMENT
+     * ───────────────────────────────────────── */
     readonly payment = {
         stripe: {
             secretKey: this.str('STRIPE_SECRET_KEY'),
@@ -155,28 +162,40 @@ export class ConfigService {
             webhook: this.str('PAYMENT_WEBHOOK_URL'),
         },
     };
-    /* =====================================================
-     * PDF / PUPPETEER CONFIGURATION
-     * ===================================================== */
+
+    /* ─────────────────────────────────────────
+     * PDF / PUPPETEER
+     * ───────────────────────────────────────── */
     readonly pdf = {
-        puppeteerExecutablePath: this.str('PUPPETEER_EXECUTABLE_PATH'),
+        executablePath: this.str('PUPPETEER_EXECUTABLE_PATH'),
         tempDir: this.str('PDF_TEMP_DIR'),
         pageSize: this.str('PDF_PAGE_SIZE'),
         margin: this.num('PDF_MARGIN'),
     };
 
-    /* =====================================================
-     * INTERNAL HELPERS
-     * ===================================================== */
+    /* ─────────────────────────────────────────
+     * IA / OPENAI
+     * ───────────────────────────────────────── */
+    readonly openai = {
+        apiKey: this.str('OPENAI_API_KEY'),
+        model: this.str('OPENAI_MODEL'),
+        baseUrl: this.str('OPENAI_BASE_URL'),
+        timeoutMs: this.num('OPENAI_TIMEOUT_MS'),
+        temperature: this.num('OPENAI_TEMPERATURE'),
+    };
+
+    /* ─────────────────────────────────────────
+     * HELPERS PRIVÉS
+     * ───────────────────────────────────────── */
     private str(key: string, def?: string): string {
         const value = process.env[key] ?? def;
-        if (!value) {
+        if (value === undefined || value === '') {
             const msg = `CONFIG → Missing env var: ${key}`;
             this.logger.error(msg);
             throw new Error(msg);
         }
         if (!process.env[key] && def !== undefined) {
-            this.logger.warn(`ENV ${key} missing, defaulting to ${def}`);
+            this.logger.warn(`ENV ${key} missing, defaulting to "${def}"`);
         }
         return value;
     }
@@ -214,63 +233,5 @@ export class ConfigService {
             .split(sep)
             .map((s) => s.trim())
             .filter(Boolean);
-    }
-
-    private optStr(key: string): string | undefined {
-        const value = process.env[key];
-        if (!value) {
-            return undefined;
-        }
-        return value;
-    }
-
-    private strFrom(keys: string[], def?: string): string {
-        for (const [index, key] of keys.entries()) {
-            const value = process.env[key];
-            if (!value) {
-                continue;
-            }
-            if (index > 0) {
-                this.logger.warn(`ENV ${keys[0]} missing, using ${key}`);
-            }
-            return value;
-        }
-
-        if (def !== undefined) {
-            this.logger.warn(`ENV ${keys.join(' / ')} missing, defaulting to ${def}`);
-            return def;
-        }
-
-        const msg = `CONFIG → Missing env var: ${keys.join(' / ')}`;
-        this.logger.error(msg);
-        throw new Error(msg);
-    }
-
-    private numFrom(keys: string[], def?: number): number {
-        for (const [index, key] of keys.entries()) {
-            const raw = process.env[key];
-            if (raw === undefined || raw.trim() === '') {
-                continue;
-            }
-            const value = Number(raw);
-            if (Number.isNaN(value)) {
-                const msg = `CONFIG → Invalid number for ${key}: ${raw}`;
-                this.logger.error(msg);
-                throw new Error(msg);
-            }
-            if (index > 0) {
-                this.logger.warn(`ENV ${keys[0]} missing, using ${key}`);
-            }
-            return value;
-        }
-
-        if (def !== undefined) {
-            this.logger.warn(`ENV ${keys.join(' / ')} missing, defaulting to ${def}`);
-            return def;
-        }
-
-        const msg = `CONFIG → Missing numeric env var: ${keys.join(' / ')}`;
-        this.logger.error(msg);
-        throw new Error(msg);
     }
 }

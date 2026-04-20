@@ -7,7 +7,7 @@ import { ConfigService } from '../common/config/config.service';
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
     constructor(private readonly config: ConfigService) {
         const adapter = new PrismaPg({
-            connectionString: config.database.postgresql.url,
+            connectionString: config.database.url,
         });
 
         super({ adapter });

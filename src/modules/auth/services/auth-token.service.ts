@@ -357,9 +357,9 @@ export class AuthTokenService {
 
     private getJwtSignOptions(tokenType: 'access' | 'refresh'): JwtSignOptions {
         return {
-            secret: tokenType === 'access' ? this.config.jwt.secret : this.config.jwt.refreshSecret,
+            secret: tokenType === 'access' ? this.config.jwt.accessSecret : this.config.jwt.refreshSecret,
             expiresIn: (tokenType === 'access'
-                ? this.config.jwt.expiresIn
+                ? this.config.jwt.accessExpiresIn
                 : this.config.jwt.refreshExpiresIn) as any,
             issuer: this.config.jwt.issuer,
             audience: this.config.jwt.audience,

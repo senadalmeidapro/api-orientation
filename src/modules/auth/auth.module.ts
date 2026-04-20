@@ -22,9 +22,9 @@ import { ConfigService } from '../../common/config/config.service';
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
-                secret: config.jwt.secret,
+                secret: config.jwt.accessSecret,
                 signOptions: {
-                    expiresIn: (config.jwt.expiresIn ?? 900) as any,
+                    expiresIn: (config.jwt.accessExpiresIn ?? 900) as any,
                     issuer: config.jwt.issuer ?? 'api-orientation-issue',
                     audience: 'api-orientation-audience',
                 },
