@@ -88,6 +88,7 @@ export class EmailService implements OnModuleInit {
 
         // Init client Brevo (utilisé en production)
         const client = SibApiV3Sdk.ApiClient.instance;
+        console.log("DEBUG EMAIL API KEY: ", this.config.email.brevo.apiKey);
         client.authentications['api-key'].apiKey = this.config.email.brevo.apiKey;
         this.brevoClient = new SibApiV3Sdk.TransactionalEmailsApi();
 
