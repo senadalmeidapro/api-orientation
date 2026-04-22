@@ -1,5 +1,5 @@
-import { PhaseType, RiasecType } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PhaseType, type Phase2Type, type RiasecType } from '@prisma/client';
+import type { PrismaService } from '../../prisma/prisma.service';
 
 /**
  * Configuration manuelle des profils multi‑RIASEC.
@@ -8,10 +8,10 @@ import { PrismaService } from '../../prisma/prisma.service';
  * Si une question n'apparaît pas dans cette configuration, elle recevra
  * automatiquement son profil principal (riasec_type_id) avec weight = 1.0.
  */
-const MANUAL_PROFILES: {
+const manualProfiles: {
     phase: PhaseType;
     questionId: number;
-    phase2Type?: 'OCCUPATIONS' | 'APTITUDES' | 'PERSONALITY'; // obligatoire pour Phase2
+    phase2Type?: Phase2Type; // obligatoire pour Phase2
     profiles: { riasecType: RiasecType; weight: number }[];
 }[] = [
     // ============================================================
@@ -1510,7 +1510,7 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
     let created = 0;
     let skipped = 0;
 
-    for (const item of MANUAL_PROFILES) {
+    for (const item of manualProfiles) {
         // Vérifier que la question existe bien (selon phase et éventuellement phase2Type)
         let exists = false;
         if (item.phase === PhaseType.PHASE1) {
@@ -1518,7 +1518,10 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
             exists = !!q;
         } else {
             const q = await prisma.phase2Question.findFirst({
-                where: { id: item.questionId, phase2_type: item.phase2Type as any },
+                where: {
+                    id: item.questionId,
+                    ...(item.phase2Type !== undefined ? { phase2Type: item.phase2Type } : {}),
+                },
             });
             exists = !!q;
         }
@@ -1546,7 +1549,7 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
             await prisma.questionProfile.create({
                 data: {
                     phase: item.phase,
-                    riasec_type: profile.riasecType,
+                    riasecType: profile.riasecType,
                     weight: profile.weight,
                     ...(item.phase === PhaseType.PHASE1
                         ? { phase1_question_id: item.questionId }

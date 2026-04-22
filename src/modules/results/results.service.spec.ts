@@ -1,7 +1,7 @@
 import { ResultsService } from './results.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { ScoringService } from '../scoring/scoring.service';
-import { BadgesService } from '../badges/badges.service';
+import type { ScoringService } from '../scoring/scoring.service';
+import type { BadgesService } from '../badges/badges.service';
 import { AssessmentStatus, AssessmentType } from '@prisma/client';
 
 const prisma = {

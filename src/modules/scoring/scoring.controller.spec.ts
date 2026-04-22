@@ -1,4 +1,4 @@
-import { ScoringService } from './scoring.service';
+import type { ScoringService } from './scoring.service';
 import { ScoringController } from './scoring.controller';
 
 describe('ScoringController', () => {

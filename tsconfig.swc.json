@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // SWC gère lui-même l'émission de design:paramtypes via son plugin
+    // @swc/plugin-transform-imports. isolatedModules peut donc être activé ici
+    // sans conflit avec emitDecoratorMetadata (lu par SWC, pas par tsc).
+    "isolatedModules": true,
+
+    // Pas d'emit depuis tsc en mode SWC — SWC s'en charge.
+    "noEmit": true
+  }
+}

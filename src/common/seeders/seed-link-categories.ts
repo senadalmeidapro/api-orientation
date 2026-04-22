@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { PrismaService } from '../../prisma/prisma.service';
+import type { PrismaService } from '../../prisma/prisma.service';
 
 type LinkSeedFile = {
     categories: LinkCategorySeed[];
@@ -46,8 +46,8 @@ export async function seedLinkCategories(prisma: PrismaService) {
 
             await prisma.link.upsert({
                 where: {
-                    category_id_title: {
-                        category_id: savedCategory.id,
+                    categoryId_title: {
+                        categoryId: savedCategory.id,
                         title: link.title,
                     },
                 },
@@ -56,7 +56,7 @@ export async function seedLinkCategories(prisma: PrismaService) {
                     note: link.note ?? null,
                 },
                 create: {
-                    category_id: savedCategory.id,
+                    categoryId: savedCategory.id,
                     title: link.title,
                     url: link.url ?? null,
                     note: link.note ?? null,

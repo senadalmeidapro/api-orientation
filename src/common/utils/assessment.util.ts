@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { AssessmentStatus, Phase2Type, PhaseType } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { AssessmentStatus, type Phase2Type, type PhaseType } from '@prisma/client';
+import type { PrismaService } from '../../prisma/prisma.service';
 
 type ResolveAssessmentOptions = {
     assessmentId?: string;
@@ -15,7 +15,7 @@ export async function resolveSessionAndAssessment(
     options: ResolveAssessmentOptions = {},
 ) {
     const session = await prisma.session.findUnique({
-        where: { session_token: sessionToken },
+        where: { sessionToken: sessionToken },
         include: { user: true },
     });
     if (!session) throw new NotFoundException('Session introuvable');
@@ -25,30 +25,30 @@ export async function resolveSessionAndAssessment(
         ? await prisma.assessment.findFirst({
               where: {
                   id: options.assessmentId,
-                  session_id: session.id,
-                  status: statusFilter ?? undefined,
+                  sessionId: session.id,
+                  ...(statusFilter ? { status: statusFilter } : {}),
               },
           })
         : await prisma.assessment.findFirst({
               where: {
-                  session_id: session.id,
-                  status: statusFilter ?? undefined,
-                  current_phase: options.phase ?? undefined,
+                  sessionId: session.id,
+                  ...(statusFilter ? { status: statusFilter } : {}),
+                  ...(options.phase ? { currentPhase: options.phase } : {}),
               },
-              orderBy: { started_at: 'desc' },
+              orderBy: { startedAt: 'desc' },
           });
 
     if (!assessment) {
         throw new NotFoundException('Aucun test actif pour cette session');
     }
 
-    if (options.phase && assessment.current_phase !== options.phase) {
+    if (options.phase && assessment.currentPhase !== options.phase) {
         throw new BadRequestException('Phase courante invalide pour cette requete');
     }
     if (
         options.section &&
-        assessment.current_section &&
-        assessment.current_section !== options.section
+        assessment.currentSection &&
+        assessment.currentSection !== options.section
     ) {
         throw new BadRequestException('Section courante invalide pour cette requete');
     }

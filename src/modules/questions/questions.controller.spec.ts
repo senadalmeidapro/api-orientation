@@ -1,4 +1,4 @@
-import { QuestionsService } from './questions.service';
+import type { QuestionsService } from './questions.service';
 import { QuestionsController } from './questions.controller';
 
 describe('QuestionsController', () => {

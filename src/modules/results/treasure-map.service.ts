@@ -7,6 +7,32 @@ import { StorageService } from '../media/storage.service';
 import { BadgesService } from '../badges/badges.service';
 import { randomUUID } from 'crypto';
 
+type TreasureMapRecommendation = {
+    rankPosition: number;
+    matchScore: number;
+    career: {
+        id: number;
+        name: string;
+        summary: string | null;
+        description: string;
+        category: string | null;
+        riasecCodes: RiasecType[];
+    };
+};
+
+type TreasureMapPayload = {
+    generatedAt: string;
+    phase1Code: string | null;
+    phase2Code: string | null;
+    phase1Scores: Prisma.JsonValue | null;
+    phase2Scores: Prisma.JsonValue | null;
+    sectionScores: Prisma.JsonValue | null;
+    consistencyLevel: string | null;
+    profileStrength: string | null;
+    strengths: string[];
+    recommendations: TreasureMapRecommendation[];
+};
+
 @Injectable()
 export class TreasureMapService {
     private readonly logger = new Logger(TreasureMapService.name);
@@ -31,12 +57,12 @@ export class TreasureMapService {
         if (!baseCode) return [];
         const weights = this.buildWeights(baseCode);
         const careers = await this.prisma.career.findMany({
-            where: { is_active: true },
+            where: { isActive: true },
         });
 
         const scored = careers
             .map((career) => {
-                const codes = career.riasec_codes;
+                const codes = career.riasecCodes;
                 let sum = 0;
                 let matched = 0;
                 for (const code of codes) {
@@ -48,7 +74,7 @@ export class TreasureMapService {
                 }
                 if (matched === 0) return { career, score: 0 };
                 const baseScore = Math.round(sum / Math.max(codes.length, 1));
-                const demandBoost = career.local_demand ? career.local_demand * 2 : 0;
+                const demandBoost = career.localDemand ? career.localDemand * 2 : 0;
                 return { career, score: baseScore + demandBoost };
             })
             .filter((c) => c.score > 0)
@@ -61,20 +87,20 @@ export class TreasureMapService {
             scored.map((item, index) =>
                 this.prisma.assessmentCareerRecommendation.upsert({
                     where: {
-                        result_id_career_id: {
-                            result_id: resultId,
-                            career_id: item.career.id,
+                        resultId_careerId: {
+                            resultId,
+                            careerId: item.career.id,
                         },
                     },
                     update: {
-                        match_score: Math.min(100, item.score),
-                        rank_position: index + 1,
+                        matchScore: Math.min(100, item.score),
+                        rankPosition: index + 1,
                     },
                     create: {
-                        result_id: resultId,
-                        career_id: item.career.id,
-                        match_score: Math.min(100, item.score),
-                        rank_position: index + 1,
+                        resultId,
+                        careerId: item.career.id,
+                        matchScore: Math.min(100, item.score),
+                        rankPosition: index + 1,
                     },
                 }),
             ),
@@ -87,10 +113,10 @@ export class TreasureMapService {
         }));
     }
 
-    private async generatePdfBuffer(mapData: any) {
+    private async generatePdfBuffer(mapData: TreasureMapPayload) {
         const doc = new PDFDocument({ margin: 50 });
         const chunks: Buffer[] = [];
-        doc.on('data', (chunk) => chunks.push(chunk));
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
 
         doc.fontSize(20).text('Carte au Tresor RIASEC', { align: 'center' });
         doc.moveDown();
@@ -117,25 +143,25 @@ export class TreasureMapService {
 
     async generate(sessionToken: string, assessmentId?: string, generatePdf = false) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken: sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = assessmentId
             ? await this.prisma.assessment.findFirst({
-                  where: { id: assessmentId, session_id: session.id },
+                  where: { id: assessmentId, sessionId: session.id },
               })
             : await this.prisma.assessment.findFirst({
-                  where: { session_id: session.id, status: AssessmentStatus.COMPLETED },
-                  orderBy: { completed_at: 'desc' },
+                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completedAt: 'desc' },
               });
         if (!assessment) {
             throw new NotFoundException('Aucun test disponible pour cette session');
         }
 
         let result = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessment.id },
+            where: { assessmentId: assessment.id },
         });
         if (!result) {
             if (assessment.status !== AssessmentStatus.COMPLETED) {
@@ -148,67 +174,67 @@ export class TreasureMapService {
         }
 
         const existingRecs = await this.prisma.assessmentCareerRecommendation.findMany({
-            where: { result_id: result.id },
+            where: { resultId: result.id },
             include: { career: true },
-            orderBy: { rank_position: 'asc' },
+            orderBy: { rankPosition: 'asc' },
             take: 6,
         });
 
         const recs = existingRecs.length
             ? existingRecs.map((r) => ({
-                  rankPosition: r.rank_position,
-                  matchScore: r.match_score,
+                  rankPosition: r.rankPosition,
+                  matchScore: r.matchScore,
                   career: r.career,
               }))
             : await this.computeRecommendations(
                   result.id,
-                  result.phase2_code ?? result.phase1_code ?? '',
+                  result.phase2Code ?? result.phase1Code ?? '',
                   6,
               );
 
         const mapData = {
             generatedAt: new Date().toISOString(),
-            phase1_code: result.phase1_code,
-            phase2_code: result.phase2_code,
-            phase1_scores: result.phase1_scores,
-            phase2_scores: result.phase2_scores,
-            section_scores: result.section_scores,
-            consistency_level: result.consistency_level,
-            profile_strength: result.profile_strength,
+            phase1Code: result.phase1Code,
+            phase2Code: result.phase2Code,
+            phase1Scores: result.phase1Scores,
+            phase2Scores: result.phase2Scores,
+            sectionScores: result.sectionScores,
+            consistencyLevel: result.consistencyLevel,
+            profileStrength: result.profileStrength,
             strengths: result.strengths,
             recommendations: recs.map((r) => ({
-                rank_position: r.rankPosition,
-                match_score: r.matchScore,
+                rankPosition: r.rankPosition,
+                matchScore: r.matchScore,
                 career: {
                     id: r.career.id,
                     name: r.career.name,
                     summary: r.career.summary,
                     description: r.career.description,
                     category: r.career.category,
-                    riasec_codes: r.career.riasec_codes,
+                    riasecCodes: r.career.riasecCodes,
                 },
             })),
-        };
+        } satisfies TreasureMapPayload;
 
-        let pdfUrl: string | undefined;
+        let pdfUrl: string | null = null;
         if (generatePdf) {
             const buffer = await this.generatePdfBuffer(mapData);
             pdfUrl = await this.storage.uploadBuffer(buffer, 'application/pdf');
         }
 
-        const updateData: { map_data: Prisma.InputJsonValue; pdf_url?: string } = {
-            map_data: mapData as Prisma.InputJsonValue,
+        const updateData: Prisma.TreasureMapUpdateInput = {
+            mapData: mapData as Prisma.InputJsonValue,
+            ...(generatePdf ? { pdfUrl } : {}),
         };
-        if (generatePdf) updateData.pdf_url = pdfUrl;
 
         const treasureMap = await this.prisma.treasureMap.upsert({
-            where: { assessment_id: assessment.id },
+            where: { assessmentId: assessment.id },
             update: updateData,
             create: {
-                assessment_id: assessment.id,
-                map_data: mapData as Prisma.InputJsonValue,
-                pdf_url: pdfUrl,
-                share_token: randomUUID(),
+                assessmentId: assessment.id,
+                mapData: mapData as Prisma.InputJsonValue,
+                pdfUrl,
+                shareToken: randomUUID(),
             },
         });
 
@@ -219,14 +245,14 @@ export class TreasureMapService {
 
     async getByShareToken(shareToken: string) {
         const map = await this.prisma.treasureMap.findUnique({
-            where: { share_token: shareToken },
+            where: { shareToken: shareToken },
         });
         if (!map) throw new NotFoundException('Carte introuvable');
         await this.prisma.treasureMap.update({
             where: { id: map.id },
             data: {
-                view_count: { increment: 1 },
-                last_viewed_at: new Date(),
+                viewCount: { increment: 1 },
+                lastViewedAt: new Date(),
             },
         });
         return map;
@@ -234,14 +260,14 @@ export class TreasureMapService {
 
     async getBySessionToken(sessionToken: string) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const map = await this.prisma.treasureMap.findFirst({
-            where: { assessment: { session_id: session.id } },
-            orderBy: { created_at: 'desc' },
+            where: { assessment: { sessionId: session.id } },
+            orderBy: { createdAt: 'desc' },
         });
         if (!map) throw new NotFoundException('Carte introuvable');
         return map;

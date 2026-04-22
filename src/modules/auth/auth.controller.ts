@@ -5,21 +5,16 @@ import {
     Post,
     Query,
     Req,
-    Res,
     UnauthorizedException,
     UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 
 import { JwtAuthGuard } from './guards/jwt.guard';
-import { Public } from '../../common/decorators/public.decorator';
+import { publicDecorator } from '../../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 
 import {
-    AuthActionResponseDto,
-    AuthLoginResponseDto,
-    AuthRefreshResponseDto,
-    AuthRegisterResponseDto,
     EmailDto,
     LoginDto,
     LogoutDto,
@@ -43,9 +38,9 @@ import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
 import { ConfigService } from '../../common/config/config.service';
 // import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
 
-const THROTTLE_AUTH_DEFAULT = { default: { limit: 20, ttl: 60 } } as const;
-const THROTTLE_AUTH_REFRESH = { default: { limit: 30, ttl: 60 } } as const;
-const THROTTLE_AUTH_SENSITIVE = { default: { limit: 10, ttl: 60 } } as const;
+const throttleAuthDefault = { default: { limit: 20, ttl: 60 } } as const;
+const throttleAuthRefresh = { default: { limit: 30, ttl: 60 } } as const;
+const throttleAuthSensitive = { default: { limit: 10, ttl: 60 } } as const;
 
 @ApiTags('Auth')
 // @ApiStandardErrorResponses()
@@ -82,8 +77,8 @@ export class AuthController {
         status: 409,
         description: 'Email déjà enregistré.',
     })
-    @Public()
-    @Throttle(THROTTLE_AUTH_DEFAULT)
+    @publicDecorator()
+    @Throttle(throttleAuthDefault)
     @Post('register')
     register(@Body() dto: RegisterDto, @Req() req: Request) {
         return this.auth.register(dto, req);
@@ -124,8 +119,8 @@ export class AuthController {
         status: 403,
         description: 'Compte inactif ou email non vérifié.',
     })
-    @Public()
-    @Throttle(THROTTLE_AUTH_DEFAULT)
+    @publicDecorator()
+    @Throttle(throttleAuthDefault)
     @Post('login')
     login(@Body() dto: LoginDto, @Req() req: Request) {
         return this.auth.login(dto, req);
@@ -162,8 +157,8 @@ export class AuthController {
             },
         },
     })
-    @Public()
-    @Throttle(THROTTLE_AUTH_REFRESH)
+    @publicDecorator()
+    @Throttle(throttleAuthRefresh)
     @Post('refresh')
     refresh(@Body() dto: RefreshDto, @Req() req: Request) {
         return this.auth.refresh(dto, req);
@@ -208,7 +203,7 @@ export class AuthController {
         },
     })
     @UseGuards(JwtAuthGuard)
-    @Throttle(THROTTLE_AUTH_REFRESH)
+    @Throttle(throttleAuthRefresh)
     @Post('logout')
     logout(@Req() req: Request, @Body() dto: LogoutDto) {
         const authHeader = req.headers.authorization;
@@ -218,6 +213,9 @@ export class AuthController {
         }
 
         const token = authHeader.split(' ')[1];
+        if (!token) {
+            throw new UnauthorizedException('Token manquant ou invalide');
+        }
 
         return this.auth.logout(dto, token);
     }
@@ -239,8 +237,8 @@ export class AuthController {
     //     model: AuthActionResponseDto,
     //     message: 'Demande de réinitialisation traitée.',
     // })
-    @Public()
-    @Throttle(THROTTLE_AUTH_SENSITIVE)
+    @publicDecorator()
+    @Throttle(throttleAuthSensitive)
     @Post('password-reset/request')
     passwordResetRequest(@Body() dto: EmailDto, @Req() req: Request) {
         return this.auth.passwordResetRequest(dto, req);
@@ -268,8 +266,8 @@ export class AuthController {
         description: 'Token de réinitialisation invalide ou expiré.',
         type: ApiErrorResponseDto,
     })
-    @Public()
-    @Throttle(THROTTLE_AUTH_DEFAULT)
+    @publicDecorator()
+    @Throttle(throttleAuthDefault)
     @Post('password-reset/confirm')
     passwordReset(@Body() dto: ResetPasswordConfirmDto) {
         return this.auth.passwordReset(dto, dto.token);
@@ -296,8 +294,8 @@ export class AuthController {
         description: 'Token invalide ou expiré.',
         type: ApiErrorResponseDto,
     })
-    @Public()
-    @Throttle(THROTTLE_AUTH_REFRESH)
+    @publicDecorator()
+    @Throttle(throttleAuthRefresh)
     @Get('verify-email')
     verifyEmail(@Query() dto: TokenDto) {
         return this.auth.verifyEmail(dto.token);

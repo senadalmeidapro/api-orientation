@@ -6,7 +6,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateSessionProfileDto } from './dto/update-session-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { CurrentUser } from '../../common/decorators';
+import { currentUser } from '../../common/decorators';
 import type { User } from '@prisma/client';
 import {
     ApiBearerAuth,
@@ -62,7 +62,7 @@ export class SessionsController {
     })
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
-    create(@CurrentUser() user: User, @Body() dto: CreateSessionDto) {
+    create(@currentUser() user: User, @Body() dto: CreateSessionDto) {
         return this.service.createSession(user.id, dto);
     }
 

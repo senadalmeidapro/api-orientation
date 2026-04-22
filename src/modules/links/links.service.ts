@@ -15,8 +15,10 @@ export class LinksService {
     constructor(private readonly prisma: PrismaService) {}
 
     async list(dto: ListLinksDto) {
+        const where = dto.categoryId ? { id: dto.categoryId } : undefined;
+
         return this.prisma.linkCategory.findMany({
-            where: dto.categoryId ? { id: dto.categoryId } : undefined,
+            ...(where ? { where } : {}),
             include: { links: true },
             orderBy: { name: 'asc' },
         });
@@ -46,13 +48,16 @@ export class LinksService {
             where: { id: dto.categoryId },
         });
         if (!category) throw new NotFoundException('Categorie introuvable');
+
+        const data = {
+            categoryId: dto.categoryId,
+            title: dto.title,
+            ...(dto.url !== undefined ? { url: dto.url } : {}),
+            ...(dto.note !== undefined ? { note: dto.note } : {}),
+        };
+
         return this.prisma.link.create({
-            data: {
-                category_id: dto.categoryId,
-                title: dto.title,
-                url: dto.url,
-                note: dto.note,
-            },
+            data,
         });
     }
 
@@ -70,7 +75,7 @@ export class LinksService {
         return this.prisma.link.update({
             where: { id },
             data: {
-                category_id: dto.categoryId ?? link.category_id,
+                categoryId: dto.categoryId ?? link.categoryId,
                 title: dto.title ?? link.title,
                 url: dto.url ?? link.url,
                 note: dto.note ?? link.note,

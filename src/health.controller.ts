@@ -14,7 +14,7 @@ import { Response } from 'express';
 import type { Cache } from 'cache-manager';
 import * as os from 'os';
 import * as process from 'process';
-import { Public } from './common/decorators/public.decorator';
+import { publicDecorator } from './common/decorators/public.decorator';
 import { PrismaService } from './prisma/prisma.service';
 import { ConfigService } from './common/config/config.service';
 
@@ -87,22 +87,22 @@ interface NotReadyError {
  * CONSTANTES
  * ───────────────────────────────────────── */
 
-const MEMORY_WARN_THRESHOLD = 0.8;
-const MEMORY_CRIT_THRESHOLD = 0.95;
-const DB_WARN_LATENCY_MS = 200;
-const DB_CRIT_LATENCY_MS = 1_000;
-const CACHE_WARN_LATENCY_MS = 50;
-const CACHE_CRIT_LATENCY_MS = 500;
-const CACHE_PROBE_KEY = '__health_probe__';
-const CACHE_PROBE_VALUE = 'ok';
-const CACHE_PROBE_TTL_MS = 5_000;
+const memoryWarnThreshold = 0.8;
+const memoryCritThreshold = 0.95;
+const dbWarnLatencyMs = 200;
+const dbCritLatencyMs = 1_000;
+const cacheWarnLatencyMs = 50;
+const cacheCritLatencyMs = 500;
+const cacheProbeKey = '__health_probe__';
+const cacheProbeValue = 'ok';
+const cacheProbeTtlMs = 5_000;
 
 /* ─────────────────────────────────────────
  * CONTROLLER
  * ───────────────────────────────────────── */
 
 @ApiTags('Health')
-@Public()
+@publicDecorator()
 @Controller('api/v1/health')
 export class HealthController {
     private readonly logger = new Logger(HealthController.name);
@@ -223,14 +223,14 @@ export class HealthController {
             await this.prisma.$queryRawUnsafe<unknown>('SELECT 1');
             const latencyMs = Date.now() - t0;
 
-            if (latencyMs >= DB_CRIT_LATENCY_MS) {
+            if (latencyMs >= dbCritLatencyMs) {
                 return {
                     status: 'degraded',
                     latencyMs,
                     message: `Latence critique : ${latencyMs}ms`,
                 };
             }
-            if (latencyMs >= DB_WARN_LATENCY_MS) {
+            if (latencyMs >= dbWarnLatencyMs) {
                 return {
                     status: 'degraded',
                     latencyMs,
@@ -247,21 +247,21 @@ export class HealthController {
     private async checkCache(): Promise<CheckResult> {
         const t0 = Date.now();
         try {
-            await this.cache.set(CACHE_PROBE_KEY, CACHE_PROBE_VALUE, CACHE_PROBE_TTL_MS);
-            const value = await this.cache.get<string>(CACHE_PROBE_KEY);
+            await this.cache.set(cacheProbeKey, cacheProbeValue, cacheProbeTtlMs);
+            const value = await this.cache.get<string>(cacheProbeKey);
             const latencyMs = Date.now() - t0;
 
-            if (value !== CACHE_PROBE_VALUE) {
+            if (value !== cacheProbeValue) {
                 return { status: 'degraded', latencyMs, message: 'Round-trip cache incohérent' };
             }
-            if (latencyMs >= CACHE_CRIT_LATENCY_MS) {
+            if (latencyMs >= cacheCritLatencyMs) {
                 return {
                     status: 'degraded',
                     latencyMs,
                     message: `Latence critique : ${latencyMs}ms`,
                 };
             }
-            if (latencyMs >= CACHE_WARN_LATENCY_MS) {
+            if (latencyMs >= cacheWarnLatencyMs) {
                 return {
                     status: 'degraded',
                     latencyMs,
@@ -288,14 +288,14 @@ export class HealthController {
             usagePercent: Math.round(usagePercent * 1000) / 10,
         };
 
-        if (usagePercent >= MEMORY_CRIT_THRESHOLD) {
+        if (usagePercent >= memoryCritThreshold) {
             return {
                 status: 'down',
                 details,
                 message: `Mémoire critique : ${details.usagePercent}%`,
             };
         }
-        if (usagePercent >= MEMORY_WARN_THRESHOLD) {
+        if (usagePercent >= memoryWarnThreshold) {
             return {
                 status: 'degraded',
                 details,

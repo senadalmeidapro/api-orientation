@@ -3,12 +3,32 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { BehavioralAnalysisService } from '../../responses/services/behavioral-analysis.service';
 import { AdaptiveSelectionService } from '../../questions/services/adaptive-selection.service';
 import { AIAdaptiveService } from '../../ai/services/ai-adaptive.service';
-import { MultiProfileUtil, RiasecScores } from '../../../common/utils/multi-profile.util';
+import {
+    MultiProfileUtil,
+    ProfileSnapshot,
+    RiasecScores,
+} from '../../../common/utils/multi-profile.util';
 
 export interface EnhancedReportSection {
     title: string;
     content: string;
     insights: string[];
+}
+
+interface BehavioralMetrics {
+    averageResponseTime: number;
+    totalChanges: number;
+    hesitationCount: number;
+    doubtCount: number;
+    excitementCount: number;
+    consistentCount: number;
+}
+
+interface BehavioralInsights {
+    dominantPattern: string;
+    confidence: number;
+    observations: string[];
+    metrics: BehavioralMetrics;
 }
 
 export interface EnhancedReport {
@@ -23,7 +43,7 @@ export interface EnhancedReport {
         dominantPattern: string;
         confidence: number;
         observations: string[];
-        metrics: any;
+        metrics: BehavioralMetrics;
     };
     psychologicalProfile: {
         summary: string;
@@ -52,11 +72,7 @@ export class EnhancedResultsService {
             include: {
                 result: true,
                 batches: {
-                    orderBy: { batch_index: 'asc' },
-                },
-                intermediate_profiles: {
-                    orderBy: { batch_index: 'desc' },
-                    take: 1,
+                    orderBy: { batchIndex: 'asc' },
                 },
             },
         });
@@ -83,7 +99,7 @@ export class EnhancedResultsService {
 
         const aiProfileAnalysis = await this.aiService.analyzeIntermediateProfile(
             profileScores,
-            assessment.batches.reduce((sum, b) => sum + b.question_ids.length, 0),
+            assessment.batches.reduce((sum, batch) => sum + batch.questionIds.length, 0),
             assessment.batches.length,
         );
 
@@ -186,19 +202,19 @@ export class EnhancedResultsService {
         return await this.aiService.generatePersonalizedRecommendations(profile, behavioralPattern);
     }
 
-    private formatRiasecSection(snapshot: any): string {
+    private formatRiasecSection(snapshot: ProfileSnapshot): string {
         return (
             `Votre profil RIASEC est ${snapshot.dominant}, avec les scores suivants:\n` +
             snapshot.topThree
                 .map(
-                    (t: any) =>
+                    (t) =>
                         `- ${t.type}: ${t.percentage.toFixed(1)}% (${t.score.toFixed(2)} points)`,
                 )
                 .join('\n')
         );
     }
 
-    private formatBehavioralSection(insights: any): string {
+    private formatBehavioralSection(insights: BehavioralInsights): string {
         return (
             `Votre comportement durant le test révèle un profil ${this.translatePattern(insights.dominantPattern)}.\n\n` +
             `Métriques:\n` +
@@ -220,10 +236,12 @@ export class EnhancedResultsService {
         );
     }
 
-    private async generateActionPlan(
-        profileSnapshot: any,
-        behavioralInsights: any,
-        aiInsights: any,
+    private generateActionPlan(
+        profileSnapshot: ProfileSnapshot,
+        behavioralInsights: BehavioralInsights,
+        aiInsights: {
+            recommendations: string[];
+        },
     ): Promise<string[]> {
         const plan: string[] = [];
 
@@ -243,7 +261,7 @@ export class EnhancedResultsService {
 
         plan.push("Consultez un conseiller d'orientation pour un accompagnement personnalisé");
 
-        return plan;
+        return Promise.resolve(plan);
     }
 
     private translatePattern(pattern: string): string {

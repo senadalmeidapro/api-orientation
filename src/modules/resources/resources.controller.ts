@@ -10,8 +10,8 @@ import {
     Query,
 } from '@nestjs/common';
 import { ResourcesService } from './resources.service';
-import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { publicDecorator } from '../../common/decorators/public.decorator';
+import { roles } from '../../common/decorators/roles.decorator';
 import { CreateResourceDto, ListResourcesDto, UpdateResourceDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -44,7 +44,7 @@ export class ResourcesController {
     //     ],
     // })
     // @ApiStandardErrorResponses()
-    @Public()
+    @publicDecorator()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
     list(@Query() dto: ListResourcesDto) {
@@ -66,7 +66,7 @@ export class ResourcesController {
     //     ],
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 60, ttl: 60 } })
     @Get('admin')
     listAdmin(@Query() dto: ListResourcesDto) {
@@ -92,7 +92,7 @@ export class ResourcesController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeNotFound: true })
-    @Public()
+    @publicDecorator()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get(':id')
     getById(@Param('id', ParseIntPipe) id: number) {
@@ -116,7 +116,7 @@ export class ResourcesController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
     create(@Body() dto: CreateResourceDto) {
@@ -145,7 +145,7 @@ export class ResourcesController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
     update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateResourceDto) {
@@ -170,7 +170,7 @@ export class ResourcesController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')
     remove(@Param('id', ParseIntPipe) id: number) {

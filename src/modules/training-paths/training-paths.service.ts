@@ -11,19 +11,19 @@ export class TrainingPathsService {
 
     async list(dto: ListTrainingPathsDto) {
         const where: Prisma.TrainingPathWhereInput = {
-            ...(dto.careerId ? { career_id: dto.careerId } : {}),
-            ...(dto.institutionId ? { institution_id: dto.institutionId } : {}),
+            ...(dto.careerId ? { careerId: dto.careerId } : {}),
+            ...(dto.institutionId ? { institutionId: dto.institutionId } : {}),
         };
 
         const activeOnly = dto.activeOnly !== false;
-        if (activeOnly) where.is_active = true;
+        if (activeOnly) where.isActive = true;
 
         return this.prisma.trainingPath.findMany({
             where,
             include: { career: true, institution: true },
-            orderBy: { created_at: 'desc' },
-            skip: dto.offset ?? undefined,
-            take: dto.limit ?? undefined,
+            orderBy: { createdAt: 'desc' },
+            ...(dto.offset !== undefined ? { skip: dto.offset } : {}),
+            ...(dto.limit !== undefined ? { take: dto.limit } : {}),
         });
     }
 
@@ -42,15 +42,15 @@ export class TrainingPathsService {
         const path = await this.prisma.trainingPath.create({
             data: {
                 name: dto.name,
-                description: dto.description,
-                level: dto.level,
-                duration_months: dto.durationMonths,
-                cost_min: dto.costMin,
-                cost_max: dto.costMax,
-                career_id: dto.careerId,
-                institution_id: dto.institutionId,
-                is_active: dto.isActive ?? true,
-            },
+                ...(dto.description !== undefined ? { description: dto.description } : {}),
+                ...(dto.level !== undefined ? { level: dto.level } : {}),
+                ...(dto.durationMonths !== undefined ? { durationMonths: dto.durationMonths } : {}),
+                ...(dto.costMin !== undefined ? { costMin: dto.costMin } : {}),
+                ...(dto.costMax !== undefined ? { costMax: dto.costMax } : {}),
+                ...(dto.careerId !== undefined ? { careerId: dto.careerId } : {}),
+                ...(dto.institutionId !== undefined ? { institutionId: dto.institutionId } : {}),
+                isActive: dto.isActive ?? true,
+            } as Prisma.TrainingPathUncheckedCreateInput,
         });
 
         return this.getById(path.id);
@@ -61,8 +61,8 @@ export class TrainingPathsService {
         if (!exists) throw new NotFoundException('Parcours introuvable');
 
         await this.assertRelations(
-            dto.careerId ?? exists.career_id ?? undefined,
-            dto.institutionId ?? exists.institution_id ?? undefined,
+            dto.careerId ?? exists.careerId ?? undefined,
+            dto.institutionId ?? exists.institutionId ?? undefined,
         );
 
         const updateData: Prisma.TrainingPathUpdateInput = {
@@ -84,7 +84,7 @@ export class TrainingPathsService {
     async deactivate(id: number) {
         const exists = await this.prisma.trainingPath.findUnique({ where: { id } });
         if (!exists) throw new NotFoundException('Parcours introuvable');
-        return this.prisma.trainingPath.update({ where: { id }, data: { is_active: false } });
+        return this.prisma.trainingPath.update({ where: { id }, data: { isActive: false } });
     }
 
     private async assertRelations(careerId?: number, institutionId?: number) {

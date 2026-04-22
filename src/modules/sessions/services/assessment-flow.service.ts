@@ -3,7 +3,7 @@ import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAssessmentDto } from '../dto/create-assessment.dto';
 
-const DEFAULT_DEPTH = 5;
+const defaultDepth = 5;
 
 @Injectable()
 export class AssessmentFlowService {
@@ -22,7 +22,7 @@ export class AssessmentFlowService {
         }
 
         const active = await this.prisma.testVersion.findFirst({
-            where: { is_active: true },
+            where: { isActive: true },
             orderBy: { id: 'desc' },
         });
 
@@ -39,7 +39,7 @@ export class AssessmentFlowService {
                 code: 'v1',
                 name: 'Version 1',
                 description: 'Version initiale du test RIASEC',
-                is_active: true,
+                isActive: true,
             },
         });
 
@@ -60,27 +60,27 @@ export class AssessmentFlowService {
     }
 
     async createAssessment(sessionId: string, testVersionId: number, dto: CreateAssessmentDto) {
-        const depth = dto.depth ?? DEFAULT_DEPTH;
+        const depth = dto.depth ?? defaultDepth;
         const { phase, section } = this.resolvePhaseForType(dto.type);
 
         return this.prisma.assessment.create({
             data: {
-                session_id: sessionId,
-                test_version_id: testVersionId,
+                sessionId,
+                testVersionId,
                 type: dto.type,
                 depth,
                 status: AssessmentStatus.IN_PROGRESS,
-                current_phase: phase,
-                current_section: section,
-                current_stepIndex: 0,
-                completion_percentage: 0,
+                currentPhase: phase,
+                currentSection: section,
+                currentStepIndex: 0,
+                completionPercentage: 0,
             },
         });
     }
 
     async createAssessmentForSession(sessionToken: string, dto: CreateAssessmentDto) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
@@ -91,7 +91,7 @@ export class AssessmentFlowService {
         ) {
             const phase1Done = await this.prisma.assessment.findFirst({
                 where: {
-                    session_id: session.id,
+                    sessionId: session.id,
                     type: AssessmentType.PHASE1,
                     status: AssessmentStatus.COMPLETED,
                 },
@@ -110,15 +110,15 @@ export class AssessmentFlowService {
 
     async listAssessments(sessionToken: string) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         return this.prisma.assessment.findMany({
-            where: { session_id: session.id },
-            orderBy: { started_at: 'desc' },
-            include: { result: true, treasure_map: true },
+            where: { sessionId: session.id },
+            orderBy: { startedAt: 'desc' },
+            include: { result: true, treasureMap: true },
         });
     }
 }

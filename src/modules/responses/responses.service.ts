@@ -16,8 +16,8 @@ import { BehavioralAnalysisService } from './services/behavioral-analysis.servic
 import { BatchManagementService } from '../sessions/services/batch-management.service';
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';
 
-const DEFAULT_DEPTH = 5;
-const PHASE2_ORDER: Phase2Type[] = [
+const defaultDepth = 5;
+const phase2Order: Phase2Type[] = [
     Phase2Type.OCCUPATIONS,
     Phase2Type.APTITUDES,
     Phase2Type.PERSONALITY,
@@ -41,26 +41,26 @@ export class ResponsesService {
 
     private async invalidateResultIfExists(assessmentId: string) {
         const existing = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessmentId },
+            where: { assessmentId },
             select: { id: true },
         });
         if (!existing) return;
 
         await this.prisma.$transaction([
             this.prisma.assessmentCareerRecommendation.deleteMany({
-                where: { result_id: existing.id },
+                where: { resultId: existing.id },
             }),
             this.prisma.treasureMap.deleteMany({
-                where: { assessment_id: assessmentId },
+                where: { assessmentId },
             }),
             this.prisma.assessmentResult.delete({
-                where: { assessment_id: assessmentId },
+                where: { assessmentId },
             }),
             this.prisma.assessment.update({
                 where: { id: assessmentId },
                 data: {
                     status: AssessmentStatus.IN_PROGRESS,
-                    completed_at: null,
+                    completedAt: null,
                 },
             }),
         ]);
@@ -69,7 +69,7 @@ export class ResponsesService {
     private async ensurePhase1Prerequisite(sessionId: string) {
         const phase1Done = await this.prisma.assessment.findFirst({
             where: {
-                session_id: sessionId,
+                sessionId,
                 type: AssessmentType.PHASE1,
                 status: AssessmentStatus.COMPLETED,
             },
@@ -88,10 +88,10 @@ export class ResponsesService {
         }, 0);
     }
 
-    private buildCounts(items: Array<{ riasec_type_id: RiasecType }>) {
+    private buildCounts(items: Array<{ riasecTypeId: RiasecType }>) {
         const counts = this.emptyScores();
         for (const item of items) {
-            counts[item.riasec_type_id] += 1;
+            counts[item.riasecTypeId] += 1;
         }
         return counts;
     }
@@ -108,18 +108,18 @@ export class ResponsesService {
         depth: number,
     ) {
         const questions = await this.prisma.phase1Question.findMany({
-            where: { is_active: true, test_version_id: testVersionId },
-            select: { riasec_type_id: true },
+            where: { isActive: true, testVersionId },
+            select: { riasecTypeId: true },
         });
         const questionCounts = this.buildCounts(questions);
         const total = this.computeTargetTotal(questionCounts, depth);
 
         const responses = await this.prisma.phase1Response.findMany({
-            where: { assessment_id: assessmentId },
-            select: { question: { select: { riasec_type_id: true } } },
+            where: { assessmentId },
+            select: { question: { select: { riasecTypeId: true } } },
         });
         const answeredCounts = this.buildCounts(
-            responses.map((r) => ({ riasec_type_id: r.question.riasec_type_id })),
+            responses.map((r) => ({ riasecTypeId: r.question.riasecTypeId })),
         );
         const answered = this.capAnsweredByDepth(answeredCounts, depth);
 
@@ -133,18 +133,18 @@ export class ResponsesService {
         section: Phase2Type,
     ) {
         const questions = await this.prisma.phase2Question.findMany({
-            where: { is_active: true, test_version_id: testVersionId, phase2_type: section },
-            select: { riasec_type_id: true },
+            where: { isActive: true, testVersionId, phase2Type: section },
+            select: { riasecTypeId: true },
         });
         const questionCounts = this.buildCounts(questions);
         const total = this.computeTargetTotal(questionCounts, depth);
 
         const responses = await this.prisma.phase2Response.findMany({
-            where: { assessment_id: assessmentId, phase2_type: section },
-            select: { question: { select: { riasec_type_id: true } } },
+            where: { assessmentId, phase2Type: section },
+            select: { question: { select: { riasecTypeId: true } } },
         });
         const answeredCounts = this.buildCounts(
-            responses.map((r) => ({ riasec_type_id: r.question.riasec_type_id })),
+            responses.map((r) => ({ riasecTypeId: r.question.riasecTypeId })),
         );
         const answered = this.capAnsweredByDepth(answeredCounts, depth);
 
@@ -156,7 +156,7 @@ export class ResponsesService {
             this.prisma,
             dto.sessionToken,
             {
-                assessmentId: dto.assessmentId,
+                ...(dto.assessmentId !== undefined ? { assessmentId: dto.assessmentId } : {}),
                 phase: PhaseType.PHASE1,
                 requireInProgress: true,
             },
@@ -169,8 +169,8 @@ export class ResponsesService {
         const questions = await this.prisma.phase1Question.findMany({
             where: {
                 id: { in: questionIds },
-                test_version_id: assessment.test_version_id,
-                is_active: true,
+                testVersionId: assessment.testVersionId,
+                isActive: true,
             },
             select: { id: true },
         });
@@ -183,29 +183,33 @@ export class ResponsesService {
             dto.responses.map((r) =>
                 this.prisma.phase1Response.upsert({
                     where: {
-                        assessment_id_question_id: {
-                            assessment_id: assessment.id,
-                            question_id: r.questionId,
+                        assessmentId_questionId: {
+                            assessmentId: assessment.id,
+                            questionId: r.questionId,
                         },
                     },
                     update: {
-                        response_value: r.responseValue,
-                        response_time_ms: r.responseTimeMs ?? undefined,
+                        responseValue: r.responseValue,
+                        ...(r.responseTimeMs !== undefined
+                            ? { responseTimeMs: r.responseTimeMs }
+                            : {}),
                     },
                     create: {
-                        assessment_id: assessment.id,
-                        question_id: r.questionId,
-                        response_value: r.responseValue,
-                        response_time_ms: r.responseTimeMs ?? undefined,
+                        assessmentId: assessment.id,
+                        questionId: r.questionId,
+                        responseValue: r.responseValue,
+                        ...(r.responseTimeMs !== undefined
+                            ? { responseTimeMs: r.responseTimeMs }
+                            : {}),
                     },
                 }),
             ),
         );
 
-        const depth = assessment.depth ?? DEFAULT_DEPTH;
+        const depth = assessment.depth ?? defaultDepth;
         const progress = await this.computePhase1Progress(
             assessment.id,
-            assessment.test_version_id,
+            assessment.testVersionId,
             depth,
         );
         const phase1Completed = progress.total > 0 && progress.answered >= progress.total;
@@ -226,12 +230,12 @@ export class ResponsesService {
                     phase1Completed && !isFull
                         ? AssessmentStatus.COMPLETED
                         : AssessmentStatus.IN_PROGRESS,
-                completed_at: phase1Completed && !isFull ? new Date() : undefined,
-                current_phase: phase1Completed && isFull ? PhaseType.PHASE2 : PhaseType.PHASE1,
-                current_section:
-                    phase1Completed && isFull ? Phase2Type.OCCUPATIONS : assessment.current_section,
-                completion_percentage: completionPercentage,
-                current_stepIndex: progress.answered,
+                ...(phase1Completed && !isFull ? { completedAt: new Date() } : {}),
+                currentPhase: phase1Completed && isFull ? PhaseType.PHASE2 : PhaseType.PHASE1,
+                currentSection:
+                    phase1Completed && isFull ? Phase2Type.OCCUPATIONS : assessment.currentSection,
+                completionPercentage,
+                currentStepIndex: progress.answered,
             },
         });
 
@@ -249,7 +253,7 @@ export class ResponsesService {
             this.prisma,
             dto.sessionToken,
             {
-                assessmentId: dto.assessmentId,
+                ...(dto.assessmentId !== undefined ? { assessmentId: dto.assessmentId } : {}),
                 phase: PhaseType.PHASE2,
                 requireInProgress: true,
             },
@@ -269,10 +273,10 @@ export class ResponsesService {
         const questions = await this.prisma.phase2Question.findMany({
             where: {
                 id: { in: questionIds },
-                test_version_id: assessment.test_version_id,
-                is_active: true,
+                testVersionId: assessment.testVersionId,
+                isActive: true,
             },
-            select: { id: true, phase2_type: true, max_value: true },
+            select: { id: true, phase2Type: true, maxValue: true },
         });
 
         if (questions.length !== questionIds.length) {
@@ -280,19 +284,19 @@ export class ResponsesService {
         }
 
         const questionMap = new Map(questions.map((q) => [q.id, q]));
-        const sectionSet = new Set(questions.map((q) => q.phase2_type));
+        const sectionSet = new Set(questions.map((q) => q.phase2Type));
         if (sectionSet.size > 1) {
             throw new BadRequestException(
                 'Les réponses Phase 2 doivent appartenir à une seule section',
             );
         }
-        const sectionType = questions[0]?.phase2_type ?? null;
+        const sectionType = questions[0]?.phase2Type ?? null;
 
         if (!sectionType) {
             throw new BadRequestException('Section de phase 2 introuvable');
         }
 
-        if (assessment.current_section && assessment.current_section !== sectionType) {
+        if (assessment.currentSection && assessment.currentSection !== sectionType) {
             throw new BadRequestException('Section courante invalide pour cette requete');
         }
 
@@ -318,8 +322,8 @@ export class ResponsesService {
         for (const r of dto.responses) {
             const q = questionMap.get(r.questionId);
             if (!q) throw new BadRequestException('Question Phase 2 introuvable');
-            if (q.phase2_type === Phase2Type.APTITUDES) {
-                const maxVal = q.max_value ?? 3;
+            if (q.phase2Type === Phase2Type.APTITUDES) {
+                const maxVal = q.maxValue ?? 3;
                 if (r.responseValue < 1 || r.responseValue > maxVal) {
                     throw new BadRequestException('Valeur aptitude invalide');
                 }
@@ -332,30 +336,34 @@ export class ResponsesService {
             dto.responses.map((r) =>
                 this.prisma.phase2Response.upsert({
                     where: {
-                        assessment_id_question_id: {
-                            assessment_id: assessment.id,
-                            question_id: r.questionId,
+                        assessmentId_questionId: {
+                            assessmentId: assessment.id,
+                            questionId: r.questionId,
                         },
                     },
                     update: {
-                        response_value: r.responseValue,
-                        response_time_ms: r.responseTimeMs ?? undefined,
+                        responseValue: r.responseValue,
+                        ...(r.responseTimeMs !== undefined
+                            ? { responseTimeMs: r.responseTimeMs }
+                            : {}),
                     },
                     create: {
-                        assessment_id: assessment.id,
-                        phase2_type: sectionType,
-                        question_id: r.questionId,
-                        response_value: r.responseValue,
-                        response_time_ms: r.responseTimeMs ?? undefined,
+                        assessmentId: assessment.id,
+                        phase2Type: sectionType,
+                        questionId: r.questionId,
+                        responseValue: r.responseValue,
+                        ...(r.responseTimeMs !== undefined
+                            ? { responseTimeMs: r.responseTimeMs }
+                            : {}),
                     },
                 }),
             ),
         );
 
-        const depth = assessment.depth ?? DEFAULT_DEPTH;
+        const depth = assessment.depth ?? defaultDepth;
         const sectionProgress = await this.computePhase2Progress(
             assessment.id,
-            assessment.test_version_id,
+            assessment.testVersionId,
             depth,
             sectionType,
         );
@@ -364,13 +372,13 @@ export class ResponsesService {
 
         const isFull = assessment.type === AssessmentType.FULL;
         let overallProgress = sectionProgress;
-        let nextSection: Phase2Type | null = assessment.current_section ?? sectionType;
+        let nextSection: Phase2Type | null = assessment.currentSection ?? sectionType;
         if (isFull) {
             const totals = await Promise.all(
-                PHASE2_ORDER.map((section) =>
+                phase2Order.map((section) =>
                     this.computePhase2Progress(
                         assessment.id,
-                        assessment.test_version_id,
+                        assessment.testVersionId,
                         depth,
                         section,
                     ),
@@ -379,9 +387,10 @@ export class ResponsesService {
             const totalAll = totals.reduce((sum, item) => sum + item.total, 0);
             const answeredAll = totals.reduce((sum, item) => sum + item.answered, 0);
             overallProgress = { total: totalAll, answered: answeredAll };
-            const nextIncomplete = PHASE2_ORDER.find(
-                (section, idx) => totals[idx].total > 0 && totals[idx].answered < totals[idx].total,
-            );
+            const nextIncomplete = phase2Order.find((section, idx) => {
+                const total = totals[idx];
+                return total !== undefined && total.total > 0 && total.answered < total.total;
+            });
             nextSection = nextIncomplete ?? sectionType;
         }
 
@@ -398,11 +407,11 @@ export class ResponsesService {
             where: { id: assessment.id },
             data: {
                 status: phase2Completed ? AssessmentStatus.COMPLETED : AssessmentStatus.IN_PROGRESS,
-                completed_at: phase2Completed ? new Date() : undefined,
-                current_phase: PhaseType.PHASE2,
-                current_section: isFull ? nextSection : sectionType,
-                completion_percentage: completionPercentage,
-                current_stepIndex: overallProgress.answered,
+                ...(phase2Completed ? { completedAt: new Date() } : {}),
+                currentPhase: PhaseType.PHASE2,
+                currentSection: isFull ? nextSection : sectionType,
+                completionPercentage,
+                currentStepIndex: overallProgress.answered,
             },
         });
 
@@ -424,7 +433,7 @@ export class ResponsesService {
             this.prisma,
             dto.sessionToken,
             {
-                assessmentId: dto.assessmentId,
+                ...(dto.assessmentId !== undefined ? { assessmentId: dto.assessmentId } : {}),
                 requireInProgress: true,
             },
         );
@@ -451,27 +460,31 @@ export class ResponsesService {
         // Sauvegarder les réponses avec métadonnées comportementales
         const savedResponses: string[] = [];
 
-        if (assessment.current_phase === PhaseType.PHASE1) {
+        if (assessment.currentPhase === PhaseType.PHASE1) {
             for (const response of dto.responses) {
                 const created = await this.prisma.phase1Response.upsert({
                     where: {
-                        assessment_id_question_id: {
-                            assessment_id: assessment.id,
-                            question_id: response.questionId,
+                        assessmentId_questionId: {
+                            assessmentId: assessment.id,
+                            questionId: response.questionId,
                         },
                     },
                     update: {
-                        response_value: response.responseValue,
-                        time_taken_ms: response.timeTakenMs,
-                        change_count: response.changeCount ?? 0,
+                        responseValue: response.responseValue,
+                        ...(response.timeTakenMs !== undefined
+                            ? { timeTakenMs: response.timeTakenMs }
+                            : {}),
+                        changeCount: response.changeCount ?? 0,
                         metadata: response.metadata ?? {},
                     },
                     create: {
-                        assessment_id: assessment.id,
-                        question_id: response.questionId,
-                        response_value: response.responseValue,
-                        time_taken_ms: response.timeTakenMs,
-                        change_count: response.changeCount ?? 0,
+                        assessmentId: assessment.id,
+                        questionId: response.questionId,
+                        responseValue: response.responseValue,
+                        ...(response.timeTakenMs !== undefined
+                            ? { timeTakenMs: response.timeTakenMs }
+                            : {}),
+                        changeCount: response.changeCount ?? 0,
                         metadata: response.metadata ?? {},
                     },
                 });
@@ -489,29 +502,33 @@ export class ResponsesService {
                 }
             }
         } else {
-            const sectionType = assessment.current_section ?? Phase2Type.OCCUPATIONS;
+            const sectionType = assessment.currentSection ?? Phase2Type.OCCUPATIONS;
 
             for (const response of dto.responses) {
                 const created = await this.prisma.phase2Response.upsert({
                     where: {
-                        assessment_id_question_id: {
-                            assessment_id: assessment.id,
-                            question_id: response.questionId,
+                        assessmentId_questionId: {
+                            assessmentId: assessment.id,
+                            questionId: response.questionId,
                         },
                     },
                     update: {
-                        response_value: response.responseValue,
-                        time_taken_ms: response.timeTakenMs,
-                        change_count: response.changeCount ?? 0,
+                        responseValue: response.responseValue,
+                        ...(response.timeTakenMs !== undefined
+                            ? { timeTakenMs: response.timeTakenMs }
+                            : {}),
+                        changeCount: response.changeCount ?? 0,
                         metadata: response.metadata ?? {},
                     },
                     create: {
-                        assessment_id: assessment.id,
-                        question_id: response.questionId,
-                        phase2_type: sectionType,
-                        response_value: response.responseValue,
-                        time_taken_ms: response.timeTakenMs,
-                        change_count: response.changeCount ?? 0,
+                        assessmentId: assessment.id,
+                        questionId: response.questionId,
+                        phase2Type: sectionType,
+                        responseValue: response.responseValue,
+                        ...(response.timeTakenMs !== undefined
+                            ? { timeTakenMs: response.timeTakenMs }
+                            : {}),
+                        changeCount: response.changeCount ?? 0,
                         metadata: response.metadata ?? {},
                     },
                 });
@@ -546,10 +563,10 @@ export class ResponsesService {
         const totalExpectedQuestions = assessment.depth * 6;
         const totalResponses =
             (await this.prisma.phase1Response.count({
-                where: { assessment_id: assessment.id },
+                where: { assessmentId: assessment.id },
             })) +
             (await this.prisma.phase2Response.count({
-                where: { assessment_id: assessment.id },
+                where: { assessmentId: assessment.id },
             }));
 
         const isComplete = totalResponses >= totalExpectedQuestions;
@@ -563,14 +580,14 @@ export class ResponsesService {
             where: { id: assessment.id },
             data: {
                 status: isComplete ? AssessmentStatus.COMPLETED : AssessmentStatus.IN_PROGRESS,
-                completed_at: isComplete ? new Date() : null,
-                completion_percentage: completionPercentage,
+                completedAt: isComplete ? new Date() : null,
+                completionPercentage,
             },
         });
 
         // Accorder des badges si applicable
         if (isComplete) {
-            if (assessment.current_phase === PhaseType.PHASE1) {
+            if (assessment.currentPhase === PhaseType.PHASE1) {
                 await this.badges.grantPhase1Completed(session);
             } else {
                 await this.badges.grantPhase2Completed(session);

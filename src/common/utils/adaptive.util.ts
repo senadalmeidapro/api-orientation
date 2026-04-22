@@ -1,9 +1,9 @@
-import { RiasecType } from '@prisma/client';
+import type { RiasecType } from '@prisma/client';
 import {
-    MultiProfileQuestion,
-    QuestionProfileWeight,
-    RiasecScores,
     MultiProfileUtil,
+    type MultiProfileQuestion,
+    type QuestionProfileWeight,
+    type RiasecScores,
 } from './multi-profile.util';
 
 export interface AdaptiveSelectionConfig {
@@ -100,7 +100,7 @@ export class AdaptiveUtil {
         while (selected.length < batchSize && selected.length < scoredQuestions.length) {
             const remaining = scoredQuestions.filter((q) => !selected.includes(q.questionId));
             if (remaining.length === 0) break;
-            selected.push(remaining[0].questionId);
+            selected.push(remaining[0]!.questionId);
         }
 
         return selected;
@@ -247,8 +247,8 @@ export class AdaptiveUtil {
         const distances: number[] = [];
         for (let i = 1; i < profileHistory.length; i++) {
             const distance = MultiProfileUtil.calculateProfileDistance(
-                profileHistory[i - 1],
-                profileHistory[i],
+                profileHistory[i - 1]!,
+                profileHistory[i]!,
             );
             distances.push(distance);
         }
@@ -257,8 +257,8 @@ export class AdaptiveUtil {
         const variance = this.calculateVariance(distances);
 
         const recentDistances = distances.slice(-3);
-        const isConverging = recentDistances.every((d, i, arr) => i === 0 || d <= arr[i - 1]);
-        const isDiverging = recentDistances.every((d, i, arr) => i === 0 || d >= arr[i - 1]);
+        const isConverging = recentDistances.every((d, i, arr) => i === 0 || d <= arr[i - 1]!);
+        const isDiverging = recentDistances.every((d, i, arr) => i === 0 || d >= arr[i - 1]!);
 
         return {
             stable: variance < 0.05 && avgDistance < 0.2,

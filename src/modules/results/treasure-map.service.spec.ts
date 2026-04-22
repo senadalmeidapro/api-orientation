@@ -1,7 +1,7 @@
 import { TreasureMapService } from './treasure-map.service';
-import { ResultsService } from './results.service';
-import { StorageService } from '../media/storage.service';
-import { BadgesService } from '../badges/badges.service';
+import type { ResultsService } from './results.service';
+import type { StorageService } from '../media/storage.service';
+import type { BadgesService } from '../badges/badges.service';
 import { AssessmentStatus } from '@prisma/client';
 
 const prisma = {

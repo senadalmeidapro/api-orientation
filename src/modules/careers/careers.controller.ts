@@ -10,8 +10,8 @@ import {
     Query,
 } from '@nestjs/common';
 import { CareersService } from './careers.service';
-import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { publicDecorator } from '../../common/decorators/public.decorator';
+import { roles } from '../../common/decorators/roles.decorator';
 import { CreateCareerDto, ListCareersDto, UpdateCareerDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -45,7 +45,7 @@ export class CareersController {
     //     ],
     // })
     // @ApiStandardErrorResponses()
-    @Public()
+    @publicDecorator()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
     list(@Query() dto: ListCareersDto) {
@@ -73,7 +73,7 @@ export class CareersController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeNotFound: true })
-    @Public()
+    @publicDecorator()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get(':id')
     getById(@Param('id', ParseIntPipe) id: number) {
@@ -97,7 +97,7 @@ export class CareersController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
     create(@Body() dto: CreateCareerDto) {
@@ -126,7 +126,7 @@ export class CareersController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
     update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCareerDto) {
@@ -151,7 +151,7 @@ export class CareersController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')
     deactivate(@Param('id', ParseIntPipe) id: number) {

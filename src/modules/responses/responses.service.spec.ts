@@ -1,6 +1,6 @@
 import { ResponsesService } from './responses.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { BadgesService } from '../badges/badges.service';
+import type { BadgesService } from '../badges/badges.service';
 import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma/client';
 
 const prisma = {

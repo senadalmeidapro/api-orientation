@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { TrainingCentersService } from './training-centers.service';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { roles } from '../../common/decorators/roles.decorator';
 import { CreateTrainingCenterDto, ListTrainingCentersDto, UpdateTrainingCenterDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
@@ -94,7 +94,7 @@ export class TrainingCentersController {
     //         is_active: true,
     //     },
     // })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
     create(@Body() dto: CreateTrainingCenterDto) {
@@ -122,7 +122,7 @@ export class TrainingCentersController {
     //         is_active: true,
     //     },
     // })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
     update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTrainingCenterDto) {
@@ -145,7 +145,7 @@ export class TrainingCentersController {
     //         is_active: false,
     //     },
     // })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')
     deactivate(@Param('id', ParseIntPipe) id: number) {

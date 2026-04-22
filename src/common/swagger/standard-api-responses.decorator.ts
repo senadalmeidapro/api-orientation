@@ -1,4 +1,4 @@
-import { Type, applyDecorators } from '@nestjs/common';
+import { applyDecorators, type Type } from '@nestjs/common';
 import {
     ApiBadRequestResponse,
     ApiCreatedResponse,
@@ -120,7 +120,7 @@ const buildSuccessSchema = (
     ],
 });
 
-export const ApiStandardOkResponse = (options: ApiSuccessOptions) => {
+export const apiStandardOkResponse = (options: ApiSuccessOptions) => {
     const extraModels = options.model
         ? [ApiSuccessResponseDto, options.model]
         : [ApiSuccessResponseDto];
@@ -134,7 +134,7 @@ export const ApiStandardOkResponse = (options: ApiSuccessOptions) => {
     );
 };
 
-export const ApiStandardCreatedResponse = (options: ApiSuccessOptions) => {
+export const apiStandardCreatedResponse = (options: ApiSuccessOptions) => {
     const extraModels = options.model
         ? [ApiSuccessResponseDto, options.model]
         : [ApiSuccessResponseDto];
@@ -148,7 +148,7 @@ export const ApiStandardCreatedResponse = (options: ApiSuccessOptions) => {
     );
 };
 
-export const ApiStandardErrorResponses = (options: ApiErrorOptions = {}) => {
+export const apiStandardErrorResponses = (options: ApiErrorOptions = {}) => {
     const decorators: Array<ClassDecorator | MethodDecorator> = [
         ApiBadRequestResponse({
             description: options.badRequestDescription ?? 'Requête invalide.',

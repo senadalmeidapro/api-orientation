@@ -1,4 +1,4 @@
-import { AuthProvider, UserRole, UserStatus } from '@prisma/client';
+import type { AuthProvider, UserRole, UserStatus } from '@prisma/client';
 
 export interface JwtPayload {
     sub: string;

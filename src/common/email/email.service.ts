@@ -10,7 +10,11 @@ import { SentMessageInfo } from 'nodemailer';
 import * as handlebars from 'handlebars';
 import * as fs from 'fs';
 import * as path from 'path';
-import SibApiV3Sdk from 'sib-api-v3-sdk';
+import SibApiV3Sdk, {
+    type SendTransacEmailRequest,
+    type SendTransacEmailResponse,
+    type TransactionalEmailsApi,
+} from 'sib-api-v3-sdk';
 import { ConfigService } from '../config/config.service';
 
 /* ─────────────────────────────────────────
@@ -25,7 +29,7 @@ export interface MailAttachment {
     encoding?: string;
 }
 
-export interface MailRecipient<T = any> {
+export interface MailRecipient<T = Record<string, unknown>> {
     email: string;
     subject: string;
     firstName?: string;
@@ -41,7 +45,7 @@ export interface MailSendOptions {
     html?: string;
     text?: string;
     template?: string;
-    context?: Record<string, any>;
+    context?: Record<string, unknown>;
     from?: string;
     replyTo?: string;
     cc?: string | string[];
@@ -69,7 +73,7 @@ export class EmailService implements OnModuleInit {
     private readonly templates = new Map<string, EmailTemplate>();
     private readonly templateSubjects = new Map<string, string>();
     private readonly templatesPath: string;
-    private readonly brevoClient: SibApiV3Sdk.TransactionalEmailsApi;
+    private readonly brevoClient: TransactionalEmailsApi;
     private readonly isProduction: boolean;
 
     constructor(private readonly config: ConfigService) {
@@ -80,7 +84,11 @@ export class EmailService implements OnModuleInit {
             : path.join(process.cwd(), this.config.email.templatePath);
 
         const client = SibApiV3Sdk.ApiClient.instance;
-        client.authentications['api-key'].apiKey = this.config.email.brevo.apiKey;
+        const authentication = client.authentications['api-key'];
+        if (!authentication) {
+            throw new Error('Brevo API key authentication method is unavailable');
+        }
+        authentication.apiKey = this.config.email.brevo.apiKey;
 
         this.brevoClient = new SibApiV3Sdk.TransactionalEmailsApi();
 
@@ -102,7 +110,7 @@ export class EmailService implements OnModuleInit {
      * PUBLIC
      * ───────────────────────────────────────── */
 
-    async sendEmail(options: MailSendOptions): Promise<SentMessageInfo | any> {
+    async sendEmail(options: MailSendOptions): Promise<unknown> {
         const html = this.resolveTemplate(options);
         const subject = this.resolveSubject(
             options.subject,
@@ -114,8 +122,9 @@ export class EmailService implements OnModuleInit {
             return this.isProduction
                 ? await this.sendWithBrevo(options.to, subject, html)
                 : await this.sendWithSmtp(options, subject, html);
-        } catch (err: any) {
-            this.logger.error(`Failed to send email: ${err.message}`, err.stack);
+        } catch (err: unknown) {
+            const details = this.getErrorDetails(err);
+            this.logger.error(`Failed to send email: ${details.message}`, details.stack);
             throw new InternalServerErrorException('Failed to send email');
         }
     }
@@ -124,10 +133,13 @@ export class EmailService implements OnModuleInit {
      * BREVO
      * ───────────────────────────────────────── */
 
-    private async sendWithBrevo(to: string | string[], subject: string, html: string) {
+    private async sendWithBrevo(
+        to: string | string[],
+        subject: string,
+        html: string,
+    ): Promise<SendTransacEmailResponse> {
         const recipients = Array.isArray(to) ? to.map((email) => ({ email })) : [{ email: to }];
-
-        return await this.brevoClient.sendTransacEmail({
+        const payload: SendTransacEmailRequest = {
             sender: {
                 email: this.config.email.fromAddress,
                 name: this.config.email.fromName,
@@ -135,7 +147,9 @@ export class EmailService implements OnModuleInit {
             to: recipients,
             subject,
             htmlContent: html,
-        });
+        };
+
+        return await this.brevoClient.sendTransacEmail(payload);
     }
 
     /* ─────────────────────────────────────────
@@ -189,8 +203,9 @@ export class EmailService implements OnModuleInit {
     private async verifySmtpTransporter(): Promise<void> {
         try {
             await this.transporter?.verify();
-        } catch (err: any) {
-            this.logger.error(`SMTP connection failed: ${err.message}`);
+        } catch (err: unknown) {
+            const details = this.getErrorDetails(err);
+            this.logger.error(`SMTP connection failed: ${details.message}`);
         }
     }
 
@@ -290,15 +305,15 @@ export class EmailService implements OnModuleInit {
             context: this.buildContext(recipient, {
                 resetLink,
                 expiresIn,
-                ipAddress: recipient.metadata?.ipAddress,
+                ipAddress: this.getMetadataIpAddress(recipient.metadata),
             }),
         });
     }
 
     private buildContext(
         recipient: MailRecipient,
-        extra: Record<string, any> = {},
-    ): Record<string, any> {
+        extra: Record<string, unknown> = {},
+    ): Record<string, unknown> {
         return {
             firstName: recipient.firstName,
             lastName: recipient.lastName,
@@ -313,5 +328,25 @@ export class EmailService implements OnModuleInit {
             currentYear: new Date().getFullYear(),
             ...extra,
         };
+    }
+
+    private getMetadataIpAddress(metadata: unknown): string | undefined {
+        if (!metadata || typeof metadata !== 'object') {
+            return undefined;
+        }
+        if (!('ipAddress' in metadata)) {
+            return undefined;
+        }
+        const ipAddress = metadata.ipAddress;
+        return typeof ipAddress === 'string' ? ipAddress : undefined;
+    }
+
+    private getErrorDetails(err: unknown): { message: string; stack?: string } {
+        if (err instanceof Error) {
+            return err.stack
+                ? { message: err.message, stack: err.stack }
+                : { message: err.message };
+        }
+        return { message: String(err) };
     }
 }

@@ -61,13 +61,13 @@ export class BadgesService {
 
     async listBadges() {
         await this.ensureDefaults();
-        return this.prisma.badge.findMany({ orderBy: { points_value: 'desc' } });
+        return this.prisma.badge.findMany({ orderBy: { pointsValue: 'desc' } });
     }
 
     private async addXp(sessionId: string, amount: number, reason: string) {
         await this.prisma.xPHistory.create({
             data: {
-                session_id: sessionId,
+                sessionId: sessionId,
                 amount,
                 reason,
             },
@@ -75,11 +75,11 @@ export class BadgesService {
 
         const session = await this.prisma.session.update({
             where: { id: sessionId },
-            data: { total_xp: { increment: amount } },
-            select: { total_xp: true, level: true },
+            data: { totalXp: { increment: amount } },
+            select: { totalXp: true, level: true },
         });
 
-        const nextLevel = Math.floor(session.total_xp / 100) + 1;
+        const nextLevel = Math.floor(session.totalXp / 100) + 1;
         if (nextLevel !== session.level) {
             await this.prisma.session.update({
                 where: { id: sessionId },
@@ -94,23 +94,23 @@ export class BadgesService {
         if (!badge) return null;
 
         const existing = await this.prisma.sessionBadge.findFirst({
-            where: { badge_id: badge.id, session_id: session.id },
+            where: { badgeId: badge.id, sessionId: session.id },
         });
         if (existing) return existing;
 
         const created = await this.prisma.sessionBadge.create({
             data: {
-                badge_id: badge.id,
-                session_id: session.id,
+                badgeId: badge.id,
+                sessionId: session.id,
             },
         });
 
         await this.prisma.badge.update({
             where: { id: badge.id },
-            data: { unlock_count: { increment: 1 } },
+            data: { unlockCount: { increment: 1 } },
         });
 
-        await this.addXp(session.id, badge.points_value, reason);
+        await this.addXp(session.id, badge.pointsValue, reason);
 
         return created;
     }

@@ -57,6 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /app/storage && chown -R node:node /app
 
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=build --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build --chown=node:node /app/node_modules/prisma ./node_modules/prisma
 COPY --from=build --chown=node:node /app/node_modules/.bin/prisma ./node_modules/.bin/prisma

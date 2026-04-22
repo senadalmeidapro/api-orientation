@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { roles } from '../../common/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { AnalyticsService } from './analytics.service';
 import {
@@ -127,7 +127,7 @@ export class AnalyticsController {
     //         feedbackSummary: { LIKED: 450, DISLIKED: 72 },
     //     },
     // })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Get('summary')
     getSummary(@Query() dto: AnalyticsSummaryDto) {

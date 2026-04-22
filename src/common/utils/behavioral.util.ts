@@ -244,13 +244,15 @@ export class BehavioralUtil {
         timeTakenMs: number;
         changeCount: number;
     } {
-        if (!metadata || !metadata.timestamps || metadata.timestamps.length < 2) {
+        const timestamps = metadata?.timestamps ?? [];
+        const changes = metadata?.changes ?? [];
+
+        if (timestamps.length < 2) {
             return { timeTakenMs: 0, changeCount: 0 };
         }
 
-        const timestamps = metadata.timestamps;
-        const timeTakenMs = timestamps[timestamps.length - 1] - timestamps[0];
-        const changeCount = metadata.changes?.length || 0;
+        const timeTakenMs = timestamps[timestamps.length - 1]! - timestamps[0]!;
+        const changeCount = changes.length;
 
         return { timeTakenMs, changeCount };
     }

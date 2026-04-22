@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+    BadRequestException,
+    Injectable,
+    InternalServerErrorException,
+    Logger,
+    NotFoundException,
+} from '@nestjs/common';
 import { AssessmentStatus, Phase2Type, PhaseType, RiasecType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecommendationsService } from '../recommendations/recommendations.service';
@@ -7,9 +13,9 @@ import { AiClient, JsonSchemaFormat } from './ai.client';
 import { AiChatDto, AiCoachDto, AiSummaryDto } from './dto';
 import { resolveSessionAndAssessment } from '../../common/utils/assessment.util';
 
-const RIASEC_CODES = ['R', 'I', 'A', 'S', 'E', 'C'] as const;
+const riasecCodes = ['R', 'I', 'A', 'S', 'E', 'C'] as const;
 
-type RiasecScores = Record<(typeof RIASEC_CODES)[number], number>;
+type RiasecScores = Record<(typeof riasecCodes)[number], number>;
 
 type CandidateQuestion = {
     id: number;
@@ -18,7 +24,19 @@ type CandidateQuestion = {
     sectionType?: Phase2Type;
 };
 
-const DEFAULT_DEPTH = 5;
+type RecommendationContextItem = {
+    career: {
+        id: number;
+        name: string;
+        category: string | null;
+        summary: string | null;
+        riasecCodes: string[] | null;
+    };
+    matchScore: number;
+    rankPosition: number;
+};
+
+const defaultDepth = 5;
 
 @Injectable()
 export class AiService {
@@ -31,25 +49,25 @@ export class AiService {
         private readonly ai: AiClient,
     ) {}
 
-    async summary(dto: AiSummaryDto) {
+    async summary(dto: AiSummaryDto): Promise<Record<string, unknown>> {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: dto.sessionToken },
+            where: { sessionToken: dto.sessionToken },
             include: { user: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = dto.assessmentId
             ? await this.prisma.assessment.findFirst({
-                  where: { id: dto.assessmentId, session_id: session.id },
+                  where: { id: dto.assessmentId, sessionId: session.id },
               })
             : await this.prisma.assessment.findFirst({
-                  where: { session_id: session.id, status: AssessmentStatus.COMPLETED },
-                  orderBy: { completed_at: 'desc' },
+                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completedAt: 'desc' },
               });
         if (!assessment) throw new NotFoundException('Aucun test disponible pour cette session');
 
         let result = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessment.id },
+            where: { assessmentId: assessment.id },
         });
         if (!result) {
             if (assessment.status !== AssessmentStatus.COMPLETED) {
@@ -66,8 +84,8 @@ export class AiService {
             assessment.id,
             dto.limit ?? 6,
         );
-        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.current_phase);
-        const profile = this.mergeProfiles(null, session.user?.bio);
+        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
+        const profile = this.mergeProfiles(null, this.parseProfile(session.user?.bio));
 
         const context = {
             session: {
@@ -77,21 +95,21 @@ export class AiService {
             assessment: {
                 id: assessment.id,
                 type: assessment.type,
-                currentPhase: assessment.current_phase,
-                currentSection: assessment.current_section,
-                completionPercentage: assessment.completion_percentage,
-                startedAt: assessment.started_at,
+                currentPhase: assessment.currentPhase,
+                currentSection: assessment.currentSection,
+                completionPercentage: assessment.completionPercentage,
+                startedAt: assessment.startedAt,
             },
             result: {
-                phase1Code: result.phase1_code,
-                phase2Code: result.phase2_code,
+                phase1Code: result.phase1Code,
+                phase2Code: result.phase2Code,
                 strengths: result.strengths,
-                consistencyLevel: result.consistency_level,
-                profileStrength: result.profile_strength,
-                differentiationScore: result.differentiation_score,
-                phase1Scores: result.phase1_scores,
-                phase2Scores: result.phase2_scores,
-                sectionScores: result.section_scores,
+                consistencyLevel: result.consistencyLevel,
+                profileStrength: result.profileStrength,
+                differentiationScore: result.differentiationScore,
+                phase1Scores: result.phase1Scores,
+                phase2Scores: result.phase2Scores,
+                sectionScores: result.sectionScores,
             },
             recommendations: recommendations.map((rec) => ({
                 id: rec.career.id,
@@ -99,8 +117,8 @@ export class AiService {
                 category: rec.career.category,
                 summary: rec.career.summary,
                 riasecCodes: rec.career.riasecCodes,
-                matchScore: rec.match_score,
-                rankPosition: rec.rank_position,
+                matchScore: rec.matchScore,
+                rankPosition: rec.rankPosition,
             })),
             behavior,
         };
@@ -166,20 +184,16 @@ export class AiService {
             },
         );
 
-        if (
-            dto.section &&
-            assessment.current_section &&
-            dto.section !== assessment.current_section
-        ) {
+        if (dto.section && assessment.currentSection && dto.section !== assessment.currentSection) {
             throw new BadRequestException('Section courante invalide pour cette requete');
         }
 
         const partialScores = await this.computePartialScores(
             assessment.id,
-            assessment.current_phase,
+            assessment.currentPhase,
             dto.section,
         );
-        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.current_phase);
+        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
         const candidates = await this.getCandidateQuestions(
             assessment,
             dto.section,
@@ -188,7 +202,7 @@ export class AiService {
         if (!candidates.length) {
             throw new BadRequestException('Aucune question disponible');
         }
-        const profile = this.mergeProfiles(null, session.user?.bio);
+        const profile = this.mergeProfiles(null, this.parseProfile(session.user?.bio));
         const recommendations: Array<{
             name: string;
             category: string | null;
@@ -223,9 +237,9 @@ export class AiService {
         const input = JSON.stringify({
             task: 'Selectionner les prochaines questions et donner un message clair.',
             assessment: {
-                currentPhase: assessment.current_phase,
-                currentSection: assessment.current_section,
-                completionPercentage: assessment.completion_percentage,
+                currentPhase: assessment.currentPhase,
+                currentSection: assessment.currentSection,
+                completionPercentage: assessment.completionPercentage,
             },
             profile,
             partialScores,
@@ -265,23 +279,23 @@ export class AiService {
 
     async chat(dto: AiChatDto) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: dto.sessionToken },
+            where: { sessionToken: dto.sessionToken },
             include: { user: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = dto.assessmentId
             ? await this.prisma.assessment.findFirst({
-                  where: { id: dto.assessmentId, session_id: session.id },
+                  where: { id: dto.assessmentId, sessionId: session.id },
               })
             : await this.prisma.assessment.findFirst({
-                  where: { session_id: session.id },
-                  orderBy: { started_at: 'desc' },
+                  where: { sessionId: session.id },
+                  orderBy: { startedAt: 'desc' },
               });
         if (!assessment) throw new NotFoundException('Aucun test disponible pour cette session');
 
         let result = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessment.id },
+            where: { assessmentId: assessment.id },
         });
         if (!result && assessment.status === AssessmentStatus.COMPLETED) {
             result = await this.resultsService.compute({
@@ -294,8 +308,8 @@ export class AiService {
             result && assessment.status === AssessmentStatus.COMPLETED
                 ? await this.ensureRecommendations(dto.sessionToken, assessment.id, 6)
                 : [];
-        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.current_phase);
-        const profile = this.mergeProfiles(null, session.user?.bio);
+        const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
+        const profile = this.mergeProfiles(null, this.parseProfile(session.user?.bio));
 
         const context = {
             session: {
@@ -306,18 +320,18 @@ export class AiService {
                 id: assessment.id,
                 type: assessment.type,
                 status: assessment.status,
-                currentPhase: assessment.current_phase,
-                currentSection: assessment.current_section,
-                completionPercentage: assessment.completion_percentage,
+                currentPhase: assessment.currentPhase,
+                currentSection: assessment.currentSection,
+                completionPercentage: assessment.completionPercentage,
             },
             result: result
                 ? {
-                      phase1Code: result.phase1_code,
-                      phase2Code: result.phase2_code,
+                      phase1Code: result.phase1Code,
+                      phase2Code: result.phase2Code,
                       strengths: result.strengths,
-                      consistencyLevel: result.consistency_level,
-                      profileStrength: result.profile_strength,
-                      differentiationScore: result.differentiation_score,
+                      consistencyLevel: result.consistencyLevel,
+                      profileStrength: result.profileStrength,
+                      differentiationScore: result.differentiationScore,
                   }
                 : null,
             recommendations: recommendations.map((rec) => ({
@@ -326,8 +340,8 @@ export class AiService {
                 category: rec.career.category,
                 summary: rec.career.summary,
                 riasecCodes: rec.career.riasecCodes,
-                matchScore: rec.match_score,
-                rankPosition: rec.rank_position,
+                matchScore: rec.matchScore,
+                rankPosition: rec.rankPosition,
             })),
             behavior,
         };
@@ -357,17 +371,17 @@ export class AiService {
     }
 
     private buildCountsFromResponses(
-        responses: Array<{ question: { riasec_type_id: RiasecType } }>,
+        responses: Array<{ question: { riasecTypeId: RiasecType } }>,
     ): Record<RiasecType, number> {
         const counts = this.emptyScores();
         for (const response of responses) {
-            counts[response.question.riasec_type_id] += 1;
+            counts[response.question.riasecTypeId] += 1;
         }
         return counts;
     }
 
     private applyDepthFilter<
-        T extends { id: number; riasec_type_id: RiasecType; display_order: number },
+        T extends { id: number; riasecTypeId: RiasecType; displayOrder: number },
     >(
         questions: T[],
         answered: Set<number>,
@@ -382,17 +396,17 @@ export class AiService {
         const selected: T[] = [];
         for (const question of questions) {
             if (answered.has(question.id)) continue;
-            const count = remaining[question.riasec_type_id] ?? 0;
+            const count = remaining[question.riasecTypeId] ?? 0;
             if (count <= 0) continue;
             selected.push(question);
-            remaining[question.riasec_type_id] = count - 1;
+            remaining[question.riasecTypeId] = count - 1;
         }
-        return selected.sort((a, b) => a.display_order - b.display_order);
+        return selected.sort((a, b) => a.displayOrder - b.displayOrder);
     }
 
     private addScore(scores: RiasecScores, code: string | null, value: number) {
         if (!code) return;
-        if ((RIASEC_CODES as readonly string[]).includes(code)) {
+        if ((riasecCodes as readonly string[]).includes(code)) {
             scores[code as keyof RiasecScores] += value;
         }
     }
@@ -407,30 +421,22 @@ export class AiService {
 
         if (phase === PhaseType.PHASE1) {
             const responses = await this.prisma.phase1Response.findMany({
-                where: { assessment_id: assessmentId },
-                select: { response_value: true, question: { select: { riasec_type_id: true } } },
+                where: { assessmentId: assessmentId },
+                select: { responseValue: true, question: { select: { riasecTypeId: true } } },
             });
             for (const response of responses) {
-                this.addScore(
-                    phase1Scores,
-                    response.question.riasec_type_id,
-                    response.response_value,
-                );
+                this.addScore(phase1Scores, response.question.riasecTypeId, response.responseValue);
             }
         } else if (phase === PhaseType.PHASE2) {
             const responses = await this.prisma.phase2Response.findMany({
                 where: {
-                    assessment_id: assessmentId,
-                    ...(section ? { phase2_type: section } : {}),
+                    assessmentId: assessmentId,
+                    ...(section ? { phase2Type: section } : {}),
                 },
-                select: { response_value: true, question: { select: { riasec_type_id: true } } },
+                select: { responseValue: true, question: { select: { riasecTypeId: true } } },
             });
             for (const response of responses) {
-                this.addScore(
-                    phase2Scores,
-                    response.question.riasec_type_id,
-                    response.response_value,
-                );
+                this.addScore(phase2Scores, response.question.riasecTypeId, response.responseValue);
             }
         }
 
@@ -441,21 +447,21 @@ export class AiService {
     }
 
     private async computeBehaviorMetrics(assessmentId: string, phase: PhaseType) {
-        let responses: Array<{ response_time_ms: number | null }> = [];
+        let responses: Array<{ responseTimeMs: number | null }> = [];
         if (phase === PhaseType.PHASE1) {
             responses = await this.prisma.phase1Response.findMany({
-                where: { assessment_id: assessmentId, response_time_ms: { not: null } },
-                select: { response_time_ms: true },
+                where: { assessmentId: assessmentId, responseTimeMs: { not: null } },
+                select: { responseTimeMs: true },
             });
         } else if (phase === PhaseType.PHASE2) {
             responses = await this.prisma.phase2Response.findMany({
-                where: { assessment_id: assessmentId, response_time_ms: { not: null } },
-                select: { response_time_ms: true },
+                where: { assessmentId: assessmentId, responseTimeMs: { not: null } },
+                select: { responseTimeMs: true },
             });
         }
 
         const times = responses
-            .map((r) => r.response_time_ms ?? 0)
+            .map((r) => r.responseTimeMs ?? 0)
             .filter((v) => Number.isFinite(v) && v > 0);
 
         if (!times.length) {
@@ -475,114 +481,185 @@ export class AiService {
     private async getCandidateQuestions(
         assessment: {
             id: string;
-            test_version_id: number;
-            current_phase: PhaseType;
-            current_section: Phase2Type | null;
+            testVersionId: number;
+            currentPhase: PhaseType;
+            currentSection: Phase2Type | null;
             depth: number;
         },
         section?: Phase2Type,
         maxQuestions = 5,
     ): Promise<CandidateQuestion[]> {
         const poolSize = Math.max(10, maxQuestions * 2);
-        const depth = assessment.depth ?? DEFAULT_DEPTH;
-        if (assessment.current_phase === PhaseType.PHASE1) {
+        const depth = assessment.depth ?? defaultDepth;
+        if (assessment.currentPhase === PhaseType.PHASE1) {
             const answered = await this.prisma.phase1Response.findMany({
-                where: { assessment_id: assessment.id },
-                select: { question_id: true, question: { select: { riasec_type_id: true } } },
+                where: { assessmentId: assessment.id },
+                select: { questionId: true, question: { select: { riasecTypeId: true } } },
             });
-            const answeredSet = new Set(answered.map((r) => r.question_id));
+            const answeredSet = new Set(answered.map((r) => r.questionId));
             const answeredCounts = this.buildCountsFromResponses(answered);
             const questions = await this.prisma.phase1Question.findMany({
-                where: { is_active: true, test_version_id: assessment.test_version_id },
-                orderBy: { display_order: 'asc' },
+                where: { isActive: true, testVersionId: assessment.testVersionId },
+                orderBy: { displayOrder: 'asc' },
                 select: {
                     id: true,
-                    riasec_type_id: true,
-                    question_text: true,
-                    display_order: true,
+                    riasecTypeId: true,
+                    questionText: true,
+                    displayOrder: true,
                 },
             });
             return this.applyDepthFilter(questions, answeredSet, answeredCounts, depth)
                 .slice(0, poolSize)
-                .map((q) => ({ id: q.id, text: q.question_text, riasecType: q.riasec_type_id }));
+                .map((q) => ({ id: q.id, text: q.questionText, riasecType: q.riasecTypeId }));
         }
 
-        const targetSection = section ?? assessment.current_section ?? Phase2Type.OCCUPATIONS;
+        const targetSection = section ?? assessment.currentSection ?? Phase2Type.OCCUPATIONS;
         const answered = await this.prisma.phase2Response.findMany({
-            where: { assessment_id: assessment.id, phase2_type: targetSection },
-            select: { question_id: true, question: { select: { riasec_type_id: true } } },
+            where: { assessmentId: assessment.id, phase2Type: targetSection },
+            select: { questionId: true, question: { select: { riasecTypeId: true } } },
         });
-        const answeredSet = new Set(answered.map((r) => r.question_id));
+        const answeredSet = new Set(answered.map((r) => r.questionId));
         const answeredCounts = this.buildCountsFromResponses(answered);
         const questions = await this.prisma.phase2Question.findMany({
             where: {
-                is_active: true,
-                test_version_id: assessment.test_version_id,
-                phase2_type: targetSection,
+                isActive: true,
+                testVersionId: assessment.testVersionId,
+                phase2Type: targetSection,
             },
-            orderBy: { display_order: 'asc' },
+            orderBy: { displayOrder: 'asc' },
             select: {
                 id: true,
-                riasec_type_id: true,
-                question_text: true,
-                phase2_type: true,
-                display_order: true,
+                riasecTypeId: true,
+                questionText: true,
+                phase2Type: true,
+                displayOrder: true,
             },
         });
         return this.applyDepthFilter(questions, answeredSet, answeredCounts, depth)
             .slice(0, poolSize)
             .map((q) => ({
                 id: q.id,
-                text: q.question_text,
-                riasecType: q.riasec_type_id,
-                sectionType: q.phase2_type,
+                text: q.questionText,
+                riasecType: q.riasecTypeId,
+                sectionType: q.phase2Type,
             }));
     }
 
-    private async ensureRecommendations(sessionToken: string, assessmentId: string, limit: number) {
+    private toRecommendationContextItem(rec: unknown): RecommendationContextItem {
+        const typed = rec as {
+            career?: {
+                id: number;
+                name: string;
+                category: string | null;
+                summary: string | null;
+                riasecCodes?: string[] | null;
+            };
+            id?: number;
+            name?: string;
+            category?: string | null;
+            summary?: string | null;
+            riasecCodes?: string[] | null;
+            matchScore?: number;
+            rankPosition?: number;
+            match_score?: number;
+            rank_position?: number;
+        };
+
+        const careerSource = typed.career ?? typed;
+        const matchScore = typed.matchScore ?? typed.match_score;
+        const rankPosition = typed.rankPosition ?? typed.rank_position;
+
+        if (
+            typeof careerSource.id !== 'number' ||
+            typeof careerSource.name !== 'string' ||
+            typeof matchScore !== 'number' ||
+            typeof rankPosition !== 'number'
+        ) {
+            throw new InternalServerErrorException('Malformed recommendation payload');
+        }
+
+        const career = {
+            id: careerSource.id,
+            name: careerSource.name,
+            category: careerSource.category ?? null,
+            summary: careerSource.summary ?? null,
+            riasecCodes: careerSource.riasecCodes ?? null,
+        };
+
+        return {
+            career,
+            matchScore,
+            rankPosition,
+        };
+    }
+
+    private async ensureRecommendations(
+        sessionToken: string,
+        assessmentId: string,
+        limit: number,
+    ): Promise<RecommendationContextItem[]> {
         const existing = await this.prisma.assessmentCareerRecommendation.findMany({
-            where: { result: { assessment_id: assessmentId } },
+            where: { result: { assessmentId: assessmentId } },
             include: { career: true },
-            orderBy: { rank_position: 'asc' },
+            orderBy: { rankPosition: 'asc' },
             take: limit,
         });
-        if (existing.length) return existing;
-        return this.recommendationsService.getRecommendations({
+        if (existing.length) {
+            return existing.map((rec) => this.toRecommendationContextItem(rec));
+        }
+
+        const generated = await this.recommendationsService.getRecommendations({
             sessionToken,
             assessmentId,
             limit,
         });
+        return generated.map((rec) => this.toRecommendationContextItem(rec));
     }
 
     private async getExistingRecommendations(assessmentId: string) {
         const recs = await this.prisma.assessmentCareerRecommendation.findMany({
-            where: { result: { assessment_id: assessmentId } },
+            where: { result: { assessmentId: assessmentId } },
             include: { career: true },
-            orderBy: { rank_position: 'asc' },
+            orderBy: { rankPosition: 'asc' },
             take: 6,
         });
         return recs.map((rec) => ({
             name: rec.career.name,
             category: rec.career.category,
-            matchScore: rec.match_score,
+            matchScore: rec.matchScore,
         }));
     }
 
     private mergeProfiles(
-        sessionProfile?: unknown | null,
-        userProfile?: unknown | null,
+        sessionProfile?: Record<string, unknown> | null,
+        userProfile?: Record<string, unknown> | null,
     ): Record<string, unknown> | null {
-        const sessionObj =
-            sessionProfile && typeof sessionProfile === 'object'
-                ? (sessionProfile as Record<string, unknown>)
-                : null;
-        const userObj =
-            userProfile && typeof userProfile === 'object'
-                ? (userProfile as Record<string, unknown>)
-                : null;
+        const sessionObj = sessionProfile ?? null;
+        const userObj = userProfile ?? null;
         if (sessionObj && userObj) {
             return { ...userObj, ...sessionObj };
         }
         return sessionObj ?? userObj ?? null;
+    }
+
+    private parseProfile(
+        profile: string | Record<string, unknown> | null | undefined,
+    ): Record<string, unknown> | null {
+        if (!profile) {
+            return null;
+        }
+
+        if (typeof profile === 'string') {
+            try {
+                const parsed: unknown = JSON.parse(profile);
+                return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                    ? (parsed as Record<string, unknown>)
+                    : null;
+            } catch {
+                return null;
+            }
+        }
+
+        return profile;
     }
 }

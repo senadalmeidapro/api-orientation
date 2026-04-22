@@ -1,4 +1,4 @@
-import { ResponsesService } from './responses.service';
+import type { ResponsesService } from './responses.service';
 import { ResponsesController } from './responses.controller';
 
 describe('ResponsesController', () => {

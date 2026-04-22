@@ -9,8 +9,8 @@ import {
     Post,
     Query,
 } from '@nestjs/common';
-import { Public } from '../../common/decorators/public.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { publicDecorator } from '../../common/decorators/public.decorator';
+import { roles } from '../../common/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 import {
     CreateLinkCategoryDto,
@@ -48,7 +48,7 @@ export class LinksController {
     //     ],
     // })
     // @ApiStandardErrorResponses()
-    @Public()
+    @publicDecorator()
     @Throttle({ default: { limit: 120, ttl: 60 } })
     @Get()
     list(@Query() dto: ListLinksDto) {
@@ -73,7 +73,7 @@ export class LinksController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
     createLink(@Body() dto: CreateLinkDto) {
@@ -102,7 +102,7 @@ export class LinksController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
     updateLink(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLinkDto) {
@@ -126,7 +126,7 @@ export class LinksController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')
     deleteLink(@Param('id', ParseIntPipe) id: number) {
@@ -149,7 +149,7 @@ export class LinksController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Post('categories')
     createCategory(@Body() dto: CreateLinkCategoryDto) {
@@ -177,7 +177,7 @@ export class LinksController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 20, ttl: 60 } })
     @Patch('categories/:id')
     updateCategory(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLinkCategoryDto) {
@@ -201,7 +201,7 @@ export class LinksController {
     //     },
     // })
     // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete('categories/:id')
     deleteCategory(@Param('id', ParseIntPipe) id: number) {

@@ -10,7 +10,7 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { roles } from '../../common/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { TrainingPathsService } from './training-paths.service';
 import { CreateTrainingPathDto, ListTrainingPathsDto, UpdateTrainingPathDto } from './dto';
@@ -94,7 +94,7 @@ export class TrainingPathsController {
     //         institution_id: 7,
     //     },
     // })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Post()
     create(@Body() dto: CreateTrainingPathDto) {
@@ -122,7 +122,7 @@ export class TrainingPathsController {
     //         is_active: true,
     //     },
     // })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Patch(':id')
     update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTrainingPathDto) {
@@ -145,7 +145,7 @@ export class TrainingPathsController {
     //         is_active: false,
     //     },
     // })
-    @Roles('ADMIN')
+    @roles('ADMIN')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @Delete(':id')
     deactivate(@Param('id', ParseIntPipe) id: number) {

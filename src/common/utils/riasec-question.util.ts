@@ -1,4 +1,4 @@
-import { RiasecType } from '@prisma/client';
+import type { RiasecType } from '@prisma/client';
 
 export function limitQuestionsByDepth<T extends { riasecTypeId: RiasecType }>(
     questions: T[],

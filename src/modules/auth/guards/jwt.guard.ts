@@ -1,7 +1,7 @@
 import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
+import { isPublicKey } from '../../../common/decorators/public.decorator';
 import { Request } from 'express';
 import { AuthTokenService } from '../services/auth-token.service';
 
@@ -15,7 +15,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     override async canActivate(context: ExecutionContext): Promise<boolean> {
-        const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+        const isPublic = this.reflector.getAllAndOverride<boolean>(isPublicKey, [
             context.getHandler(),
             context.getClass(),
         ]);
@@ -49,9 +49,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         return context.switchToHttp().getRequest<Request>();
     }
 
-    override handleRequest<TUser = unknown>(err: unknown, user: TUser, _info?: unknown): TUser {
+    override handleRequest<TUser = unknown>(err: unknown, user: TUser): TUser {
         if (err || !user) {
-            throw err || new UnauthorizedException('Invalid or expired token');
+            throw err instanceof Error
+                ? err
+                : new UnauthorizedException('Invalid or expired token');
         }
         return user;
     }

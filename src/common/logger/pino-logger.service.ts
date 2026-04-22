@@ -1,4 +1,4 @@
-import { LoggerService } from '@nestjs/common';
+import type { LoggerService } from '@nestjs/common';
 import pino from 'pino';
 
 export class PinoLoggerService implements LoggerService {

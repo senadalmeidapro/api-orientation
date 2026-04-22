@@ -23,23 +23,30 @@ export class AnalyticsService {
         return date;
     }
 
+    private buildDateTimeFilter(from?: Date, to?: Date) {
+        const filter: { gte?: Date; lte?: Date } = {};
+        if (from !== undefined) filter.gte = from;
+        if (to !== undefined) filter.lte = to;
+        return Object.keys(filter).length > 0 ? filter : undefined;
+    }
+
     private async resolveAssessment(sessionToken: string, assessmentId?: string) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = assessmentId
             ? await this.prisma.assessment.findFirst({
-                  where: { id: assessmentId, session_id: session.id },
+                  where: { id: assessmentId, sessionId: session.id },
               })
             : await this.prisma.assessment.findFirst({
                   where: {
-                      session_id: session.id,
+                      sessionId: session.id,
                       status: AssessmentStatus.COMPLETED,
                   },
-                  orderBy: { completed_at: 'desc' },
+                  orderBy: { completedAt: 'desc' },
               });
 
         if (!assessment) throw new NotFoundException('Assessment introuvable');
@@ -50,12 +57,12 @@ export class AnalyticsService {
         const { assessment } = await this.resolveAssessment(dto.sessionToken, dto.assessmentId);
         return this.prisma.assessmentInteraction.create({
             data: {
-                assessment_id: assessment.id,
+                assessmentId: assessment.id,
                 type: dto.type,
-                entity_type: dto.entityType,
-                entity_id: dto.entityId,
-                value: dto.value,
-                metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonObject) : undefined,
+                entityType: dto.entityType,
+                entityId: dto.entityId,
+                value: dto.value ?? null,
+                metadata: dto.metadata ? (dto.metadata as Prisma.InputJsonValue) : {},
             },
         });
     }
@@ -64,11 +71,11 @@ export class AnalyticsService {
         const { assessment } = await this.resolveAssessment(dto.sessionToken, dto.assessmentId);
         return this.prisma.assessmentFeedback.create({
             data: {
-                assessment_id: assessment.id,
-                recommendationId: dto.recommendationId,
+                assessmentId: assessment.id,
+                recommendationId: dto.recommendationId ?? null,
                 type: dto.type,
                 value: dto.value,
-                context: dto.context ? (dto.context as Prisma.InputJsonObject) : undefined,
+                context: dto.context ? (dto.context as Prisma.InputJsonValue) : {},
             },
         });
     }
@@ -77,12 +84,12 @@ export class AnalyticsService {
         const { assessment } = await this.resolveAssessment(dto.sessionToken, dto.assessmentId);
         return this.prisma.assessmentOutcome.create({
             data: {
-                assessment_id: assessment.id,
-                career_id: dto.careerId,
+                assessmentId: assessment.id,
+                careerId: dto.careerId,
                 status: dto.status,
                 sector: dto.sector,
-                salary_range: dto.salaryRange,
-                delay_to_outcome: dto.delayToOutcome,
+                salaryRange: dto.salaryRange ?? null,
+                delayToOutcome: dto.delayToOutcome,
             },
         });
     }
@@ -90,7 +97,9 @@ export class AnalyticsService {
     async getSummary(dto: AnalyticsSummaryDto) {
         const from = this.parseDate(dto.from);
         const to = this.parseDate(dto.to);
-        const dateFilter = from || to ? { created_at: { gte: from, lte: to } } : {};
+        const createdAtFilter = this.buildDateTimeFilter(from, to);
+        const completedAtFilter = this.buildDateTimeFilter(from, to);
+        const dateFilter = createdAtFilter ? { createdAt: createdAtFilter } : {};
         const limit = dto.limit ?? 10;
 
         const [assessmentsCompleted, sessionsTotal, topCareers, feedbacks] =
@@ -98,16 +107,16 @@ export class AnalyticsService {
                 this.prisma.assessment.count({
                     where: {
                         status: AssessmentStatus.COMPLETED,
-                        ...(from || to ? { completed_at: { gte: from, lte: to } } : {}),
+                        ...(completedAtFilter ? { completedAt: completedAtFilter } : {}),
                     },
                 }),
                 this.prisma.session.count({
-                    where: from || to ? { created_at: { gte: from, lte: to } } : {},
+                    where: createdAtFilter ? { createdAt: createdAtFilter } : {},
                 }),
                 this.prisma.assessmentCareerRecommendation.groupBy({
-                    by: ['career_id'],
-                    _count: { career_id: true },
-                    orderBy: { _count: { career_id: 'desc' } },
+                    by: ['careerId'],
+                    _count: { careerId: true },
+                    orderBy: { _count: { careerId: 'desc' } },
                     take: limit,
                     where: dateFilter,
                 }),
@@ -119,7 +128,7 @@ export class AnalyticsService {
                 }),
             ]);
 
-        const careerIds = topCareers.map((c) => c.career_id);
+        const careerIds = topCareers.map((c) => c.careerId);
         const careers = await this.prisma.career.findMany({
             where: { id: { in: careerIds } },
             select: { id: true, name: true },
@@ -137,9 +146,9 @@ export class AnalyticsService {
             sessionsTotal,
             assessmentsCompleted,
             topCareers: topCareers.map((item) => ({
-                careerId: item.career_id,
-                name: careerMap.get(item.career_id) ?? 'Unknown',
-                count: (item._count as { career_id: number })?.career_id ?? 0,
+                careerId: item.careerId,
+                name: careerMap.get(item.careerId) ?? 'Unknown',
+                count: (item._count as { careerId: number })?.careerId ?? 0,
             })),
             feedbackSummary,
         };

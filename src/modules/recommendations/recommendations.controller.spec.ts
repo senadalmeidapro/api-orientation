@@ -1,4 +1,4 @@
-import { RecommendationsService } from './recommendations.service';
+import type { RecommendationsService } from './recommendations.service';
 import { RecommendationsController } from './recommendations.controller';
 
 describe('RecommendationsController', () => {

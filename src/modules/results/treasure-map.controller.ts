@@ -116,15 +116,15 @@ export class TreasureMapController {
         @Res({ passthrough: true }) res: Response,
     ) {
         const map = await this.service.getByShareToken(shareToken);
-        if (!map.pdf_url) {
+        if (!map.pdfUrl) {
             throw new NotFoundException('PDF non généré');
         }
 
-        if (map.pdf_url.startsWith('http')) {
-            return res.redirect(map.pdf_url);
+        if (typeof map.pdfUrl === 'string' && map.pdfUrl.startsWith('http')) {
+            return res.redirect(map.pdfUrl);
         }
 
-        const filePath = path.join(process.cwd(), map.pdf_url);
+        const filePath = path.join(process.cwd(), map.pdfUrl);
         if (!fs.existsSync(filePath)) {
             throw new NotFoundException('Fichier PDF introuvable');
         }

@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { RecommendationsService } from './recommendations.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
-import { Public } from '../../common/decorators/public.decorator';
+import { publicDecorator } from '../../common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 // import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
@@ -39,7 +39,7 @@ export class RecommendationsController {
     //     ],
     // })
     @Throttle({ default: { limit: 60, ttl: 60 } })
-    @Public()
+    @publicDecorator()
     @Get('recommendations')
     getRecommendations(@Query() dto: GetRecommendationsDto) {
         return this.service.getRecommendations(dto);

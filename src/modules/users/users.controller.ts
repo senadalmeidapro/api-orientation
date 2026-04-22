@@ -1,11 +1,11 @@
 import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { UserRole, UserStatus } from '@prisma/client';
-import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
+import { roles } from '../../common/decorators/roles.decorator';
 import { UpdateUserDto, UpdateUserRolesDto, UserResponseDto } from './dto';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { CurrentUser } from '../../common/decorators';
+import { currentUser } from '../../common/decorators';
 import {
     ApiBearerAuth,
     ApiBody,
@@ -51,7 +51,7 @@ export class UsersController {
     })
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @Get('me')
-    async me(@CurrentUser('id') id: string): Promise<UserResponseDto> {
+    async me(@currentUser('id') id: string): Promise<UserResponseDto> {
         return this.users.findById(id);
     }
 
@@ -66,7 +66,7 @@ export class UsersController {
     //     message: 'Liste des utilisateurs récupérée.',
     // })
     @Throttle({ default: { limit: 20, ttl: 60 } })
-    @Roles(UserRole.ADMIN)
+    @roles(UserRole.ADMIN)
     @Get()
     list(): Promise<UserResponseDto[]> {
         return this.users.listUsers();
@@ -102,7 +102,7 @@ export class UsersController {
         },
     })
     @Throttle({ default: { limit: 20, ttl: 60 } })
-    @Roles(UserRole.ADMIN)
+    @roles(UserRole.ADMIN)
     @Get(':userId')
     getById(@Param('userId') userId: string): Promise<UserResponseDto> {
         return this.users.findById(userId);
@@ -142,7 +142,7 @@ export class UsersController {
         },
     })
     @Throttle({ default: { limit: 20, ttl: 60 } })
-    @Roles(UserRole.ADMIN)
+    @roles(UserRole.ADMIN)
     @Patch(':userId')
     update(@Param('userId') userId: string, @Body() dto: UpdateUserDto): Promise<UserResponseDto> {
         return this.users.updateUser(userId, dto);
@@ -182,7 +182,7 @@ export class UsersController {
         },
     })
     @Throttle({ default: { limit: 20, ttl: 60 } })
-    @Roles(UserRole.ADMIN)
+    @roles(UserRole.ADMIN)
     @Patch(':userId/roles')
     updateRoles(
         @Param('userId') userId: string,

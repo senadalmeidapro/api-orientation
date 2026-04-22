@@ -24,7 +24,7 @@ import { ConfigService } from '../../common/config/config.service';
             useFactory: (config: ConfigService) => ({
                 secret: config.jwt.accessSecret,
                 signOptions: {
-                    expiresIn: (config.jwt.accessExpiresIn ?? 900) as any,
+                    expiresIn: config.jwt.accessExpiresIn ?? 900,
                     issuer: config.jwt.issuer ?? 'api-orientation-issue',
                     audience: 'api-orientation-audience',
                 },

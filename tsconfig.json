@@ -1,29 +1,61 @@
 {
     "compilerOptions": {
-        "module": "commonjs", // ← fix
-        "moduleResolution": "node", // ← fix
-        "target": "ES2023",
-        "noEmitOnError": false, // ← safer for dev watch mode
+        // ───────────────────────── MODULE ─────────────────────────
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "resolvePackageJsonExports": true,
+
         "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+
+        // ───────────────────────── TARGET ─────────────────────────
+        "target": "ES2023",
+        "lib": ["ES2023"],
+
+        // ───────────────────────── PATHS ─────────────────────────
+        "paths": {
+            "@/*": ["./src/*"],
+            "@common/*": ["./src/common/*"],
+            "@config/*": ["./src/config/*"],
+            "@domain/*": ["./src/domain/*"],
+            "@modules/*": ["./src/modules/*"],
+            "@infra/*": ["./src/infrastructure/*"]
+        },
+
+        // ───────────────────────── OUTPUT ─────────────────────────
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "removeComments": true,
+        "noEmitOnError": true,
+
+        // ───────────────────────── PERFORMANCE ─────────────────────────
+        "incremental": true,
+        "tsBuildInfoFile": "./dist/.tsbuildinfo",
+        "skipLibCheck": true,
+
+        // ───────────────────────── DECORATORS (NestJS CRITICAL) ─────────────────────────
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        "declaration": true,
-        "sourceMap": true,
-        "incremental": true,
-        "tsBuildInfoFile": "./dist/.tsbuildinfo", // ← keeps root clean
+
+        // ───────────────────────── STRICT CORE (CLEAN + SAFE) ─────────────────────────
         "strict": true,
-        "strictNullChecks": true,
-        "forceConsistentCasingInFileNames": true,
-        "noImplicitAny": false,
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
+
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
         "noFallthroughCasesInSwitch": true,
-        "isolatedModules": true,
-        "removeComments": true,
-        "skipLibCheck": true,
-        "rootDir": "./src",
-        "outDir": "./dist",
+        "forceConsistentCasingInFileNames": true,
+
+        // ───────────────────────── TYPES ─────────────────────────
         "types": ["node"],
         "typeRoots": ["./node_modules/@types", "./src/common/types"]
     },
-    "include": ["src/**/*", "prisma/**/*"],
-    "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "**/*.e2e-spec.ts"]
 }

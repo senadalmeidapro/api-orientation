@@ -1,4 +1,4 @@
-import { RiasecType, PhaseType } from '@prisma/client';
+import type { RiasecType } from '@prisma/client';
 
 export interface QuestionProfileWeight {
     riasecType: RiasecType;
@@ -19,19 +19,28 @@ export interface RiasecScores {
     C: number;
 }
 
+export interface ProfileSnapshot {
+    raw: RiasecScores;
+    normalized: RiasecScores;
+    dominant: string;
+    topThree: Array<{ type: RiasecType; score: number; percentage: number }>;
+}
+
 export class MultiProfileUtil {
     static emptyScores(): RiasecScores {
         return { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
     }
 
     static normalizeScores(scores: RiasecScores): RiasecScores {
-        const total = Object.values(scores).reduce((sum, val) => sum + val, 0);
+        const values = Object.values(scores) as number[];
+        const total = values.reduce((sum, val) => sum + val, 0);
 
         if (total === 0) {
             return this.emptyScores();
         }
 
         const normalized: RiasecScores = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
+
         for (const key of Object.keys(scores) as RiasecType[]) {
             normalized[key] = scores[key] / total;
         }
@@ -136,12 +145,7 @@ export class MultiProfileUtil {
         return relevanceScore;
     }
 
-    static createProfileSnapshot(scores: RiasecScores): {
-        raw: RiasecScores;
-        normalized: RiasecScores;
-        dominant: string;
-        topThree: Array<{ type: RiasecType; score: number; percentage: number }>;
-    } {
+    static createProfileSnapshot(scores: RiasecScores): ProfileSnapshot {
         const normalized = this.normalizeScores(scores);
         const dominant = this.getDominantProfiles(scores, 3);
 

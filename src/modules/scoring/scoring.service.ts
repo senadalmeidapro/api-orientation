@@ -4,7 +4,7 @@ import { ConsistencyLevel, Phase2Type, ProfileStrength, RiasecType } from '@pris
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';
 import { MultiProfileUtil, RiasecScores } from '../../common/utils/multi-profile.util';
 
-const RIASEC_ORDER: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
+const riasecOrder: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
 
 @Injectable()
 export class ScoringService {
@@ -16,10 +16,10 @@ export class ScoringService {
     ) {}
 
     private sortCodes(scores: Record<RiasecType, number>) {
-        return [...RIASEC_ORDER].sort((a, b) => {
+        return [...riasecOrder].sort((a, b) => {
             const diff = (scores[b] ?? 0) - (scores[a] ?? 0);
             if (diff !== 0) return diff;
-            return RIASEC_ORDER.indexOf(a) - RIASEC_ORDER.indexOf(b);
+            return riasecOrder.indexOf(a) - riasecOrder.indexOf(b);
         });
     }
 
@@ -29,7 +29,7 @@ export class ScoringService {
 
     private normalizeScores(raw: Record<RiasecType, number>, max: Record<RiasecType, number>) {
         const normalized = this.makeEmptyScores();
-        for (const key of RIASEC_ORDER) {
+        for (const key of riasecOrder) {
             const denom = max[key] ?? 0;
             normalized[key] = denom > 0 ? Math.round((raw[key] / denom) * 100) : 0;
         }
@@ -45,7 +45,7 @@ export class ScoringService {
     ) {
         const assessment = await this.prisma.assessment.findUnique({
             where: { id: assessmentId },
-            select: { test_version_id: true },
+            select: { testVersionId: true },
         });
         if (!assessment) throw new NotFoundException('Assessment introuvable');
 
@@ -60,39 +60,34 @@ export class ScoringService {
             ? (options?.phase2Types ?? [])
             : [Phase2Type.OCCUPATIONS, Phase2Type.APTITUDES, Phase2Type.PERSONALITY];
 
-        const phase1Questions = await this.prisma.phase1Question.findMany({
-            where: { is_active: true, test_version_id: assessment.test_version_id },
-            select: { riasec_type_id: true },
-        });
-
         const phase2Questions = await this.prisma.phase2Question.findMany({
             where: {
-                is_active: true,
-                test_version_id: assessment.test_version_id,
+                isActive: true,
+                testVersionId: assessment.testVersionId,
                 ...(hasPhase2Filter ? { phase2Type: { in: phase2Types } } : {}),
             },
-            select: { riasec_type_id: true, phase2_type: true, max_value: true },
+            select: { riasecTypeId: true, phase2Type: true, maxValue: true },
         });
 
         const phase1 = phase1AssessmentId
             ? await this.prisma.phase1Response.findMany({
-                  where: { assessment_id: phase1AssessmentId },
-                  include: { question: { select: { riasec_type_id: true } } },
+                  where: { assessmentId: phase1AssessmentId },
+                  include: { question: { select: { riasecTypeId: true } } },
               })
             : [];
 
         const phase2 = await this.prisma.phase2Response.findMany({
             where: {
-                assessment_id: assessmentId,
+                assessmentId,
                 ...(hasPhase2Filter ? { phase2Type: { in: phase2Types } } : {}),
             },
-            include: { question: { select: { riasec_type_id: true, phase2_type: true } } },
+            include: { question: { select: { riasecTypeId: true, phase2Type: true } } },
         });
 
         const phase1Scores = this.makeEmptyScores();
         for (const r of phase1) {
-            const key = r.question.riasec_type_id;
-            phase1Scores[key] += r.response_value;
+            const key = r.question.riasecTypeId;
+            phase1Scores[key] += r.responseValue;
         }
 
         const phase2Scores = this.makeEmptyScores();
@@ -103,10 +98,10 @@ export class ScoringService {
         };
 
         for (const r of phase2) {
-            const key = r.question.riasec_type_id;
-            const section = r.question.phase2_type;
-            phase2Scores[key] += r.response_value;
-            sectionScoresRaw[section][key] += r.response_value;
+            const key = r.question.riasecTypeId;
+            const section = r.question.phase2Type;
+            phase2Scores[key] += r.responseValue;
+            sectionScoresRaw[section][key] += r.responseValue;
         }
 
         const maxPhase2 = this.makeEmptyScores();
@@ -116,9 +111,9 @@ export class ScoringService {
             PERSONALITY: this.makeEmptyScores(),
         };
         for (const q of phase2Questions) {
-            const maxVal = q.phase2_type === Phase2Type.APTITUDES ? (q.max_value ?? 3) : 1;
-            maxPhase2[q.riasec_type_id] += maxVal;
-            maxBySection[q.phase2_type][q.riasec_type_id] += maxVal;
+            const maxVal = q.phase2Type === Phase2Type.APTITUDES ? (q.maxValue ?? 3) : 1;
+            maxPhase2[q.riasecTypeId] += maxVal;
+            maxBySection[q.phase2Type][q.riasecTypeId] += maxVal;
         }
 
         const phase2NormalizedScores = this.normalizeScores(phase2Scores, maxPhase2);
@@ -216,15 +211,15 @@ export class ScoringService {
         const assessment = await this.prisma.assessment.findUnique({
             where: { id: assessmentId },
             include: {
-                phase1_responses: {
+                phase1Responses: {
                     include: {
                         question: {
                             select: {
                                 id: true,
-                                riasec_type_id: true,
+                                riasecTypeId: true,
                                 profiles: {
                                     select: {
-                                        riasec_type: true,
+                                        riasecType: true,
                                         weight: true,
                                     },
                                 },
@@ -232,15 +227,15 @@ export class ScoringService {
                         },
                     },
                 },
-                phase2_responses: {
+                phase2Responses: {
                     include: {
                         question: {
                             select: {
                                 id: true,
-                                riasec_type_id: true,
+                                riasecTypeId: true,
                                 profiles: {
                                     select: {
-                                        riasec_type: true,
+                                        riasecType: true,
                                         weight: true,
                                     },
                                 },
@@ -259,40 +254,40 @@ export class ScoringService {
         let phase2Scores = MultiProfileUtil.emptyScores();
 
         // Calculer phase1 avec profils multiples
-        for (const response of assessment.phase1_responses) {
+        for (const response of assessment.phase1Responses) {
             if (response.question.profiles.length > 0) {
                 // Utiliser les profils multi-RIASEC
                 const profiles = response.question.profiles.map((p) => ({
-                    riasecType: p.riasec_type,
+                    riasecType: p.riasecType,
                     weight: p.weight,
                 }));
                 phase1Scores = MultiProfileUtil.applyWeightedResponse(
                     phase1Scores,
                     profiles,
-                    response.response_value,
+                    response.responseValue,
                 );
             } else {
                 // Fallback sur riasec_type_id simple
-                phase1Scores[response.question.riasec_type_id] += response.response_value;
+                phase1Scores[response.question.riasecTypeId] += response.responseValue;
             }
         }
 
         // Calculer phase2 avec profils multiples
-        for (const response of assessment.phase2_responses) {
+        for (const response of assessment.phase2Responses) {
             if (response.question.profiles.length > 0) {
                 // Utiliser les profils multi-RIASEC
                 const profiles = response.question.profiles.map((p) => ({
-                    riasecType: p.riasec_type,
+                    riasecType: p.riasecType,
                     weight: p.weight,
                 }));
                 phase2Scores = MultiProfileUtil.applyWeightedResponse(
                     phase2Scores,
                     profiles,
-                    response.response_value,
+                    response.responseValue,
                 );
             } else {
                 // Fallback sur riasec_type_id simple
-                phase2Scores[response.question.riasec_type_id] += response.response_value;
+                phase2Scores[response.question.riasecTypeId] += response.responseValue;
             }
         }
 

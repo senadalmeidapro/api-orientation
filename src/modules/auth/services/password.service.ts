@@ -2,8 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '../../../common/config/config.service';
 import * as bcrypt from 'bcrypt';
 
-const DEFAULT_SALT_ROUNDS = 10;
-
 @Injectable()
 export class PasswordService {
     private readonly logger = new Logger(PasswordService.name);

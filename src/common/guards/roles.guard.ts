@@ -6,27 +6,30 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RoleLike, ROLES_KEY } from '../decorators/roles.decorator';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { RoleLike, rolesKey } from '../decorators/roles.decorator';
+import { isPublicKey } from '../decorators/public.decorator';
+import type { Request } from 'express';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
     constructor(private readonly reflector: Reflector) {}
 
     canActivate(context: ExecutionContext): boolean {
-        const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+        const isPublic = this.reflector.getAllAndOverride<boolean>(isPublicKey, [
             context.getHandler(),
             context.getClass(),
         ]);
         if (isPublic) return true;
 
-        const requiredRoles = this.reflector.getAllAndOverride<RoleLike[]>(ROLES_KEY, [
+        const requiredRoles = this.reflector.getAllAndOverride<RoleLike[]>(rolesKey, [
             context.getHandler(),
             context.getClass(),
         ]);
         if (!requiredRoles || requiredRoles.length === 0) return true;
 
-        const request = context.switchToHttp().getRequest();
+        const request = context
+            .switchToHttp()
+            .getRequest<Request & { user?: { roles?: RoleLike[]; role?: RoleLike } }>();
         const user = request?.user as { roles?: RoleLike[]; role?: RoleLike } | undefined;
         if (!user) {
             throw new UnauthorizedException('Acces refuse');

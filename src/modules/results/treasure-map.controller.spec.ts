@@ -1,5 +1,5 @@
 import { TreasureMapController } from './treasure-map.controller';
-import { TreasureMapService } from './treasure-map.service';
+import type { TreasureMapService } from './treasure-map.service';
 
 describe('TreasureMapController', () => {
     it('delegates generate', async () => {

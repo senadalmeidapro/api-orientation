@@ -1,4 +1,15 @@
 {
-    "extends": "./tsconfig.json",
-    "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "declarationMap": false
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/*.e2e-spec.ts"
+  ]
 }

@@ -6,24 +6,23 @@ import { UpdateUserDto, UserResponseDto } from './dto';
 const userPublicSelect = {
     id: true,
     email: true,
-    first_name: true,
-    last_name: true,
-    display_name: true,
+    firstName: true,
+    lastName: true,
+    displayName: true,
     bio: true,
     role: true,
     status: true,
-    email_verified_at: true,
-    last_login_at: true,
-    created_at: true,
-    updated_at: true,
+    emailVerifiedAt: true,
+    lastLoginAt: true,
+    createdAt: true,
+    updatedAt: true,
 } satisfies Prisma.UserSelect;
 
 const userInternalSelect = {
     ...userPublicSelect,
-    is_deleted: true,
+    isDeleted: true,
 } satisfies Prisma.UserSelect;
 
-type UserPublic = Prisma.UserGetPayload<{ select: typeof userPublicSelect }>;
 type UserInternal = Prisma.UserGetPayload<{ select: typeof userInternalSelect }>;
 
 @Injectable()
@@ -41,7 +40,7 @@ export class UsersService {
             data: {
                 email: data.email,
                 password: data.passwordHash,
-                display_name: data.displayName,
+                ...(data.displayName !== undefined ? { displayName: data.displayName } : {}),
             },
             select: userPublicSelect,
         });
@@ -53,10 +52,11 @@ export class UsersService {
             where: { email },
             select: userInternalSelect,
         });
-        if (!user || user.is_deleted || user.status === UserStatus.DELETED) {
+        if (!user || user.isDeleted || user.status === UserStatus.DELETED) {
             return null;
         }
-        const { is_deleted, ...safeUser } = user;
+        const { isDeleted, ...safeUser } = user;
+        void isDeleted;
         return new UserResponseDto(safeUser);
     }
 
@@ -71,10 +71,10 @@ export class UsersService {
     async listUsers(): Promise<UserResponseDto[]> {
         const users = await this.prisma.user.findMany({
             where: {
-                is_deleted: false,
+                isDeleted: false,
                 status: { not: UserStatus.DELETED },
             },
-            orderBy: { created_at: 'desc' },
+            orderBy: { createdAt: 'desc' },
             select: userPublicSelect,
         });
         return users.map((user) => new UserResponseDto(user));
@@ -83,12 +83,12 @@ export class UsersService {
     async updateUser(userId: string, data: UpdateUserDto): Promise<UserResponseDto> {
         const updateData: Prisma.UserUpdateInput = {};
         if (data.displayName !== undefined) {
-            updateData.display_name = data.displayName;
+            updateData.displayName = data.displayName;
         }
         if (data.status !== undefined) {
             updateData.status = data.status;
             if (data.status === UserStatus.DELETED) {
-                updateData.is_deleted = true;
+                updateData.isDeleted = true;
             }
         }
         if (data.bio !== undefined) {
@@ -113,7 +113,7 @@ export class UsersService {
 
         const updated = await this.prisma.user.update({
             where: { id: userId },
-            data: { role, role_assigned_at: new Date() },
+            data: { role, roleAssignedAt: new Date() },
             select: userPublicSelect,
         });
         return new UserResponseDto(updated);
@@ -126,24 +126,25 @@ export class UsersService {
         if (roleCodes.length > 1) {
             throw new BadRequestException('Un seul role est autorisé');
         }
-        return roleCodes[0];
+        return roleCodes[0]!;
     }
 
     private async ensureUserExists(userId: string): Promise<void> {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
-            select: { id: true, is_deleted: true, status: true },
+            select: { id: true, isDeleted: true, status: true },
         });
-        if (!user || user.is_deleted || user.status === UserStatus.DELETED) {
+        if (!user || user.isDeleted || user.status === UserStatus.DELETED) {
             throw new NotFoundException('Utilisateur introuvable');
         }
     }
 
     private ensureVisibleUser(user: UserInternal | null): UserResponseDto {
-        if (!user || user.is_deleted || user.status === UserStatus.DELETED) {
+        if (!user || user.isDeleted || user.status === UserStatus.DELETED) {
             throw new NotFoundException('Utilisateur introuvable');
         }
-        const { is_deleted, ...safeUser } = user;
+        const { isDeleted, ...safeUser } = user;
+        void isDeleted;
         return new UserResponseDto(safeUser);
     }
 }

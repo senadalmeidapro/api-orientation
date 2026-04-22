@@ -16,7 +16,7 @@ export class ResourcesService {
 
         const publishedOnly = dto.publishedOnly !== false;
         if (publishedOnly) {
-            where.is_published = true;
+            where.isPublished = true;
         }
 
         if (dto.q) {
@@ -28,16 +28,16 @@ export class ResourcesService {
 
         return this.prisma.resource.findMany({
             where,
-            orderBy: { created_at: 'desc' },
-            skip: dto.offset ?? undefined,
-            take: dto.limit ?? undefined,
+            orderBy: { createdAt: 'desc' },
+            ...(dto.offset !== undefined ? { skip: dto.offset } : {}),
+            ...(dto.limit !== undefined ? { take: dto.limit } : {}),
         });
     }
 
     async getById(id: number) {
         const resource = await this.prisma.resource.findUnique({
             where: { id },
-            include: { related_careers: { include: { career: true } } },
+            include: { relatedCareers: { include: { career: true } } },
         });
         if (!resource) throw new NotFoundException('Ressource introuvable');
         return resource;
@@ -52,20 +52,22 @@ export class ResourcesService {
               ? new Date(dto.publishedAt)
               : undefined;
 
+        const createData: Prisma.ResourceCreateInput = {
+            title: dto.title,
+            description: dto.description,
+            content: dto.content,
+            contentType: dto.contentType,
+            tags: dto.tags ?? [],
+            isPublished: dto.isPublished ?? false,
+            ...(dto.thumbnailUrl !== undefined ? { thumbnailUrl: dto.thumbnailUrl } : {}),
+            ...(dto.mediaUrl !== undefined ? { mediaUrl: dto.mediaUrl } : {}),
+            ...(dto.category !== undefined ? { category: dto.category } : {}),
+            ...(dto.author !== undefined ? { author: dto.author } : {}),
+            ...(publishedAt !== undefined ? { publishedAt } : {}),
+        };
+
         const resource = await this.prisma.resource.create({
-            data: {
-                title: dto.title,
-                description: dto.description,
-                content: dto.content,
-                content_type: dto.contentType,
-                thumbnail_url: dto.thumbnailUrl,
-                media_url: dto.mediaUrl,
-                category: dto.category,
-                tags: dto.tags ?? [],
-                author: dto.author,
-                is_published: dto.isPublished ?? false,
-                published_at: publishedAt,
-            },
+            data: createData,
         });
 
         if (dto.careerIds !== undefined) {
@@ -113,7 +115,7 @@ export class ResourcesService {
     async remove(id: number) {
         const exists = await this.prisma.resource.findUnique({ where: { id } });
         if (!exists) throw new NotFoundException('Ressource introuvable');
-        await this.prisma.careerResource.deleteMany({ where: { resource_id: id } });
+        await this.prisma.careerResource.deleteMany({ where: { resourceId: id } });
         return this.prisma.resource.delete({ where: { id } });
     }
 
@@ -129,13 +131,13 @@ export class ResourcesService {
         }
 
         await this.prisma.$transaction([
-            this.prisma.careerResource.deleteMany({ where: { resource_id: resourceId } }),
+            this.prisma.careerResource.deleteMany({ where: { resourceId } }),
             ...(careerIds.length > 0
                 ? [
                       this.prisma.careerResource.createMany({
                           data: careerIds.map((careerId) => ({
-                              career_id: careerId,
-                              resource_id: resourceId,
+                              careerId,
+                              resourceId,
                           })),
                       }),
                   ]

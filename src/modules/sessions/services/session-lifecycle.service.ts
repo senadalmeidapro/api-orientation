@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { randomUUID, createHash } from 'crypto';
 
@@ -24,29 +23,40 @@ export class SessionLifecycleService {
         // Sessions are valid for a default time, let's say 7 days.
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
+        const sessionCreateData: {
+            sessionToken: string;
+            sessionHash: string;
+            shareToken: string;
+            isActive: boolean;
+            isCurrent: boolean;
+            expiresAt: Date;
+            userId?: string;
+        } = {
+            sessionToken,
+            sessionHash,
+            shareToken: randomUUID(),
+            isActive: true,
+            isCurrent: true,
+            expiresAt,
+        };
+
+        if (userId !== undefined) sessionCreateData.userId = userId;
+
         return this.prisma.session.create({
-            data: {
-                session_token: sessionToken,
-                session_hash: sessionHash,
-                share_token: randomUUID(),
-                user_id: userId ?? undefined,
-                is_active: true,
-                is_current: true,
-                expires_at: expiresAt,
-            },
+            data: sessionCreateData,
         });
     }
 
     async getByToken(sessionToken: string) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
             include: {
                 user: true,
                 assessments: {
-                    orderBy: { started_at: 'desc' },
+                    orderBy: { startedAt: 'desc' },
                     include: {
                         result: true,
-                        treasure_map: true,
+                        treasureMap: true,
                     },
                 },
             },
@@ -56,9 +66,15 @@ export class SessionLifecycleService {
         return session;
     }
 
-    async updateProfile(sessionToken: string, profileDto: any) {
+    async updateProfile(
+        sessionToken: string,
+        profileDto: {
+            firstName?: unknown;
+            lastName?: unknown;
+        },
+    ) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
             include: { user: true },
         });
 
@@ -68,16 +84,22 @@ export class SessionLifecycleService {
         // It resides solely on the 'User' model. We update the User directly if userId exists.
         // If it's an anonymous session, we ignore the profile update completely to adhere to schema.
 
-        if (session.user_id) {
-            await this.prisma.user.update({
-                where: { id: session.user_id },
-                data: {
-                    first_name: profileDto.firstName ?? undefined,
-                    last_name: profileDto.lastName ?? undefined,
-                    // If your User had a generic JSON profile field, you would map it here.
-                    // Assuming you only have fields explicitly defined in schema: bio, first_name, last_name, display_name
-                },
-            });
+        if (session.userId) {
+            const firstName =
+                typeof profileDto.firstName === 'string' ? profileDto.firstName : undefined;
+            const lastName =
+                typeof profileDto.lastName === 'string' ? profileDto.lastName : undefined;
+            const userUpdateData: { firstName?: string; lastName?: string } = {};
+
+            if (firstName !== undefined) userUpdateData.firstName = firstName;
+            if (lastName !== undefined) userUpdateData.lastName = lastName;
+
+            if (Object.keys(userUpdateData).length > 0) {
+                await this.prisma.user.update({
+                    where: { id: session.userId },
+                    data: userUpdateData,
+                });
+            }
         }
 
         return session; // return unchanged session to satisfy flow, or re-fetch it

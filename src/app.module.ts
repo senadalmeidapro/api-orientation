@@ -34,7 +34,7 @@ import { ConfigService } from './common/config/config.service';
         NestCacheModule.registerAsync({
             isGlobal: true,
             imports: [ConfigModule],
-            useFactory: async (config: ConfigService) => {
+            useFactory: (config: ConfigService) => {
                 const redisUrl = config.redis.url;
                 return {
                     stores: [createKeyv(redisUrl)],

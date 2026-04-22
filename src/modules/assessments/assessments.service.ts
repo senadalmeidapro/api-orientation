@@ -10,14 +10,14 @@ export class AssessmentsService {
 
     async getById(sessionToken: string, assessmentId: string) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = await this.prisma.assessment.findFirst({
-            where: { id: assessmentId, session_id: session.id },
-            include: { result: true, treasure_map: true },
+            where: { id: assessmentId, sessionId: session.id },
+            include: { result: true, treasureMap: true },
         });
         if (!assessment) throw new NotFoundException('Assessment introuvable');
         return assessment;
@@ -29,13 +29,13 @@ export class AssessmentsService {
             id: assessment.id,
             status: assessment.status,
             type: assessment.type,
-            currentPhase: assessment.current_phase,
-            currentSection: assessment.current_section,
-            currentStepIndex: assessment.current_stepIndex,
-            completionPercentage: assessment.completion_percentage,
-            startedAt: assessment.started_at,
-            lastActivityAt: assessment.lastActivity_at,
-            completedAt: assessment.completed_at,
+            currentPhase: assessment.currentPhase,
+            currentSection: assessment.currentSection,
+            currentStepIndex: assessment.currentStepIndex,
+            completionPercentage: assessment.completionPercentage,
+            startedAt: assessment.startedAt,
+            lastActivityAt: assessment.lastActivityAt,
+            completedAt: assessment.completedAt,
         };
     }
 
@@ -49,7 +49,7 @@ export class AssessmentsService {
             where: { id: assessment.id },
             data: {
                 status: AssessmentStatus.ABANDONED,
-                completed_at: new Date(),
+                completedAt: new Date(),
             },
         });
     }

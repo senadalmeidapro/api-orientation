@@ -10,7 +10,7 @@ export class AiCoachDto {
     @ApiPropertyOptional({ description: 'Assessment id', type: String, example: 'clx123abc0001' })
     @IsOptional()
     @IsString()
-    assessmentId?: string;
+    assessmentId!: string;
 
     @ApiPropertyOptional({ description: 'Message', type: String, example: 'Message exemple' })
     @IsOptional()

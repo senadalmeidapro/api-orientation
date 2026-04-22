@@ -4,7 +4,6 @@ import { ComputeResultDto } from './dto/compute-result.dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { EnhancedReportDto } from './dto/enhanced-report.dto';
 // import {
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,

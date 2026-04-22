@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { PhaseType } from '@prisma/client';
+import { BatchHistory, PhaseType } from '@prisma/client';
 
 export interface BatchInfo {
     id: string;
@@ -36,22 +36,22 @@ export class BatchManagementService {
     ): Promise<BatchInfo> {
         const assessment = await this.prisma.assessment.findUnique({
             where: { id: assessmentId },
-            select: { current_batch: true },
+            select: { currentBatch: true },
         });
 
         if (!assessment) {
             throw new NotFoundException(`Assessment ${assessmentId} not found`);
         }
 
-        const batchIndex = assessment.current_batch;
+        const batchIndex = assessment.currentBatch;
 
         const batch = await this.prisma.batchHistory.create({
             data: {
-                assessment_id: assessmentId,
-                batch_index: batchIndex,
-                phase_type: phaseType,
-                question_ids: questionIds,
-                presented_at: new Date(),
+                assessmentId,
+                batchIndex,
+                phaseType,
+                questionIds,
+                presentedAt: new Date(),
             },
         });
 
@@ -61,9 +61,9 @@ export class BatchManagementService {
     async completeBatch(assessmentId: string, batchIndex: number): Promise<BatchInfo> {
         const batch = await this.prisma.batchHistory.findUnique({
             where: {
-                assessment_id_batch_index: {
-                    assessment_id: assessmentId,
-                    batch_index: batchIndex,
+                assessmentId_batchIndex: {
+                    assessmentId,
+                    batchIndex,
                 },
             },
         });
@@ -76,19 +76,19 @@ export class BatchManagementService {
 
         const updatedBatch = await this.prisma.batchHistory.update({
             where: {
-                assessment_id_batch_index: {
-                    assessment_id: assessmentId,
-                    batch_index: batchIndex,
+                assessmentId_batchIndex: {
+                    assessmentId,
+                    batchIndex,
                 },
             },
             data: {
-                completed_at: new Date(),
+                completedAt: new Date(),
             },
         });
 
         await this.prisma.assessment.update({
             where: { id: assessmentId },
-            data: { current_batch: batchIndex + 1 },
+            data: { currentBatch: batchIndex + 1 },
         });
 
         return this.mapBatchToInfo(updatedBatch);
@@ -97,7 +97,7 @@ export class BatchManagementService {
     async getCurrentBatch(assessmentId: string): Promise<BatchInfo | null> {
         const assessment = await this.prisma.assessment.findUnique({
             where: { id: assessmentId },
-            select: { current_batch: true },
+            select: { currentBatch: true },
         });
 
         if (!assessment) {
@@ -106,9 +106,9 @@ export class BatchManagementService {
 
         const batch = await this.prisma.batchHistory.findUnique({
             where: {
-                assessment_id_batch_index: {
-                    assessment_id: assessmentId,
-                    batch_index: assessment.current_batch,
+                assessmentId_batchIndex: {
+                    assessmentId,
+                    batchIndex: assessment.currentBatch,
                 },
             },
         });
@@ -118,8 +118,8 @@ export class BatchManagementService {
 
     async getBatchHistory(assessmentId: string): Promise<BatchInfo[]> {
         const batches = await this.prisma.batchHistory.findMany({
-            where: { assessment_id: assessmentId },
-            orderBy: { batch_index: 'asc' },
+            where: { assessmentId },
+            orderBy: { batchIndex: 'asc' },
         });
 
         return batches.map((b) => this.mapBatchToInfo(b));
@@ -129,14 +129,14 @@ export class BatchManagementService {
         const assessment = await this.prisma.assessment.findUnique({
             where: { id: assessmentId },
             select: {
-                current_batch: true,
+                currentBatch: true,
                 depth: true,
-                current_phase: true,
-                phase1_responses: { select: { id: true } },
-                phase2_responses: { select: { id: true } },
+                currentPhase: true,
+                phase1Responses: { select: { id: true } },
+                phase2Responses: { select: { id: true } },
                 batches: {
-                    select: { question_ids: true, completed_at: true },
-                    orderBy: { batch_index: 'asc' },
+                    select: { questionIds: true, completedAt: true },
+                    orderBy: { batchIndex: 'asc' },
                 },
             },
         });
@@ -147,12 +147,10 @@ export class BatchManagementService {
 
         const totalExpectedQuestions = assessment.depth * 6;
         const questionsAnswered =
-            assessment.phase1_responses.length + assessment.phase2_responses.length;
+            assessment.phase1Responses.length + assessment.phase2Responses.length;
 
-        const currentBatchData = assessment.batches.find((b) => !b.completed_at);
-        const questionsInCurrentBatch = currentBatchData?.question_ids.length || 0;
-
-        const completedBatches = assessment.batches.filter((b) => b.completed_at !== null).length;
+        const currentBatchData = assessment.batches.find((b) => !b.completedAt);
+        const questionsInCurrentBatch = currentBatchData?.questionIds.length || 0;
 
         const estimatedTotalBatches = Math.ceil(totalExpectedQuestions / 5);
 
@@ -164,7 +162,7 @@ export class BatchManagementService {
         const overallCompletionPercentage = (questionsAnswered / totalExpectedQuestions) * 100;
 
         return {
-            currentBatch: assessment.current_batch,
+            currentBatch: assessment.currentBatch,
             totalBatches: estimatedTotalBatches,
             questionsAnswered,
             questionsInCurrentBatch,
@@ -175,11 +173,11 @@ export class BatchManagementService {
 
     async getAllAskedQuestions(assessmentId: string): Promise<number[]> {
         const batches = await this.prisma.batchHistory.findMany({
-            where: { assessment_id: assessmentId },
-            select: { question_ids: true },
+            where: { assessmentId },
+            select: { questionIds: true },
         });
 
-        const allQuestionIds = batches.flatMap((b) => b.question_ids);
+        const allQuestionIds = batches.flatMap((b) => b.questionIds);
         return [...new Set(allQuestionIds)];
     }
 
@@ -188,17 +186,17 @@ export class BatchManagementService {
         return askedQuestions.includes(questionId);
     }
 
-    private mapBatchToInfo(batch: any): BatchInfo {
+    private mapBatchToInfo(batch: BatchHistory): BatchInfo {
         return {
             id: batch.id,
-            assessmentId: batch.assessment_id,
-            batchIndex: batch.batch_index,
-            phaseType: batch.phase_type,
-            questionIds: batch.question_ids,
-            presentedAt: batch.presented_at,
-            completedAt: batch.completed_at,
-            isComplete: batch.completed_at !== null,
-            questionCount: batch.question_ids.length,
+            assessmentId: batch.assessmentId,
+            batchIndex: batch.batchIndex,
+            phaseType: batch.phaseType,
+            questionIds: batch.questionIds,
+            presentedAt: batch.presentedAt,
+            completedAt: batch.completedAt,
+            isComplete: batch.completedAt !== null,
+            questionCount: batch.questionIds.length,
         };
     }
 }

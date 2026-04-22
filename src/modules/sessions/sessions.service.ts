@@ -30,14 +30,14 @@ export class SessionsService {
 
         // Ensure user profile is updated immediately if passed (and if it's an authenticated session)
         if (dto.profile) {
-            await this.lifecycleService.updateProfile(session.session_token, dto.profile);
+            await this.lifecycleService.updateProfile(session.sessionToken, dto.profile);
         }
 
         return {
             sessionId: session.id,
-            sessionToken: session.session_token,
-            shareToken: session.share_token,
-            startedAt: session.created_at,
+            sessionToken: session.sessionToken,
+            shareToken: session.shareToken,
+            startedAt: session.createdAt,
             assessment,
         };
     }

@@ -1,5 +1,5 @@
 import { SessionsController } from './sessions.controller';
-import { SessionsService } from './sessions.service';
+import type { SessionsService } from './sessions.service';
 
 describe('SessionsController', () => {
     it('delegates create', async () => {

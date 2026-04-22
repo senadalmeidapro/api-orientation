@@ -19,18 +19,18 @@ export class ResultsService {
 
     async compute(dto: ComputeResultDto) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: dto.sessionToken },
+            where: { sessionToken: dto.sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = dto.assessmentId
             ? await this.prisma.assessment.findFirst({
-                  where: { id: dto.assessmentId, session_id: session.id },
+                  where: { id: dto.assessmentId, sessionId: session.id },
               })
             : await this.prisma.assessment.findFirst({
-                  where: { session_id: session.id, status: AssessmentStatus.COMPLETED },
-                  orderBy: { completed_at: 'desc' },
+                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completedAt: 'desc' },
               });
 
         if (!assessment) {
@@ -44,14 +44,14 @@ export class ResultsService {
         }
 
         const existing = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessment.id },
+            where: { assessmentId: assessment.id },
         });
         if (existing && !dto.force) {
             if (dto.subjectiveRanking) {
                 return this.prisma.assessmentResult.update({
-                    where: { assessment_id: assessment.id },
+                    where: { assessmentId: assessment.id },
                     data: {
-                        subjective_ranking: dto.subjectiveRanking as Prisma.InputJsonObject,
+                        subjectiveRanking: dto.subjectiveRanking as Prisma.InputJsonObject,
                     },
                 });
             }
@@ -64,11 +64,11 @@ export class ResultsService {
                 : await this.prisma.assessment
                       .findFirst({
                           where: {
-                              session_id: session.id,
+                              sessionId: session.id,
                               type: AssessmentType.PHASE1,
                               status: AssessmentStatus.COMPLETED,
                           },
-                          orderBy: { completed_at: 'desc' },
+                          orderBy: { completedAt: 'desc' },
                           select: { id: true },
                       })
                       .then((item) => item?.id);
@@ -85,46 +85,50 @@ export class ResultsService {
                       : [];
 
         const scores = await this.scoring.computeScores(assessment.id, {
-            phase1AssessmentId: phase1Source,
+            phase1AssessmentId: phase1Source ?? null,
             phase2Types,
         });
 
         const result = await this.prisma.assessmentResult.upsert({
-            where: { assessment_id: assessment.id },
+            where: { assessmentId: assessment.id },
             update: {
-                phase1_code: scores.phase1Code,
-                phase2_code: scores.phase2Code,
-                phase1_scores: scores.phase1Scores,
-                phase2_scores: scores.phase2Scores,
-                section_scores: {
+                phase1Code: scores.phase1Code,
+                phase2Code: scores.phase2Code,
+                phase1Scores: scores.phase1Scores,
+                phase2Scores: scores.phase2Scores,
+                sectionScores: {
                     ...scores.sectionScores,
                     totalRaw: scores.phase2Scores,
                     totalNormalized: scores.phase2NormalizedScores,
                 },
-                consistency_score: scores.consistencyScore,
-                consistency_level: scores.consistencyLevel,
-                differentiation_score: scores.differentiationScore,
-                profile_strength: scores.profileStrength,
+                consistencyScore: scores.consistencyScore,
+                consistencyLevel: scores.consistencyLevel,
+                differentiationScore: scores.differentiationScore,
+                profileStrength: scores.profileStrength,
                 strengths: scores.strengths,
-                subjective_ranking: dto.subjectiveRanking ?? undefined,
+                ...(dto.subjectiveRanking !== undefined
+                    ? { subjectiveRanking: dto.subjectiveRanking as Prisma.InputJsonObject }
+                    : {}),
             },
             create: {
-                assessment_id: assessment.id,
-                phase1_code: scores.phase1Code,
-                phase2_code: scores.phase2Code,
-                phase1_scores: scores.phase1Scores,
-                phase2_scores: scores.phase2Scores,
-                section_scores: {
+                assessmentId: assessment.id,
+                phase1Code: scores.phase1Code,
+                phase2Code: scores.phase2Code,
+                phase1Scores: scores.phase1Scores,
+                phase2Scores: scores.phase2Scores,
+                sectionScores: {
                     ...scores.sectionScores,
                     totalRaw: scores.phase2Scores,
                     totalNormalized: scores.phase2NormalizedScores,
                 },
-                consistency_score: scores.consistencyScore,
-                consistency_level: scores.consistencyLevel,
-                differentiation_score: scores.differentiationScore,
-                profile_strength: scores.profileStrength,
+                consistencyScore: scores.consistencyScore,
+                consistencyLevel: scores.consistencyLevel,
+                differentiationScore: scores.differentiationScore,
+                profileStrength: scores.profileStrength,
                 strengths: scores.strengths,
-                subjective_ranking: dto.subjectiveRanking ?? undefined,
+                ...(dto.subjectiveRanking !== undefined
+                    ? { subjectiveRanking: dto.subjectiveRanking as Prisma.InputJsonObject }
+                    : {}),
             },
         });
 
@@ -137,17 +141,17 @@ export class ResultsService {
 
     async getBySessionId(sessionId: string) {
         const result = await this.prisma.assessmentResult.findFirst({
-            where: { assessment: { session_id: sessionId } },
-            orderBy: { created_at: 'desc' },
-            include: { career_recommendations: true },
+            where: { assessment: { sessionId } },
+            orderBy: { createdAt: 'desc' },
+            include: { careerRecommendations: true },
         });
         if (!result) throw new NotFoundException('Résultat introuvable');
-        return this.touchResult(result.assessment_id);
+        return this.touchResult(result.assessmentId);
     }
 
     async getByToken(sessionToken: string) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: sessionToken },
+            where: { sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
@@ -156,8 +160,8 @@ export class ResultsService {
 
     async getByAssessmentId(assessmentId: string) {
         const result = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessmentId },
-            include: { career_recommendations: true },
+            where: { assessmentId },
+            include: { careerRecommendations: true },
         });
         if (!result) throw new NotFoundException('Résultat introuvable');
         return this.touchResult(assessmentId);
@@ -165,12 +169,12 @@ export class ResultsService {
 
     private async touchResult(assessmentId: string) {
         return this.prisma.assessmentResult.update({
-            where: { assessment_id: assessmentId },
+            where: { assessmentId },
             data: {
-                view_sount: { increment: 1 },
-                lastViewed_at: new Date(),
+                viewSount: { increment: 1 },
+                lastViewedAt: new Date(),
             },
-            include: { career_recommendations: true },
+            include: { careerRecommendations: true },
         });
     }
 
@@ -180,7 +184,7 @@ export class ResultsService {
     async computeEnhancedResult(assessmentId: string) {
         // S'assurer que le résultat de base existe
         const baseResult = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessmentId },
+            where: { assessmentId },
         });
 
         if (!baseResult) {

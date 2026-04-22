@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Get, Param } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, UseGuards } from '@nestjs/common';
 import { ResponsesService } from './responses.service';
 import { CreatePhase1ResponsesDto } from './dto/create-phase1-responses.dto';
 import { CreatePhase2ResponsesDto } from './dto/create-phase2-responses.dto';
@@ -7,7 +7,6 @@ import { BehavioralAnalysisService } from './services/behavioral-analysis.servic
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { UseGuards } from '@nestjs/common';
 // import {
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,

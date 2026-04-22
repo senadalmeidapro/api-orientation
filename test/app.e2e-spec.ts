@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { Test } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
@@ -12,10 +12,10 @@ const prisma = new PrismaClient({
         connectionString: process.env.DATABASE_URL,
     }),
 });
-const TEST_RUN_ID = Date.now().toString(36);
-const TEST_VERSION_CODE = `e2e-${TEST_RUN_ID}`;
-const ADMIN_EMAIL = `admin+${TEST_RUN_ID}@test.local`;
-const ADMIN_PASSWORD = 'adminpass123';
+const testRunId = Date.now().toString(36);
+const testVersionCode = `e2e-${testRunId}`;
+const adminEmail = `admin+${testRunId}@test.local`;
+const adminPassword = 'adminpass123';
 
 describe('E2E', () => {
     let app: INestApplication;
@@ -34,10 +34,10 @@ describe('E2E', () => {
 
         const version = await prisma.testVersion.create({
             data: {
-                code: TEST_VERSION_CODE,
+                code: testVersionCode,
                 name: 'Test Version',
                 description: 'E2E',
-                is_active: true,
+                isActive: true,
             },
         });
         testVersionId = version.id;
@@ -55,40 +55,40 @@ describe('E2E', () => {
 
         await prisma.phase1Question.create({
             data: {
-                test_version_id: version.id,
-                riasec_type_id: 'R',
-                question_text: 'Test question',
-                display_order: 1,
-                is_active: true,
+                testVersionId: version.id,
+                riasecTypeId: 'R',
+                questionText: 'Test question',
+                displayOrder: 1,
+                isActive: true,
             },
         });
 
         const phase2Question = await prisma.phase2Question.create({
             data: {
-                test_version_id: version.id,
-                riasec_type_id: 'R',
-                phase2_type: 'OCCUPATIONS',
-                question_text: 'Occ Q1',
-                display_order: 1,
-                is_active: true,
+                testVersionId: version.id,
+                riasecTypeId: 'R',
+                phase2Type: 'OCCUPATIONS',
+                questionText: 'Occ Q1',
+                displayOrder: 1,
+                isActive: true,
             },
         });
         phase2QuestionId = phase2Question.id;
 
-        const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+        const passwordHash = await bcrypt.hash(adminPassword, 10);
         await prisma.user.create({
             data: {
-                email: ADMIN_EMAIL,
+                email: adminEmail,
                 password: passwordHash,
                 role: UserRole.ADMIN,
                 status: UserStatus.ACTIVE,
-                email_verified_at: new Date(),
+                emailVerifiedAt: new Date(),
             },
         });
 
         const login = await request(app.getHttpServer())
             .post('/auth/login')
-            .send({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD })
+            .send({ email: adminEmail, password: adminPassword })
             .expect(201);
 
         accessToken = login.body.accessToken;
@@ -98,13 +98,13 @@ describe('E2E', () => {
     afterAll(async () => {
         if (testVersionId) {
             await prisma.assessment.deleteMany({
-                where: { test_version_id: testVersionId },
+                where: { testVersionId },
             });
             await prisma.phase1Question.deleteMany({
-                where: { test_version_id: testVersionId },
+                where: { testVersionId },
             });
             await prisma.phase2Question.deleteMany({
-                where: { test_version_id: testVersionId },
+                where: { testVersionId },
             });
             await prisma.testVersion.deleteMany({
                 where: { id: testVersionId },
@@ -118,7 +118,7 @@ describe('E2E', () => {
         }
 
         await prisma.user.deleteMany({
-            where: { email: ADMIN_EMAIL },
+            where: { email: adminEmail },
         });
 
         if (app) {

@@ -17,7 +17,7 @@ export class CareersService {
 
         const activeOnly = dto.activeOnly !== false;
         if (activeOnly) {
-            where.is_active = true;
+            where.isActive = true;
         }
 
         if (dto.q) {
@@ -28,12 +28,14 @@ export class CareersService {
             ];
         }
 
-        return this.prisma.career.findMany({
+        const findManyArgs: Prisma.CareerFindManyArgs = {
             where,
-            orderBy: { created_at: 'desc' },
-            skip: dto.offset ?? undefined,
-            take: dto.limit ?? undefined,
-        });
+            orderBy: { createdAt: 'desc' },
+            ...(dto.offset !== undefined ? { skip: dto.offset } : {}),
+            ...(dto.limit !== undefined ? { take: dto.limit } : {}),
+        };
+
+        return this.prisma.career.findMany(findManyArgs);
     }
 
     async getById(id: number) {
@@ -54,20 +56,20 @@ export class CareersService {
             data: {
                 name: dto.name,
                 description: dto.description,
-                summary: dto.summary,
-                riasec_codes: dto.riasecCodes,
-                local_demand: dto.localDemand,
-                formation_level: dto.formationLevel,
-                salary_range_min: dto.salaryRangeMin,
-                salary_range_max: dto.salaryRangeMax,
-                career_path: dto.careerPath,
-                icon_url: dto.iconUrl,
-                image_url: dto.imageUrl,
-                video_url: dto.videoUrl,
-                category: dto.category,
+                summary: dto.summary ?? null,
+                riasecCodes: dto.riasecCodes,
+                localDemand: dto.localDemand ?? null,
+                formationLevel: dto.formationLevel ?? null,
+                salaryRangeMin: dto.salaryRangeMin ?? null,
+                salaryRangeMax: dto.salaryRangeMax ?? null,
+                careerPath: dto.careerPath ?? null,
+                iconUrl: dto.iconUrl ?? null,
+                imageUrl: dto.imageUrl ?? null,
+                videoUrl: dto.videoUrl ?? null,
+                category: dto.category ?? null,
                 tags: dto.tags ?? [],
-                is_featured: dto.isFeatured ?? false,
-                is_active: dto.isActive ?? true,
+                isFeatured: dto.isFeatured ?? false,
+                isActive: dto.isActive ?? true,
             },
         });
 
@@ -119,7 +121,7 @@ export class CareersService {
     async deactivate(id: number) {
         const exists = await this.prisma.career.findUnique({ where: { id } });
         if (!exists) throw new NotFoundException('Metier introuvable');
-        return this.prisma.career.update({ where: { id }, data: { is_active: false } });
+        return this.prisma.career.update({ where: { id }, data: { isActive: false } });
     }
 
     private async replaceInstitutions(careerId: number, institutionIds: number[]) {
@@ -134,13 +136,13 @@ export class CareersService {
         }
 
         await this.prisma.$transaction([
-            this.prisma.careerInstitution.deleteMany({ where: { career_id: careerId } }),
+            this.prisma.careerInstitution.deleteMany({ where: { careerId: careerId } }),
             ...(institutionIds.length > 0
                 ? [
                       this.prisma.careerInstitution.createMany({
                           data: institutionIds.map((institutionId) => ({
-                              career_id: careerId,
-                              institution_id: institutionId,
+                              careerId,
+                              institutionId,
                           })),
                       }),
                   ]
@@ -160,13 +162,13 @@ export class CareersService {
         }
 
         await this.prisma.$transaction([
-            this.prisma.careerResource.deleteMany({ where: { career_id: careerId } }),
+            this.prisma.careerResource.deleteMany({ where: { careerId } }),
             ...(resourceIds.length > 0
                 ? [
                       this.prisma.careerResource.createMany({
                           data: resourceIds.map((resourceId) => ({
-                              career_id: careerId,
-                              resource_id: resourceId,
+                              careerId,
+                              resourceId,
                           })),
                       }),
                   ]

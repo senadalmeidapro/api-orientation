@@ -22,7 +22,7 @@ export class AiClient {
         const result = await this.respondText({
             instructions: '',
             input: prompt,
-            temperature: options.temperature,
+            ...(options.temperature !== undefined && { temperature: options.temperature }),
         });
         return result.text;
     }
@@ -68,6 +68,9 @@ export class AiClient {
                 raw: response,
             };
         } catch (err) {
+            if (err instanceof ServiceUnavailableException) {
+                throw err;
+            }
             throw new ServiceUnavailableException('Reponse IA invalide (JSON)');
         }
     }
@@ -75,7 +78,7 @@ export class AiClient {
     private async createResponse(params: {
         instructions: string;
         input: string;
-        temperature?: number;
+        temperature?: number | undefined;
         format: { type: 'text' | 'json_schema'; json_schema?: Record<string, unknown> };
     }) {
         if (!this.apiKey) {
@@ -104,18 +107,23 @@ export class AiClient {
                 signal: controller.signal,
             });
 
-            const data = await res.json();
+            const data = (await res.json()) as Record<string, unknown>;
             if (!res.ok) {
+                const errorData = data?.error;
                 const message =
-                    typeof data?.error?.message === 'string'
-                        ? data.error.message
+                    errorData &&
+                    typeof errorData === 'object' &&
+                    typeof (errorData as Record<string, unknown>).message === 'string'
+                        ? (errorData as Record<string, unknown>).message
                         : 'OpenAI request failed';
                 throw new ServiceUnavailableException(message);
             }
 
-            return data as Record<string, unknown>;
+            return data;
         } catch (err) {
-            if (err instanceof ServiceUnavailableException) throw err;
+            if (err instanceof ServiceUnavailableException) {
+                throw err;
+            }
             throw new ServiceUnavailableException('Appel OpenAI indisponible');
         } finally {
             clearTimeout(timeout);
@@ -123,13 +131,18 @@ export class AiClient {
     }
 
     private extractOutputText(response: Record<string, unknown>) {
-        const output = Array.isArray(response.output) ? response.output : [];
+        const output: unknown[] = Array.isArray(response.output) ? response.output : [];
         const texts: string[] = [];
         for (const item of output) {
-            const content = Array.isArray(item?.content) ? item.content : [];
+            if (!item || typeof item !== 'object') continue;
+            const contentValue = (item as Record<string, unknown>).content;
+            const content: unknown[] = Array.isArray(contentValue) ? contentValue : [];
+
             for (const part of content) {
-                const type = typeof part?.type === 'string' ? part.type : '';
-                const text = typeof part?.text === 'string' ? part.text : undefined;
+                if (!part || typeof part !== 'object') continue;
+                const partRecord = part as Record<string, unknown>;
+                const type = typeof partRecord.type === 'string' ? partRecord.type : '';
+                const text = typeof partRecord.text === 'string' ? partRecord.text : undefined;
                 if (text && (type === 'output_text' || type === 'text')) {
                     texts.push(text);
                 }

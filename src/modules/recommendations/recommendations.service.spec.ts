@@ -1,5 +1,5 @@
 import { RecommendationsService } from './recommendations.service';
-import { ResultsService } from '../results/results.service';
+import type { ResultsService } from '../results/results.service';
 
 const prisma = {
     session: { findUnique: jest.fn() },

@@ -1,5 +1,5 @@
 import { ResultsController } from './results.controller';
-import { ResultsService } from './results.service';
+import type { ResultsService } from './results.service';
 
 describe('ResultsController', () => {
     it('delegates compute', async () => {

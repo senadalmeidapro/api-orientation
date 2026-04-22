@@ -23,11 +23,45 @@ export interface AIBehavioralInsights {
     recommendations: string[];
 }
 
+type JsonObject = Record<string, unknown>;
+
+const fallbackProfileAnalysis: AIProfileAnalysis = {
+    interpretation:
+        'Profil en cours de construction. Continuez à répondre pour affiner les résultats.',
+    strengths: [],
+    areasForDevelopment: [],
+    careerSuggestions: [],
+};
+
+const fallbackQuestionSuggestion: AIQuestionSuggestion = {
+    questionIds: [],
+    reasoning: 'Selection automatique basee sur les algorithmes.',
+    focusAreas: [],
+};
+
+const fallbackBehavioralInsights: AIBehavioralInsights = {
+    summary: 'Analyse comportementale en cours.',
+    keyObservations: [],
+    psychologicalProfile: 'Profil en construction.',
+    recommendations: [],
+};
+
 @Injectable()
 export class AIAdaptiveService {
     private readonly logger = new Logger(AIAdaptiveService.name);
 
     constructor(private readonly aiClient: AiClient) {}
+
+    private parseJsonObject(raw: string): JsonObject | null {
+        try {
+            const parsed: unknown = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                ? (parsed as JsonObject)
+                : null;
+        } catch {
+            return null;
+        }
+    }
 
     async analyzeIntermediateProfile(
         profile: RiasecScores,
@@ -53,15 +87,30 @@ Réponds en JSON avec: { interpretation, strengths[], areasForDevelopment[], car
                 max_tokens: 800,
             });
 
-            return JSON.parse(response);
-        } catch (error) {
+            const parsed = this.parseJsonObject(response);
+            if (!parsed) return fallbackProfileAnalysis;
+
             return {
                 interpretation:
-                    'Profil en cours de construction. Continuez à répondre pour affiner les résultats.',
-                strengths: [],
-                areasForDevelopment: [],
-                careerSuggestions: [],
+                    typeof parsed.interpretation === 'string'
+                        ? parsed.interpretation
+                        : fallbackProfileAnalysis.interpretation,
+                strengths: Array.isArray(parsed.strengths)
+                    ? parsed.strengths.filter((item): item is string => typeof item === 'string')
+                    : [],
+                areasForDevelopment: Array.isArray(parsed.areasForDevelopment)
+                    ? parsed.areasForDevelopment.filter(
+                          (item): item is string => typeof item === 'string',
+                      )
+                    : [],
+                careerSuggestions: Array.isArray(parsed.careerSuggestions)
+                    ? parsed.careerSuggestions.filter(
+                          (item): item is string => typeof item === 'string',
+                      )
+                    : [],
             };
+        } catch {
+            return fallbackProfileAnalysis;
         }
     }
 
@@ -96,23 +145,23 @@ Réponds en JSON: { questionIds[], reasoning, focusAreas[] }`;
                 max_tokens: 500,
             });
 
-            const parsed = JSON.parse(response);
+            const parsed = this.parseJsonObject(response);
+            if (!parsed) return fallbackQuestionSuggestion;
 
-            const validIds = parsed.questionIds.filter((id: number) =>
-                availableQuestions.some((q) => q.id === id),
-            );
+            const rawQuestionIds = Array.isArray(parsed.questionIds) ? parsed.questionIds : [];
+            const validIds = rawQuestionIds
+                .filter((id): id is number => typeof id === 'number')
+                .filter((id) => availableQuestions.some((q) => q.id === id));
 
             return {
                 questionIds: validIds,
-                reasoning: parsed.reasoning || '',
-                focusAreas: parsed.focusAreas || [],
+                reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : '',
+                focusAreas: Array.isArray(parsed.focusAreas)
+                    ? parsed.focusAreas.filter((item): item is string => typeof item === 'string')
+                    : [],
             };
-        } catch (error) {
-            return {
-                questionIds: [],
-                reasoning: 'Sélection automatique basée sur les algorithmes.',
-                focusAreas: [],
-            };
+        } catch {
+            return fallbackQuestionSuggestion;
         }
     }
 
@@ -152,14 +201,31 @@ Réponds en JSON: { summary, keyObservations[], psychologicalProfile, recommenda
                 max_tokens: 1000,
             });
 
-            return JSON.parse(response);
-        } catch (error) {
+            const parsed = this.parseJsonObject(response);
+            if (!parsed) return fallbackBehavioralInsights;
+
             return {
-                summary: 'Analyse comportementale en cours.',
-                keyObservations: [],
-                psychologicalProfile: 'Profil en construction.',
-                recommendations: [],
+                summary:
+                    typeof parsed.summary === 'string'
+                        ? parsed.summary
+                        : fallbackBehavioralInsights.summary,
+                keyObservations: Array.isArray(parsed.keyObservations)
+                    ? parsed.keyObservations.filter(
+                          (item): item is string => typeof item === 'string',
+                      )
+                    : [],
+                psychologicalProfile:
+                    typeof parsed.psychologicalProfile === 'string'
+                        ? parsed.psychologicalProfile
+                        : fallbackBehavioralInsights.psychologicalProfile,
+                recommendations: Array.isArray(parsed.recommendations)
+                    ? parsed.recommendations.filter(
+                          (item): item is string => typeof item === 'string',
+                      )
+                    : [],
             };
+        } catch {
+            return fallbackBehavioralInsights;
         }
     }
 
@@ -194,7 +260,7 @@ Réponds en JSON avec la structure enrichie complète.`;
             });
 
             return JSON.parse(response);
-        } catch (error) {
+        } catch {
             return {
                 ...baseReport,
                 behavioralSection: behavioralInsights,
@@ -229,8 +295,11 @@ Réponds avec un array JSON de strings.`;
                 max_tokens: 600,
             });
 
-            return JSON.parse(response);
-        } catch (error) {
+            const parsed: unknown = JSON.parse(response);
+            return Array.isArray(parsed)
+                ? parsed.filter((item): item is string => typeof item === 'string')
+                : [];
+        } catch {
             return [
                 'Explorez les domaines liés à vos profils dominants.',
                 'Recherchez des formations alignées avec vos intérêts.',

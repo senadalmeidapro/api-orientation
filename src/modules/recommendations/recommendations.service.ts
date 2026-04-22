@@ -2,8 +2,17 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
-import { AssessmentStatus, Prisma, RiasecType } from '@prisma/client';
+import { AssessmentStatus, Career, RiasecType } from '@prisma/client';
 import { CacheService } from '../../common/cache/cache.service';
+
+type CareerWithInstitutions = Career & {
+    institutions: Array<{
+        institution: {
+            latitude: number | null;
+            longitude: number | null;
+        } | null;
+    }>;
+};
 
 @Injectable()
 export class RecommendationsService {
@@ -24,11 +33,14 @@ export class RecommendationsService {
         return weights;
     }
 
-    private getInstitutions(career: unknown) {
-        const typed = career as Prisma.CareerGetPayload<{
-            include: { institutions: { include: { institution: true } } };
-        }>;
-        return typed.institutions ?? [];
+    private hasInstitutions(
+        career: Career | CareerWithInstitutions,
+    ): career is CareerWithInstitutions {
+        return 'institutions' in career;
+    }
+
+    private getInstitutions(career: Career | CareerWithInstitutions) {
+        return this.hasInstitutions(career) ? career.institutions : [];
     }
 
     private normalizeVector(raw?: Record<string, number> | null) {
@@ -45,9 +57,11 @@ export class RecommendationsService {
         let normA = 0;
         let normB = 0;
         for (let i = 0; i < a.length; i += 1) {
-            dot += a[i] * b[i];
-            normA += a[i] * a[i];
-            normB += b[i] * b[i];
+            const aValue = a[i] ?? 0;
+            const bValue = b[i] ?? 0;
+            dot += aValue * bValue;
+            normA += aValue * aValue;
+            normB += bValue * bValue;
         }
         if (normA === 0 || normB === 0) return 0;
         return dot / Math.sqrt(normA * normB);
@@ -66,35 +80,54 @@ export class RecommendationsService {
         return 2 * r * Math.asin(Math.min(1, Math.sqrt(h)));
     }
 
-    private extractNormalizedScores(result: any) {
-        const sectionScores = result?.sectionScores;
-        const totalNormalized = sectionScores?.totalNormalized ?? null;
-        if (totalNormalized && typeof totalNormalized === 'object') {
-            return this.normalizeVector(totalNormalized as Record<string, number>);
+    private isRecord(value: unknown): value is Record<string, unknown> {
+        return value !== null && typeof value === 'object' && !Array.isArray(value);
+    }
+
+    private toNumberRecord(value: unknown): Record<string, number> | null {
+        if (!this.isRecord(value)) return null;
+        const out: Record<string, number> = {};
+        for (const [k, v] of Object.entries(value)) {
+            if (typeof v === 'number') out[k] = v;
         }
-        if (result?.phase2Scores && typeof result.phase2Scores === 'object') {
-            return this.normalizeVector(result.phase2Scores as Record<string, number>);
+        return out;
+    }
+
+    private extractNormalizedScores(result: {
+        sectionScores?: unknown;
+        phase2Scores?: unknown;
+        phase1Scores?: unknown;
+    }) {
+        const sectionScores = result.sectionScores;
+        if (this.isRecord(sectionScores)) {
+            const totalNormalized = sectionScores.totalNormalized;
+            const asNumbers = this.toNumberRecord(totalNormalized);
+            if (asNumbers) return this.normalizeVector(asNumbers);
         }
-        if (result?.phase1Scores && typeof result.phase1Scores === 'object') {
-            return this.normalizeVector(result.phase1Scores as Record<string, number>);
-        }
+
+        const phase2 = this.toNumberRecord(result.phase2Scores);
+        if (phase2) return this.normalizeVector(phase2);
+
+        const phase1 = this.toNumberRecord(result.phase1Scores);
+        if (phase1) return this.normalizeVector(phase1);
+
         return [0, 0, 0, 0, 0, 0];
     }
 
     async getRecommendations(dto: GetRecommendationsDto) {
         const session = await this.prisma.session.findUnique({
-            where: { session_token: dto.sessionToken },
+            where: { sessionToken: dto.sessionToken },
             select: { id: true },
         });
         if (!session) throw new NotFoundException('Session introuvable');
 
         const assessment = dto.assessmentId
             ? await this.prisma.assessment.findFirst({
-                  where: { id: dto.assessmentId, session_id: session.id },
+                  where: { id: dto.assessmentId, sessionId: session.id },
               })
             : await this.prisma.assessment.findFirst({
-                  where: { session_id: session.id, status: AssessmentStatus.COMPLETED },
-                  orderBy: { completed_at: 'desc' },
+                  where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+                  orderBy: { completedAt: 'desc' },
               });
 
         if (!assessment) {
@@ -102,7 +135,7 @@ export class RecommendationsService {
         }
 
         let result = await this.prisma.assessmentResult.findUnique({
-            where: { assessment_id: assessment.id },
+            where: { assessmentId: assessment.id },
         });
 
         if (!result) {
@@ -115,22 +148,24 @@ export class RecommendationsService {
         const hasGeo = dto.latitude !== undefined && dto.longitude !== undefined;
         if (!dto.force && !dto.advanced && !hasGeo) {
             const cached = await this.prisma.assessmentCareerRecommendation.findMany({
-                where: { result_id: result.id },
+                where: { resultId: result.id },
                 include: { career: true },
-                orderBy: { rank_position: 'asc' },
+                orderBy: { rankPosition: 'asc' },
                 take: dto.limit ?? 6,
             });
             if (cached.length > 0) return cached;
         }
 
-        let careers: any[] | null = null;
+        type CareerLike = Career | CareerWithInstitutions;
+
+        let careers: CareerLike[] | null = null;
         if (!hasGeo) {
             const cacheKey = `careers:active:${dto.category ?? 'all'}`;
-            careers = await this.cache.get<any[]>(cacheKey);
+            careers = await this.cache.get<Career[]>(cacheKey);
             if (!careers) {
                 careers = await this.prisma.career.findMany({
                     where: {
-                        is_active: true,
+                        isActive: true,
                         ...(dto.category ? { category: dto.category } : {}),
                     },
                 });
@@ -140,14 +175,14 @@ export class RecommendationsService {
         if (!careers) {
             careers = await this.prisma.career.findMany({
                 where: {
-                    is_active: true,
+                    isActive: true,
                     ...(dto.category ? { category: dto.category } : {}),
                 },
                 include: { institutions: { include: { institution: true } } },
             });
         }
 
-        const baseCode = result.phase2_code ?? result.phase1_code;
+        const baseCode = result.phase2Code ?? result.phase1Code;
         if (!baseCode) return [];
 
         const weights = this.buildWeights(baseCode);
@@ -172,10 +207,13 @@ export class RecommendationsService {
                     let minDistance: number | null = null;
                     for (const link of institutions) {
                         const inst = link.institution;
-                        if (inst?.latitude == null || inst?.longitude == null) continue;
+                        const lat = inst?.latitude;
+                        const lon = inst?.longitude;
+                        if (lat === null || lat === undefined || lon === null || lon === undefined)
+                            continue;
                         const distance = this.distanceKm(
                             { lat: dto.latitude, lon: dto.longitude },
-                            { lat: inst.latitude, lon: inst.longitude },
+                            { lat, lon },
                         );
                         if (minDistance === null || distance < minDistance) {
                             minDistance = distance;
@@ -201,10 +239,10 @@ export class RecommendationsService {
             const currentVector = this.extractNormalizedScores(result);
             const recentResults = await this.prisma.assessmentResult.findMany({
                 where: {
-                    assessment_id: { not: assessment.id },
+                    assessmentId: { not: assessment.id },
                 },
-                select: { id: true, phase2_code: true, section_scores: true, phase2_scores: true },
-                orderBy: { created_at: 'desc' },
+                select: { id: true, sectionScores: true, phase2Scores: true, phase1Scores: true },
+                orderBy: { createdAt: 'desc' },
                 take: 200,
             });
 
@@ -223,17 +261,17 @@ export class RecommendationsService {
             const similarityMap = new Map(similarities.map((item) => [item.id, item.similarity]));
             if (similarityMap.size > 0) {
                 const cfRecs = await this.prisma.assessmentCareerRecommendation.findMany({
-                    where: { result_id: { in: Array.from(similarityMap.keys()) } },
-                    select: { result_id: true, career_id: true, match_score: true },
+                    where: { resultId: { in: Array.from(similarityMap.keys()) } },
+                    select: { resultId: true, careerId: true, matchScore: true },
                 });
 
                 const aggregates = new Map<number, number>();
                 for (const rec of cfRecs) {
-                    const weight = similarityMap.get(rec.result_id) ?? 0;
+                    const weight = similarityMap.get(rec.resultId) ?? 0;
                     if (weight === 0) continue;
                     aggregates.set(
-                        rec.career_id,
-                        (aggregates.get(rec.career_id) ?? 0) + weight * rec.match_score,
+                        rec.careerId,
+                        (aggregates.get(rec.careerId) ?? 0) + weight * rec.matchScore,
                     );
                 }
 
@@ -256,20 +294,20 @@ export class RecommendationsService {
             top.map((item, index) =>
                 this.prisma.assessmentCareerRecommendation.upsert({
                     where: {
-                        result_id_career_id: {
-                            result_id: result.id,
-                            career_id: item.career.id,
+                        resultId_careerId: {
+                            resultId: result.id,
+                            careerId: item.career.id,
                         },
                     },
                     update: {
-                        match_score: item.score,
-                        rank_position: index + 1,
+                        matchScore: item.score,
+                        rankPosition: index + 1,
                     },
                     create: {
-                        result_id: result.id,
-                        career_id: item.career.id,
-                        match_score: item.score,
-                        rank_position: index + 1,
+                        resultId: result.id,
+                        careerId: item.career.id,
+                        matchScore: item.score,
+                        rankPosition: index + 1,
                     },
                 }),
             ),
@@ -277,7 +315,7 @@ export class RecommendationsService {
 
         return saved.map((rec, idx) => ({
             ...rec,
-            career: top[idx].career,
+            career: top[idx]?.career ?? null,
         }));
     }
 }

@@ -12,9 +12,10 @@ import { Request } from 'express';
 import { EmailService } from '../../common/email/email.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailDto, LoginDto, LogoutDto, RefreshDto, RegisterDto, ResetPasswordDto } from './dto';
-import { AuthTokenService, AUTH_TOKEN_TYPES } from './services/auth-token.service';
+import { AuthTokenService, authTokenTypes } from './services/auth-token.service';
 import { PasswordService } from './services/password.service';
 import { ConfigService } from '../../common/config/config.service';
+import type { JwtPayload } from './interfaces';
 
 @Injectable()
 export class AuthService {
@@ -37,10 +38,10 @@ export class AuthService {
 
         const existingUser = await this.prisma.user.findUnique({
             where: { email },
-            select: { id: true, is_deleted: true },
+            select: { id: true, isDeleted: true },
         });
 
-        if (existingUser && !existingUser.is_deleted) {
+        if (existingUser && !existingUser.isDeleted) {
             throw new ConflictException('Email already registered');
         }
 
@@ -53,8 +54,8 @@ export class AuthService {
                 const createdUser = await tx.user.create({
                     data: {
                         email,
-                        first_name: this.normalizeName(dto.firstName),
-                        last_name: this.normalizeName(dto.lastName),
+                        firstName: this.normalizeName(dto.firstName),
+                        lastName: this.normalizeName(dto.lastName),
                         password: passwordHash,
                         role: UserRole.USER,
                         status: UserStatus.PENDING,
@@ -63,7 +64,7 @@ export class AuthService {
 
                 const token = await this.token.createUserToken(
                     createdUser.id,
-                    AUTH_TOKEN_TYPES.emailVerification,
+                    authTokenTypes.emailVerification,
                     req,
                     tx,
                 );
@@ -82,9 +83,9 @@ export class AuthService {
                 {
                     email: user.email,
                     subject: 'Vérification de votre email',
-                    firstName: user.first_name ?? '',
-                    lastName: user.last_name ?? '',
-                    fullName: user.first_name + ' ' + user.last_name,
+                    firstName: user.firstName ?? '',
+                    lastName: user.lastName ?? '',
+                    fullName: user.firstName + ' ' + user.lastName,
                 },
                 `${this.config.app.frontendUrl}/auth/check-email?token=${verificationToken}`,
             );
@@ -106,12 +107,12 @@ export class AuthService {
                 password: true,
                 role: true,
                 status: true,
-                is_deleted: true,
-                email_verified_at: true,
+                isDeleted: true,
+                emailVerifiedAt: true,
             },
         });
 
-        if (!user || user.is_deleted || !user.password) {
+        if (!user || user.isDeleted || !user.password) {
             throw new UnauthorizedException('Identifiants invalides');
         }
 
@@ -124,12 +125,12 @@ export class AuthService {
             throw new ForbiddenException('Compte inactif');
         }
 
-        if (!user.email_verified_at) {
+        if (!user.emailVerifiedAt) {
             throw new ForbiddenException('Email non vérifié');
         }
 
         const tokens = await this.token.signTokens(user);
-        const refreshTokenUpsert = await this.token.buildRefreshTokenUpsert(
+        const refreshTokenUpsert = this.token.buildRefreshTokenUpsert(
             user.id,
             tokens.refreshToken,
             tokens.refreshTokenExpiresAt,
@@ -140,7 +141,7 @@ export class AuthService {
         await this.prisma.$transaction([
             this.prisma.user.update({
                 where: { id: user.id },
-                data: { last_login_at: new Date() },
+                data: { lastLoginAt: new Date() },
             }),
             this.prisma.authToken.upsert(refreshTokenUpsert),
         ]);
@@ -163,7 +164,7 @@ export class AuthService {
         const tokenRecord = await this.token.validateRefreshToken(dto.refreshToken);
         const tokens = await this.token.signTokens(tokenRecord.user);
 
-        const refreshTokenPayload = await this.token.buildRefreshTokenPayload(
+        const refreshTokenPayload = this.token.buildRefreshTokenPayload(
             tokens.refreshToken,
             tokens.refreshTokenExpiresAt,
             new Date(),
@@ -173,8 +174,8 @@ export class AuthService {
         const result = await this.prisma.authToken.updateMany({
             where: {
                 id: tokenRecord.id,
-                token_hash: tokenRecord.token_hash,
-                invalidated_at: null,
+                tokenHash: tokenRecord.tokenHash,
+                invalidatedAt: null,
             },
             data: refreshTokenPayload,
         });
@@ -197,10 +198,10 @@ export class AuthService {
         const result = await this.prisma.authToken.updateMany({
             where: {
                 id: tokenRecord.id,
-                token_hash: tokenRecord.token_hash,
-                invalidated_at: null,
+                tokenHash: tokenRecord.tokenHash,
+                invalidatedAt: null,
             },
-            data: { invalidated_at: new Date() },
+            data: { invalidatedAt: new Date() },
         });
 
         if (result.count === 0) {
@@ -217,14 +218,14 @@ export class AuthService {
             select: {
                 id: true,
                 email: true,
-                first_name: true,
-                last_name: true,
+                firstName: true,
+                lastName: true,
                 status: true,
-                is_deleted: true,
+                isDeleted: true,
             },
         });
 
-        if (!user || user.is_deleted || user.status === UserStatus.DELETED) {
+        if (!user || user.isDeleted || user.status === UserStatus.DELETED) {
             return {
                 message:
                     'Si un compte existe pour cet email, un message de réinitialisation a été envoyé.',
@@ -238,20 +239,16 @@ export class AuthService {
             };
         }
 
-        const token = await this.token.createUserToken(
-            user.id,
-            AUTH_TOKEN_TYPES.resetPassword,
-            req,
-        );
+        const token = await this.token.createUserToken(user.id, authTokenTypes.resetPassword, req);
 
         if (user.email) {
             await this.email.sendPasswordResetEmail(
                 {
                     email: user.email,
                     subject: 'Réinitialisation de mot de passe',
-                    firstName: user.first_name ?? '',
-                    lastName: user.last_name ?? '',
-                    fullName: user.first_name + ' ' + user.last_name,
+                    firstName: user.firstName ?? '',
+                    lastName: user.lastName ?? '',
+                    fullName: user.firstName + ' ' + user.lastName,
                 },
                 `${this.config.app.frontendUrl}/auth/reset-password?token=${token}`,
             );
@@ -271,7 +268,7 @@ export class AuthService {
 
         const { user, tokenId } = await this.token.validateUserToken(
             token,
-            AUTH_TOKEN_TYPES.resetPassword,
+            authTokenTypes.resetPassword,
         );
         const passwordHash = await this.password.hashPassword(dto.newPassword);
         const now = new Date();
@@ -283,11 +280,11 @@ export class AuthService {
             }),
             this.prisma.token.update({
                 where: { id: tokenId },
-                data: { deleted_at: now },
+                data: { deletedAt: now },
             }),
             this.prisma.authToken.updateMany({
-                where: { user_id: user.id, invalidated_at: null },
-                data: { invalidated_at: now },
+                where: { userId: user.id, invalidatedAt: null },
+                data: { invalidatedAt: now },
             }),
         ]);
 
@@ -297,34 +294,40 @@ export class AuthService {
     async verifyEmail(token: string) {
         const { user, tokenId } = await this.token.validateUserToken(
             token,
-            AUTH_TOKEN_TYPES.emailVerification,
+            authTokenTypes.emailVerification,
         );
 
         await this.prisma.$transaction([
             this.prisma.user.update({
                 where: { id: user.id },
                 data: {
-                    email_verified_at: new Date(),
+                    emailVerifiedAt: new Date(),
                     status: UserStatus.ACTIVE,
                 },
             }),
             this.prisma.token.update({
                 where: { id: tokenId },
-                data: { deleted_at: new Date() },
+                data: { deletedAt: new Date() },
             }),
         ]);
 
         return { message: 'Email vérifié avec succès.' };
     }
 
-    async validateUserFromJwt(payload: any) {
-        if (!payload.iss || payload.iss !== this.config.jwt.issuer) {
+    async validateUserFromJwt(payload: JwtPayload) {
+        const issuer =
+            payload.issuer ??
+            (payload as JwtPayload & { iss?: string; aud?: string | string[] }).iss;
+        if (!issuer || issuer !== this.config.jwt.issuer) {
             throw new UnauthorizedException('Invalid token');
         }
 
-        const audienceMatches = Array.isArray(payload.aud)
-            ? payload.aud.includes(this.config.jwt.audience)
-            : payload.aud === this.config.jwt.audience;
+        const audience =
+            payload.audience ??
+            (payload as JwtPayload & { iss?: string; aud?: string | string[] }).aud;
+        const audienceMatches = Array.isArray(audience)
+            ? audience.includes(this.config.jwt.audience)
+            : audience === this.config.jwt.audience;
 
         if (!audienceMatches) {
             throw new UnauthorizedException('Invalid token');
@@ -341,16 +344,16 @@ export class AuthService {
                 email: true,
                 role: true,
                 status: true,
-                is_deleted: true,
-                email_verified_at: true,
+                isDeleted: true,
+                emailVerifiedAt: true,
             },
         });
 
-        if (!user || user.is_deleted) {
+        if (!user || user.isDeleted) {
             throw new UnauthorizedException('Invalid token');
         }
 
-        if (user.status !== UserStatus.ACTIVE || !user.email_verified_at) {
+        if (user.status !== UserStatus.ACTIVE || !user.emailVerifiedAt) {
             throw new UnauthorizedException('Invalid token');
         }
 

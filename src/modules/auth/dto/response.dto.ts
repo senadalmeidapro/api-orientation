@@ -24,9 +24,9 @@ export class ApiResponseDto<T = unknown> {
 
     constructor(data?: T, message?: string, error?: string) {
         this.success = !error;
-        this.data = data;
-        this.message = message;
-        this.error = error;
+        if (data !== undefined) this.data = data;
+        if (message !== undefined) this.message = message;
+        if (error !== undefined) this.error = error;
         this.timestamp = new Date();
     }
 
@@ -128,12 +128,12 @@ export class LoginResponseDto implements LoginResponse {
         this.userId = data.userId;
         this.email = data.email;
         this.username = data.username;
-        this.tempToken = data.tempToken;
-        this.accessToken = data.accessToken;
-        this.refreshToken = data.refreshToken;
-        this.sessionToken = data.sessionToken;
-        this.user = data.user;
-        this.isNewUser = data.isNewUser;
+        if (data.tempToken !== undefined) this.tempToken = data.tempToken;
+        if (data.accessToken !== undefined) this.accessToken = data.accessToken;
+        if (data.refreshToken !== undefined) this.refreshToken = data.refreshToken;
+        if (data.sessionToken !== undefined) this.sessionToken = data.sessionToken;
+        if (data.user !== undefined) this.user = data.user;
+        if (data.isNewUser !== undefined) this.isNewUser = data.isNewUser;
     }
 }
 
