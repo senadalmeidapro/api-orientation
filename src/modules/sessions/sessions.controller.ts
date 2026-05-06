@@ -6,7 +6,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateSessionProfileDto } from './dto/update-session-profile.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { currentUser } from '../../common/decorators';
+import { currentUser } from '@common/decorators';
 import type { User } from '@prisma/client';
 import {
     ApiBearerAuth,
@@ -16,12 +16,12 @@ import {
     ApiParam,
     ApiTags,
 } from '@nestjs/swagger';
-import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
+import { ApiErrorResponseDto } from '@common/dto/api-response.dto';
 // import {
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,
 //     ApiStandardOkResponse,
-// } from '../../common/swagger';
+// } from '@common/swagger';
 
 @ApiTags('Sessions')
 @UseGuards(JwtAuthGuard)

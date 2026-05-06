@@ -8,15 +8,15 @@ import {
     Res,
     Inject,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Response } from 'express';
 import type { Cache } from 'cache-manager';
 import * as os from 'os';
 import * as process from 'process';
-import { publicDecorator } from './common/decorators/public.decorator';
+import { publicDecorator } from '@common/decorators/public.decorator';
 import { PrismaService } from './prisma/prisma.service';
-import { ConfigService } from './common/config/config.service';
+import { ConfigService } from '@common/config/config.service';
 
 /* ─────────────────────────────────────────
  * TYPES — réponses

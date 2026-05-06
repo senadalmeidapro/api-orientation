@@ -1,11 +1,11 @@
 import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
-import { roles } from '../../common/decorators/roles.decorator';
+import { roles } from '@common/decorators/roles.decorator';
 import { UpdateUserDto, UpdateUserRolesDto, UserResponseDto } from './dto';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { currentUser } from '../../common/decorators';
+import { currentUser } from '@common/decorators';
 import {
     ApiBearerAuth,
     ApiBody,
@@ -14,8 +14,8 @@ import {
     ApiParam,
     ApiTags,
 } from '@nestjs/swagger';
-import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
-// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
+import { ApiErrorResponseDto } from '@common/dto/api-response.dto';
+// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Users')
 @UseGuards(JwtAuthGuard)

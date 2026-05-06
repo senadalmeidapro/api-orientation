@@ -12,8 +12,8 @@ export class AiClient {
     private readonly apiKey = process.env.OPENAI_API_KEY;
     private readonly baseUrl = process.env.OPENAI_BASE_URL ?? 'https://api.openai.com';
     private readonly model = process.env.OPENAI_MODEL ?? 'gpt-4o';
-    private readonly temperature = Number(process.env.OPENAI_TEMPERATURE ?? 0.3);
-    private readonly timeoutMs = Number(process.env.OPENAI_TIMEOUT_MS ?? 15000);
+    private readonly temperature = Number(process.env.AI_TEMPERATURE ?? 0.3);
+    private readonly timeoutMs = Number(process.env.AI_TIMEOUT_MS ?? 15000);
 
     async chat(
         prompt: string,

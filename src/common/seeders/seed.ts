@@ -8,9 +8,10 @@ import {
 } from '@prisma/client';
 import 'dotenv/config';
 import { PrismaService } from '../../prisma/prisma.service';
-import { seedLinkCategories } from './seed-link-categories';
 import { seedQuestionProfiles } from './seed-question-profiles';
 import { ConfigService } from '../config/config.service';
+import { seedEnhancedData } from './seed-enhanced-data';
+import { seedSampleAssessmentData } from './seed-sample-data';
 
 const config = new ConfigService();
 const prisma = new PrismaService(config);
@@ -1253,8 +1254,12 @@ export async function main() {
         });
     }
 
-    // --- Link categories ---
-    await seedLinkCategories(prisma);
+    // --- Universities & Scholarships will be seeded separately ---
+    // (Removed seedLinkCategories as links are now replaced with universities)
+
+    await seedEnhancedData(prisma);
+
+    await seedSampleAssessmentData(prisma);
 
     // --- Question Profiles (multi-RIASEC) ---
     await seedQuestionProfiles(prisma);

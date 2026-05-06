@@ -3,9 +3,9 @@ import { Throttle } from '@nestjs/throttler';
 import { AiService } from './ai.service';
 import { AiChatDto, AiCoachDto, AiSummaryDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
-import { publicDecorator } from '../../common/decorators';
+import { publicDecorator } from '@common/decorators';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
-// import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
+// import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '@common/swagger';
 
 @ApiTags('Ai')
 @Controller('api/v1/ai')

@@ -5,12 +5,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { EmailModule } from '../../common/email/email.module';
+import { EmailModule } from '@common/email/email.module';
 import { PasswordService } from './services/password.service';
 import { AuthDeviceService } from './services/auth-device.service';
 import { AuthTokenService } from './services/auth-token.service';
-import { ConfigModule } from '../../common/config/config.module';
-import { ConfigService } from '../../common/config/config.service';
+import { ConfigModule } from '@common/config/config.module';
+import { ConfigService } from '@common/config/config.service';
 
 @Global()
 @Module({

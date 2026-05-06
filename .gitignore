@@ -96,3 +96,6 @@ custom_migration
 /.github/skills
 /.github/agents
 tsconfig.build.tsbuildinfo
+PRISMA_SCHEMA_ANALYSIS.md
+SCHEMA_DATA_FLOW.md
+SEEDER_QUICK_REFERENCE.md

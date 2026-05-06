@@ -1,10 +1,10 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { RecommendationsService } from './recommendations.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
-import { publicDecorator } from '../../common/decorators/public.decorator';
+import { publicDecorator } from '@common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
+// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Careers')
 // @ApiStandardErrorResponses({ includeNotFound: true })

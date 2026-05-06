@@ -8,7 +8,7 @@ import {
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Prisma, User, UserStatus } from '@prisma/client';
 import * as crypto from 'crypto';
-import { ConfigService } from '../../../common/config/config.service';
+import { ConfigService } from '@common/config/config.service';
 import { Request } from 'express';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { JwtPayload } from '../interfaces';

@@ -10,8 +10,8 @@ import {
     Query,
 } from '@nestjs/common';
 import { CareersService } from './careers.service';
-import { publicDecorator } from '../../common/decorators/public.decorator';
-import { roles } from '../../common/decorators/roles.decorator';
+import { publicDecorator } from '@common/decorators/public.decorator';
+import { roles } from '@common/decorators/roles.decorator';
 import { CreateCareerDto, ListCareersDto, UpdateCareerDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -19,7 +19,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,
 //     ApiStandardOkResponse,
-// } from '../../common/swagger';
+// } from '@common/swagger';
 
 @ApiTags('Careers')
 @ApiBearerAuth('access-token')

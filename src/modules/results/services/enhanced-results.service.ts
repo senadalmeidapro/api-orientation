@@ -3,11 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { BehavioralAnalysisService } from '../../responses/services/behavioral-analysis.service';
 import { AdaptiveSelectionService } from '../../questions/services/adaptive-selection.service';
 import { AIAdaptiveService } from '../../ai/services/ai-adaptive.service';
-import {
-    MultiProfileUtil,
-    ProfileSnapshot,
-    RiasecScores,
-} from '../../../common/utils/multi-profile.util';
+import { MultiProfileUtil, ProfileSnapshot, RiasecScores } from '@common/utils/multi-profile.util';
 
 export interface EnhancedReportSection {
     title: string;

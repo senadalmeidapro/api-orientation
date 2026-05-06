@@ -6,8 +6,8 @@ import {
     QuestionProfileWeight,
     RiasecScores,
     MultiProfileUtil,
-} from '../../../common/utils/multi-profile.util';
-import { AdaptiveUtil } from '../../../common/utils/adaptive.util';
+} from '@common/utils/multi-profile.util';
+import { AdaptiveUtil } from '@common/utils/adaptive.util';
 
 export interface IntermediateProfileData {
     batchIndex: number;

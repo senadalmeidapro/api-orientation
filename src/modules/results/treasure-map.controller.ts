@@ -30,7 +30,7 @@ import {
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,
 //     ApiStandardOkResponse,
-// } from '../../common/swagger';
+// } from '@common/swagger';
 
 @ApiTags('Treasure map')
 @UseGuards(JwtAuthGuard)

@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConsistencyLevel, Phase2Type, ProfileStrength, RiasecType } from '@prisma/client';
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';
-import { MultiProfileUtil, RiasecScores } from '../../common/utils/multi-profile.util';
+import { MultiProfileUtil, RiasecScores } from '@common/utils/multi-profile.util';
 
 const riasecOrder: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
 

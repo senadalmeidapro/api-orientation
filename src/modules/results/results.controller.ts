@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,
 //     ApiStandardOkResponse,
-// } from '../../common/swagger';
+// } from '@common/swagger';
 
 @ApiTags('Results')
 @UseGuards(JwtAuthGuard)

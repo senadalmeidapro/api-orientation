@@ -1,11 +1,11 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Phase2Type, PhaseType, Prisma, RiasecType } from '@prisma/client';
-import { resolveSessionAndAssessment } from '../../common/utils/assessment.util';
-import { CacheService } from '../../common/cache/cache.service';
+import { resolveSessionAndAssessment } from '@common/utils/assessment.util';
+import { CacheService } from '@common/cache/cache.service';
 import { AdaptiveSelectionService } from './services/adaptive-selection.service';
 import { BatchManagementService } from '../sessions/services/batch-management.service';
-import { MultiProfileUtil } from '../../common/utils/multi-profile.util';
+import { MultiProfileUtil } from '@common/utils/multi-profile.util';
 import { GetPhase1QuestionsDto, GetPhase2QuestionsDto, GetNextBatchDto } from './dto';
 
 const defaultDepth = 5;

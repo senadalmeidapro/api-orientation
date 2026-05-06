@@ -11,7 +11,7 @@ import {
     RiasecType,
 } from '@prisma/client';
 import { BadgesService } from '../badges/badges.service';
-import { resolveSessionAndAssessment } from '../../common/utils/assessment.util';
+import { resolveSessionAndAssessment } from '@common/utils/assessment.util';
 import { BehavioralAnalysisService } from './services/behavioral-analysis.service';
 import { BatchManagementService } from '../sessions/services/batch-management.service';
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';

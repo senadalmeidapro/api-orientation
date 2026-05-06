@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { BehavioralUtil, BehavioralIndicatorData } from '../../../common/utils/behavioral.util';
+import { BehavioralUtil, BehavioralIndicatorData } from '@common/utils/behavioral.util';
 
 export interface BehavioralMetrics {
     averageResponseTime: number;

@@ -1538,8 +1538,8 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
         await prisma.questionProfile.deleteMany({
             where: {
                 ...(item.phase === PhaseType.PHASE1
-                    ? { phase1_question_id: item.questionId }
-                    : { phase2_question_id: item.questionId }),
+                    ? { phase1QuestionId: item.questionId }
+                    : { phase2QuestionId: item.questionId }),
                 phase: item.phase,
             },
         });
@@ -1552,8 +1552,8 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
                     riasecType: profile.riasecType,
                     weight: profile.weight,
                     ...(item.phase === PhaseType.PHASE1
-                        ? { phase1_question_id: item.questionId }
-                        : { phase2_question_id: item.questionId }),
+                        ? { phase1QuestionId: item.questionId }
+                        : { phase2QuestionId: item.questionId }),
                 },
             });
             created++;

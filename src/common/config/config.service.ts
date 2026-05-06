@@ -176,12 +176,18 @@ export class ConfigService {
     /* ─────────────────────────────────────────
      * IA / OPENAI
      * ───────────────────────────────────────── */
-    readonly openai = {
-        apiKey: this.str('OPENAI_API_KEY'),
-        model: this.str('OPENAI_MODEL'),
-        baseUrl: this.str('OPENAI_BASE_URL'),
-        timeoutMs: this.num('OPENAI_TIMEOUT_MS'),
-        temperature: this.num('OPENAI_TEMPERATURE'),
+    readonly ai = {
+        temperature: this.num('AI_TEMPERATURE'),
+        timeoutMs: this.num('AI_TIMEOUT_MS'),
+        google: {
+            apiKey: this.str('GOOGLE_AI_API_KEY'),
+            model: this.str('GOOGLE_AI_MODEL'),
+        },
+        openai: {
+            apiKey: this.str('OPENAI_API_KEY'),
+            model: this.str('OPENAI_MODEL'),
+            baseUrl: this.str('OPENAI_BASE_URL'),
+        },
     };
 
     /* ─────────────────────────────────────────

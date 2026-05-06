@@ -11,7 +11,7 @@ import {
 import type { Request } from 'express';
 
 import { JwtAuthGuard } from './guards/jwt.guard';
-import { publicDecorator } from '../../common/decorators/public.decorator';
+import { publicDecorator } from '@common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 
 import {
@@ -34,9 +34,9 @@ import {
     ApiTags,
     ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ApiErrorResponseDto } from '../../common/dto/api-response.dto';
-import { ConfigService } from '../../common/config/config.service';
-// import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '../../common/swagger';
+import { ApiErrorResponseDto } from '@common/dto/api-response.dto';
+import { ConfigService } from '@common/config/config.service';
+// import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '@common/swagger';
 
 const throttleAuthDefault = { default: { limit: 20, ttl: 60 } } as const;
 const throttleAuthRefresh = { default: { limit: 30, ttl: 60 } } as const;

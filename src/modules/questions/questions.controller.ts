@@ -4,7 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { GetPhase1QuestionsDto, GetPhase2QuestionsDto, GetNextBatchDto } from './dto';
-// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
+// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Questions')
 @UseGuards(JwtAuthGuard)

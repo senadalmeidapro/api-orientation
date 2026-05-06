@@ -3,7 +3,7 @@
 // import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 // import { BillingService } from './billing.service';
 // import { JwtAuthGuard } from '../../core/auth/guards';
-// import { CurrentUser } from '../../common/decorators';
+// import { CurrentUser } from '@common/decorators';
 
 // @ApiTags('Billing')
 // @Controller('api/v1/billing')

@@ -9,9 +9,10 @@ import { AssessmentStatus, Phase2Type, PhaseType, RiasecType } from '@prisma/cli
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecommendationsService } from '../recommendations/recommendations.service';
 import { ResultsService } from '../results/results.service';
-import { AiClient, JsonSchemaFormat } from './ai.client';
+import { JsonSchemaFormat } from './ai.client';
+import { AiProviderFactory } from './ai-provider.factory';
 import { AiChatDto, AiCoachDto, AiSummaryDto } from './dto';
-import { resolveSessionAndAssessment } from '../../common/utils/assessment.util';
+import { resolveSessionAndAssessment } from '@common/utils/assessment.util';
 
 const riasecCodes = ['R', 'I', 'A', 'S', 'E', 'C'] as const;
 
@@ -46,7 +47,7 @@ export class AiService {
         private readonly prisma: PrismaService,
         private readonly resultsService: ResultsService,
         private readonly recommendationsService: RecommendationsService,
-        private readonly ai: AiClient,
+        private readonly aiProvider: AiProviderFactory,
     ) {}
 
     async summary(dto: AiSummaryDto): Promise<Record<string, unknown>> {
@@ -165,7 +166,7 @@ export class AiService {
             context,
         });
 
-        const response = await this.ai.respondJson({
+        const response = await this.aiProvider.getProvider().respondJson({
             instructions,
             input,
             schema,
@@ -253,7 +254,7 @@ export class AiService {
             },
         });
 
-        const response = await this.ai.respondJson({
+        const response = await this.aiProvider.getProvider().respondJson({
             instructions,
             input,
             schema,
@@ -358,7 +359,7 @@ export class AiService {
             context,
         });
 
-        const response = await this.ai.respondText({
+        const response = await this.aiProvider.getProvider().respondText({
             instructions,
             input,
         });

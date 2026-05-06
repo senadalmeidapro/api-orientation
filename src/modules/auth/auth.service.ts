@@ -9,12 +9,12 @@ import {
 } from '@nestjs/common';
 import { Prisma, User, UserRole, UserStatus } from '@prisma/client';
 import { Request } from 'express';
-import { EmailService } from '../../common/email/email.service';
+import { EmailService } from '@common/email/email.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailDto, LoginDto, LogoutDto, RefreshDto, RegisterDto, ResetPasswordDto } from './dto';
 import { AuthTokenService, authTokenTypes } from './services/auth-token.service';
 import { PasswordService } from './services/password.service';
-import { ConfigService } from '../../common/config/config.service';
+import { ConfigService } from '@common/config/config.service';
 import type { JwtPayload } from './interfaces';
 
 @Injectable()

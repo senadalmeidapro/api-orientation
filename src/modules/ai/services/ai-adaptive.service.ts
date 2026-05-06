@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RiasecScores, MultiProfileQuestion } from '../../../common/utils/multi-profile.util';
-import { BehavioralIndicatorData } from '../../../common/utils/behavioral.util';
+import { RiasecScores, MultiProfileQuestion } from '@common/utils/multi-profile.util';
+import { BehavioralIndicatorData } from '@common/utils/behavioral.util';
 import { AiClient } from '../ai.client';
 
 export interface AIProfileAnalysis {

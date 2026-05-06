@@ -11,7 +11,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { TrainingCentersService } from './training-centers.service';
-import { roles } from '../../common/decorators/roles.decorator';
+import { roles } from '@common/decorators/roles.decorator';
 import { CreateTrainingCenterDto, ListTrainingCentersDto, UpdateTrainingCenterDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
@@ -20,7 +20,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,
 //     ApiStandardOkResponse,
-// } from '../../common/swagger';
+// } from '@common/swagger';
 
 @ApiTags('Training centers')
 @UseGuards(JwtAuthGuard)

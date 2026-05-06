@@ -3,7 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
 import { AssessmentStatus, Career, RiasecType } from '@prisma/client';
-import { CacheService } from '../../common/cache/cache.service';
+import { CacheService } from '@common/cache/cache.service';
 
 type CareerWithInstitutions = Career & {
     institutions: Array<{

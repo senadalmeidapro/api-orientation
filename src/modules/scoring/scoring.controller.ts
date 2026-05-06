@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '../../common/swagger';
+// import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Scoring')
 @UseGuards(JwtAuthGuard)

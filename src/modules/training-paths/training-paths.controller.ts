@@ -10,7 +10,7 @@ import {
     Query,
     UseGuards,
 } from '@nestjs/common';
-import { roles } from '../../common/decorators/roles.decorator';
+import { roles } from '@common/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { TrainingPathsService } from './training-paths.service';
 import { CreateTrainingPathDto, ListTrainingPathsDto, UpdateTrainingPathDto } from './dto';
@@ -20,7 +20,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,
 //     ApiStandardOkResponse,
-// } from '../../common/swagger';
+// } from '@common/swagger';
 
 @ApiTags('Training paths')
 @UseGuards(JwtAuthGuard)

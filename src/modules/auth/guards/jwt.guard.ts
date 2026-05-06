@@ -1,7 +1,7 @@
 import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
-import { isPublicKey } from '../../../common/decorators/public.decorator';
+import { isPublicKey } from '@common/decorators/public.decorator';
 import { Request } from 'express';
 import { AuthTokenService } from '../services/auth-token.service';
 
