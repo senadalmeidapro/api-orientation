@@ -1,5 +1,6 @@
 import type { PrismaService } from '../../prisma/prisma.service';
 import { Phase2Type } from '@prisma/client';
+import { ConfigService } from '../config/config.service';
 
 /**
  * SAMPLE DATA SEEDER
@@ -14,81 +15,449 @@ import { Phase2Type } from '@prisma/client';
  * Uses realistic generic data suitable for testing.
  */
 
+const config = new ConfigService();
+
 // ============================================================
 // TRAINING INSTITUTIONS
 // ============================================================
-const trainingInstitutions = [
+const universities = [
     {
-        name: "Université d'Abomey-Calavi",
-        acronym: 'UAC',
-        type: 'UNIVERSITE',
-        department: 'Littoral',
-        city: 'Cotonou',
-        address: '01 BP 526, Cotonou',
-        phone: '+229 21 30 00 70',
-        email: 'contact@uac.bj',
-        website: 'https://www.uac.bj',
-        coverUrl: '',
+        name: "Centre International de Formation à l'Expertise Comptable",
+        acronym: 'CIFEC',
+        description:
+            "Le Centre International de Formation à l'Expertise Comptable (CIFEC) du Bénin est une grande école spécialisée dans les métiers de la comptabilité. Il propose des formations comme la Licence Comptabilité, Contrôle et Audit (LCCA), le Diplôme de Comptabilité et de Gestion (DCG) et prépare au Diplôme d'Expertise Comptable.",
+        phone: '+22966158232',
+        email: 'contact@cifec.bj',
+        website: 'https://www.cifecbenin.com',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/CIFEC.jpg`,
+        formationUrls: [
+            'https://www.cifecbenin.com/formations/licence-comptabilite-controle-et-audit-lcca',
+            'https://www.cifecbenin.com/formations/diplome-de-comptabilite-et-de-gestion-dcg',
+            'https://www.cifecbenin.com/formations/diplome-de-gestion-et-de-comptabilite-dgc',
+            'https://www.cifecbenin.com/formations/licence-en-science-technique-comptable-et-financiere-lstcf',
+            'https://www.cifecbenin.com/specialisations',
+        ],
     },
     {
-        name: 'Institut de Formation Agricole',
-        acronym: 'IFA',
-        type: 'ECOLE',
-        department: 'Zou',
-        city: 'Abomey',
-        address: 'Abomey-Calavi',
-        phone: '+229 21 30 15 50',
-        email: 'info@ifa-benin.bj',
-        website: null,
-        coverUrl: '',
+        name: 'École Internationale de Graphisme du Bénin',
+        acronym: 'EIG',
+        description:
+            "L'École Internationale de Graphisme du Bénin (EIG) est un groupe scolaire et universitaire privé spécialisé dans les métiers du digital, du graphisme, de l'audiovisuel et du numérique. Implantée au Bénin, au Mali et au Burkina Faso, elle forme plus de 300 apprenants par an avec un taux d'insertion professionnelle de 94%.",
+        phone: '+2290166392222',
+        email: 'contact@eiggroupe.com',
+        website: 'https://eiggroupe.com',
+        address: 'Cotonou, Aïbatin, Bénin',
+        coverUrl: `${config.app.frontendUrl}/EIG.jpg`,
+        formationUrls: [
+            'https://eiggroupe.com/stream/communication-visuelle-graphique-et-numerique/',
+            'https://eiggroupe.com/stream/developpement-web-mobile-et-logiciel/',
+            'https://eiggroupe.com/stream/realisation-cinema-et-television/',
+            'https://eiggroupe.com/stream/marketing-et-communication-digitale/',
+            'https://eiggroupe.com/stream/journalisme-multimedia/',
+            'https://eiggroupe.com/stream/design-graphique/',
+            'https://eiggroupe.com/stream/ui-ux-design/',
+            'https://eiggroupe.com/stream/developpement-web-et-mobile/',
+            'https://eiggroupe.com/stream/montage-video/',
+            'https://eiggroupe.com/stream/serigraphie/',
+            'https://eiggroupe.com/stream/photographie-et-cadrage/',
+        ],
     },
     {
-        name: 'Lycée Technique National',
-        acronym: 'LTN',
-        type: 'LYCEE_TECHNIQUE',
-        department: 'Littoral',
-        city: 'Cotonou',
-        address: 'Cotonou',
-        phone: '+229 21 31 25 64',
-        email: null,
-        website: null,
-        coverUrl: '',
+        name: "École Nationale d'Administration et de Magistrature",
+        acronym: 'ENA',
+        description:
+            "L'École Nationale d'Administration et de Magistrature (ENAM) du Bénin, située à Abomey-Calavi, est un établissement public de formation professionnelle et de recherche affilié à l'Université d'Abomey-Calavi. Créée en 1984, elle a pour mission de former et perfectionner les cadres et agents publics béninois.",
+        phone: '',
+        email: 'enambenin@yahoo.fr',
+        website: 'https://www.enam.uac.bj',
+        address: 'Abomey-Calavi, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ENA.jpg`,
+        formationUrls: [],
     },
     {
-        name: "Centre d'Excellence Numérique",
-        acronym: 'CEN',
-        type: 'CENTRE',
-        department: 'Littoral',
-        city: 'Cotonou',
-        address: 'Quartier des Affaires',
-        phone: '+229 21 32 10 01',
-        email: 'formation@cen-benin.com',
-        website: 'https://www.cen-benin.com',
-        coverUrl: '',
+        name: "École Nationale d'Économie Appliquée et de Management",
+        acronym: 'ENEAM',
+        description:
+            "L'École Nationale d'Économie Appliquée et de Management (ENEAM) est une entité de l'Université d'Abomey-Calavi située à Cotonou. Créée en 1980 sous le nom d'Institut National d'Économie (INE), elle a adopté son nom actuel en 2002. Elle forme dans les domaines de la statistique, la planification du développement, le management des organisations, l'informatique et l'expertise comptable.",
+        phone: '+22921304168',
+        email: 'eneam.uac@eneam.uac.bj',
+        website: 'https://eneam.uac.bj',
+        address: 'Gbégamey, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ENEAM.webp`,
+        formationUrls: ['https://eneam.uac.bj'],
     },
     {
-        name: 'École Nationale de Santé',
-        acronym: 'ENS',
-        type: 'ECOLE',
-        department: 'Littoral',
-        city: 'Cotonou',
-        address: 'Cotonou',
-        phone: '+229 21 33 45 67',
-        email: 'contact@ens-benin.bj',
-        website: null,
-        coverUrl: '',
+        name: 'Epitech Bénin',
+        acronym: 'EPITECH',
+        description:
+            "Epitech est une école d'expertise informatique implantée au Bénin depuis 2019, premier campus africain du réseau Epitech. Située à Cotonou, elle propose des formations de type Bachelor et MSc Pro en ingénierie logicielle selon une pédagogie active par projets.",
+        phone: '+22969077730',
+        email: 'info@epitech.bj',
+        website: 'https://epitech.africa',
+        address: 'Boulevard Saint Michel, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/EPITECH (2).jpg`,
+        formationUrls: ['https://epitech.africa'],
     },
     {
-        name: 'Institut de Commerce et de Gestion',
-        acronym: 'ICG',
-        type: 'CENTRE',
-        department: 'Littoral',
-        city: 'Cotonou',
-        address: 'Quartier Administratif',
-        phone: '+229 21 34 56 78',
-        email: 'info@icg-benin.bj',
-        website: 'https://www.icg-benin.bj',
-        coverUrl: '',
+        name: "École Supérieure de Gestion d'Informatique et des Sciences",
+        acronym: 'ESGIS',
+        description:
+            "L'ESGIS est une école supérieure privée agréée évoluant sous l'égide du Ministère de l'Enseignement Supérieur du Togo, du Bénin et du Gabon. Fondée au Togo en 1994, elle s'est implantée au Bénin en 2005 et propose des formations en informatique, gestion et sciences.",
+        phone: '+22921324773',
+        email: 'esgis.benin@esgis.org',
+        website: 'https://www.esgis.bj',
+        address: "Boulevard de l'Ouémé, Jéricho, Cotonou, Bénin",
+        coverUrl: `${config.app.frontendUrl}/ESGIS.jpeg`,
+        formationUrls: ['https://www.esgis.bj'],
+    },
+    {
+        name: 'École Supérieure de Management, Tourisme, Hôtellerie et Restauration',
+        acronym: 'ESMATH',
+        description:
+            'ESMATH-BENIN est une école de référence à Cotonou spécialisée dans les formations professionnelles en tourisme, hôtellerie et restauration. Elle prépare aux diplômes de Licence professionnelle dans ces domaines.',
+        phone: '+2290196532197',
+        email: 'contact@esmathbenin.org',
+        website: 'https://www.esmathbenin.org',
+        address: 'Gbèdjromèdé, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/esmath.jpg`,
+        formationUrls: ['https://www.esmathbenin.org'],
+    },
+    {
+        name: 'École Supérieure des Métiers des Energies Renouvelables',
+        acronym: 'ESMER-Benin',
+        description:
+            "L'ESMER est la première école de référence au Bénin spécialisée dans la formation aux métiers des énergies renouvelables (solaire, éolienne, marine, biomasse et leur hybridation). Elle propose des formations de niveau Licence et Master professionnels.",
+        phone: '+22995676625',
+        email: 'infos@esmer-benin.org',
+        website: 'https://esmer-benin.org',
+        address: 'Zogbo, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ESMER-Benin.jpg`,
+        formationUrls: ['https://esmer-benin.org'],
+    },
+    {
+        name: 'École Supérieure de Management',
+        acronym: 'ESM-BENIN',
+        description:
+            "ESM-BENIN est un établissement privé d'enseignement supérieur créé en 2007, spécialisé dans la formation des leaders. Il propose des formations homologuées par l'État béninois et accréditées par le CAMES, conduisant aux grades de Licences et Masters Professionnels dans les domaines du marketing, de la finance, des ressources humaines et de l'hôtellerie.",
+        phone: '+2290197308484',
+        email: 'contact@esm-benin.com',
+        website: 'https://esm-benin.com',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ESM-BENIN.jpg`,
+        formationUrls: ['https://esm-benin.com'],
+    },
+    {
+        name: 'École Supérieure de Technologie et de Gestion',
+        acronym: 'ESTG',
+        description:
+            "L'École Supérieure de Technologie et de Gestion (ESTG – BENIN) est un établissement privé formant des cadres qualifiés dans les domaines de la gestion, la finance, le droit, la communication, l'informatique, le marketing et l'électronique. Créée en septembre 2013, elle prépare aux diplômes de Licence et Master.",
+        phone: '+22962791010',
+        email: 'contact@estg-benin.com',
+        website: 'https://estg-benin.com',
+        address: 'Fidjrossè Kpota, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ESTG.jpg`,
+        formationUrls: ['https://estg-benin.com'],
+    },
+    {
+        name: 'Faculté de Droit et de Science Politique',
+        acronym: 'FADESP',
+        description:
+            "La Faculté de Droit et des Sciences Politiques (FADESP) est une unité de formation et de recherche de l'Université d'Abomey-Calavi. Elle propose des formations en droit et en science politique, incluant un cycle de capacité en droit et des études universitaires complètes.",
+        phone: '',
+        email: 'contact@fadesp.net',
+        website: 'https://www.fadesp.net',
+        address: "Campus d'Abomey-Calavi, Bénin",
+        coverUrl: `${config.app.frontendUrl}/FADESP.jpg`,
+        formationUrls: ['https://www.fadesp.net'],
+    },
+    {
+        name: 'Faculté des Sciences Économiques et de Gestion',
+        acronym: 'FASEG',
+        description:
+            "La Faculté des Sciences Économiques et de Gestion (FASEG) est une unité de formation et de recherche de l'Université d'Abomey-Calavi. Elle offre des formations dans les domaines de l'économie et de la gestion.",
+        phone: '+22991054242',
+        email: 'faseg.uac@faseg.uac.bj',
+        website: 'https://faseg-uac.bj',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/FASEG.jpg`,
+        formationUrls: [],
+    },
+    {
+        name: "Faculté des Sciences Économiques et de Gestion de l'Université de Parakou",
+        acronym: 'FASEG-UP',
+        description:
+            "La Faculté des Sciences Économiques et de Gestion de l'Université de Parakou (FASEG-UP) est un joyau académique dédié à l'excellence dans les domaines de l'économie et de la gestion. Fondée en 2001, elle constitue un des plus importants sites académiques de l'Université de Parakou.",
+        phone: '+22923610712',
+        email: 'contact@fasegup.com',
+        website: 'https://www.fasegup.com',
+        address: 'Université de Parakou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/faseg-up.png`,
+        formationUrls: [],
+    },
+    {
+        name: 'Faculté des Sciences Humaines et Sociales',
+        acronym: 'FASHS',
+        description:
+            "La Faculté des Sciences Humaines et Sociales (FASHS) est une unité de formation et de recherche de l'Université d'Abomey-Calavi. Créée en 2017 suite à la scission de l'ex FLASH, elle a pour vocation de former dans les domaines des sciences humaines et sociales.",
+        phone: '',
+        email: '',
+        website: '',
+        address: "Campus d'Abomey-Calavi, Bénin",
+        coverUrl: `${config.app.frontendUrl}/FASHS.png`,
+        formationUrls: [],
+    },
+    {
+        name: 'Faculté des Sciences et Techniques',
+        acronym: 'FAST',
+        description:
+            "La Faculté des Sciences et Techniques (FAST) est une unité de formation et de recherche de l'Université d'Abomey-Calavi. Elle offre des formations dans les domaines des sciences naturelles, mathématiques, physique et autres disciplines scientifiques.",
+        phone: '',
+        email: '',
+        website: '',
+        address: "Campus d'Abomey-Calavi, Bénin",
+        coverUrl: `${config.app.frontendUrl}/FAST.jpg`,
+        formationUrls: [],
+    },
+    {
+        name: 'Faculté des Sciences de la Santé',
+        acronym: 'FSS',
+        description:
+            "La Faculté des Sciences de la Santé (FSS) est une institution publique béninoise de formation et de recherche rattachée à l'Université d'Abomey-Calavi. Créée en 1971, elle forme dans les filières médecine générale, pharmacie, assistance sociale, nutrition et diététique, et kinésithérapie.",
+        phone: '+22921304095',
+        email: 'fss_cotonou@yahoo.fr',
+        website: 'https://www.fss-cotonou.com',
+        address: 'Champ de foire, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/FSS.jpg`,
+        formationUrls: ['https://www.fss-cotonou.com'],
+    },
+    {
+        name: 'Haute École de Commerce et de Management',
+        acronym: 'HECM',
+        description:
+            "La Haute École de Commerce et de Management (HECM) est une université privée implantée dans sept localités du Bénin depuis sa création en 1999. Elle propose des formations orientées vers l'emploi dans les secteurs clés de l'économie africaine.",
+        phone: '+22921324889',
+        email: 'contact@hecm-afrique.net',
+        website: 'https://www.hecm-afrique.net',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/HECM.jpg`,
+        formationUrls: ['https://www.hecm-afrique.net'],
+    },
+    {
+        name: 'Institut de Multimédia Appliqué',
+        acronym: 'IMA',
+        description:
+            "L'Institut de Multimédia Appliqué (IMA) est une école de formation professionnelle et technique aux métiers du multimédia. Il forme les talents du numérique dans les domaines du design graphique, webdesign, audiovisuel et développement web.",
+        phone: '+22969191960',
+        email: 'contactimabenin@gmail.com',
+        website: 'https://imalearning.com',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/IMA.jpg`,
+        formationUrls: ['https://imalearning.com'],
+    },
+    {
+        name: 'Institut National Médico-Sanitaire',
+        acronym: 'INMES',
+        description:
+            "L'Institut National Médico-Sanitaire (INMeS) est la plus importante école d'infirmières et de sage-femmes du Bénin. C'est une entité de l'Université d'Abomey-Calavi située à Cotonou, offrant des formations de Licence et Master dans les domaines de la santé.",
+        phone: '+2290167333371',
+        email: 'inmes.uac@uac.bj',
+        website: 'https://inmes.uac.bj',
+        address: 'Cadjèhoun, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/INMES.jpg`,
+        formationUrls: ['https://inmes.uac.bj'],
+    },
+    {
+        name: 'IRGIB Africa University',
+        acronym: 'IRGIB-Africa',
+        description:
+            "IRGIB Africa University est une université privée installée au Bénin, autorisée depuis 2006 comme institut et en 2015 comme université. Elle forme des travailleurs hautement qualifiés en sciences avancées, avec un objectif de développement scientifique et technologique de l'Afrique subsaharienne.",
+        phone: '+22967296464',
+        email: 'contact@irgibafrica.university',
+        website: 'https://irgibafrica.university',
+        address: 'Akpakpa, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/IRGIB-Africa.jpg`,
+        formationUrls: ['https://irgibafrica.university'],
+    },
+    {
+        name: "Institut Supérieur des Métiers de l'Audiovisuel",
+        acronym: 'ISMA',
+        description:
+            "L'Institut Supérieur des Métiers de l'Audiovisuel (ISMA) est un établissement d'enseignement supérieur technique privé fondé en 2006, reconnu par l'État béninois et accrédité par le CAMES. Il forme aux métiers du journalisme, du cinéma et de l'audiovisuel avec une pédagogie par projets.",
+        phone: '+22921300185',
+        email: 'info@isma-benin.org',
+        website: 'https://isma-benin.org',
+        address: 'Fidjrossè, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ISMA.jpg`,
+        formationUrls: ['https://isma-benin.org'],
+    },
+    {
+        name: 'Institut Supérieur de Management et de Technologies Saint Salomon',
+        acronym: 'ISMT',
+        description:
+            "ISMT St Salomon University est un établissement d'enseignement supérieur bilingue accrédité par le Ministère de l'Enseignement Supérieur et de la Recherche Scientifique du Bénin. Elle propose des formations en sciences, arts, commerce et ingénierie.",
+        phone: '+22961216456',
+        email: 'contactus@ismtstsalomon.com',
+        website: 'https://ismtstsalomon.com',
+        address: 'Midombo, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ISMT-2.jpeg`,
+        formationUrls: ['https://ismtstsalomon.com'],
+    },
+    {
+        name: "Institut Supérieur des Sciences de l'Information et de la Communication",
+        acronym: 'ISSIC',
+        description:
+            "ISSIC University Benin est un établissement privé d'enseignement supérieur fondé en 2015, situé à Cotonou. Accréditée par le Ministère de l'Enseignement Supérieur et de la Recherche Scientifique, elle propose des programmes de Bachelor et Master enseignés en anglais.",
+        phone: '+22963008282',
+        email: 'info@issicuniversity.edu.bj',
+        website: 'https://issicuniversity.edu.bj',
+        address: 'PK11, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ISSIC.png`,
+        formationUrls: ['https://issicuniversity.edu.bj'],
+    },
+    {
+        name: 'Institut Universitaire Les Cours Sonou',
+        acronym: 'LCS',
+        description:
+            "Les Cours Sonou (LCS) est une université privée bilingue au Bénin fondée en 2007 par Fabrice Sonou. Elle forme ses apprenants dans diverses disciplines en mettant l'accent sur l'excellence académique.",
+        phone: '+2290160412121',
+        email: 'contact@lescoursonou-universite.org',
+        website: 'https://lescoursonou-universite.org',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/LCS.jpg`,
+        formationUrls: [],
+    },
+    {
+        name: 'Pigier Bénin',
+        acronym: 'PIGIER',
+        description:
+            "Pigier Bénin est une institution privée d'enseignement supérieur, franchise de la marque Pigier fondée en France en 1850. Agréée par la CREFECF/UEMOA, elle propose des formations Licence et Master Professionnels en banque, finance, audit, contrôle de gestion et informatique.",
+        phone: '+22921302906',
+        email: '',
+        website: 'https://pigier-benin.com',
+        address: 'Carré 1270, Rue 320 Agontinkon-Ayidote, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/PIGIER.jpg`,
+        formationUrls: ['https://pigier-benin.com'],
+    },
+    {
+        name: 'Institut Jean Paul II de Philosophie et de Sciences Humaines',
+        acronym: 'Saint-Jean-Paul',
+        description:
+            "L'Institut Jean-Paul II, situé à Cotonou, est un établissement privé d'enseignement supérieur spécialisé en sciences humaines. Il propose des formations variées en philosophie, psychologie, sociologie et domaines connexes, agréées par l'État.",
+        phone: '',
+        email: 'jpacademie@yahoo.fr',
+        website: 'https://institutjeanpaul2.org',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/saint-jean-paul-2-2.jpeg`,
+        formationUrls: [],
+    },
+    {
+        name: 'Sèmè One (Sèmè City)',
+        acronym: 'Sèmè One',
+        description:
+            "Sèmè One est le premier campus de Sèmè City, situé au cœur de Cotonou sur une superficie de 4 500 m². Il fonctionne comme bâtiment administratif central du projet Sèmè City, hébergeant des programmes d'incubation, de formation comme l'Africa Design School, des espaces de co-working et un centre de langues.",
+        phone: '+22921368800',
+        email: 'contact@semecity.com',
+        website: 'https://semecity.bj',
+        address: 'Rue 364, Immeuble Sèmè One, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/Sèmè One.jpg`,
+        formationUrls: ['https://semecity.bj'],
+    },
+    {
+        name: 'Université Africaine de Technologie et de Management',
+        acronym: 'UATM(Gasa)',
+        description:
+            "L'Université Africaine de Technologie et de Management (UATM GASA FORMATION) est une université privée créée en 1992 par le Dr Théophane AYI. Première université privée du Bénin, elle compte plus de 2000 étudiants répartis dans 23 filières agréées, formant des ingénieurs, entrepreneurs, comptables, agronomes et juristes.",
+        phone: '+22965787721',
+        email: 'info@uatm-gasa.com',
+        website: 'https://uatm-gasa.com',
+        address: 'Gbégamey, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/UATM(Gasa).avif`,
+        formationUrls: ['https://uatm-gasa.com'],
+    },
+    {
+        name: "Université Catholique de l'Afrique de l'Ouest - Unité Universitaire de Cotonou",
+        acronym: 'UCAO-UCC',
+        description:
+            "L'UCAO-UUC est l'unité universitaire de l'Université Catholique de l'Afrique de l'Ouest à Cotonou. Plus grand réseau universitaire privé décentralisé d'Afrique, l'UCAO a été officiellement reconnue comme université privée catholique au Bénin.",
+        phone: '+2290121604070',
+        email: 'contact@ucaobenin.org',
+        website: 'https://www.ucaobenin.org',
+        address: "Lot 246, rue de l'hôpital St Jean, Cotonou, Bénin",
+        coverUrl: `${config.app.frontendUrl}/UCAO-UCC.jpg`,
+        formationUrls: [],
+    },
+    {
+        name: "Université Nationale d'Agriculture",
+        acronym: 'UNA',
+        description:
+            "L'Université Nationale d'Agriculture (UNA) est une université publique béninoise créée en 2016. Elle dispense des formations en Licence Professionnelle, Master et Doctorat dans les domaines de l'agriculture, l'aquaculture, l'horticulture, la foresterie et les industries agroalimentaires.",
+        phone: '',
+        email: '',
+        website: 'https://una.bj',
+        address: 'Porto-Novo, Bénin',
+        coverUrl: `${config.app.frontendUrl}/una.png`,
+        formationUrls: ['https://una.bj'],
+    },
+    {
+        name: 'Université Nationale des Sciences, Technologies, Ingénierie et Mathématiques',
+        acronym: 'UNSTIM',
+        description:
+            "L'UNSTIM est une université publique béninoise créée en 2016. Université thématique basée sur les STIM (Sciences, Technologies, Ingénierie et Mathématiques), elle assure la formation des cadres techniques, la recherche scientifique et l'innovation technologique.",
+        phone: '+22940522199',
+        email: 'unstim@unstim.bj',
+        website: 'https://unstim.bj',
+        address: 'Abomey, Bénin',
+        coverUrl: `${config.app.frontendUrl}/unstim.png`,
+        formationUrls: ['https://unstim.bj'],
+    },
+    {
+        name: "Université Protestante de l'Afrique de l'Ouest",
+        acronym: 'UPAO',
+        description:
+            "L'Université Protestante de l'Afrique de l'Ouest (UPAO) est un établissement privé bilingue situé à Porto-Novo, au Bénin. Fondée en 2003 et accréditée par le Ministère de l'Enseignement Supérieur, elle propose des formations en gestion, management, informatique et sciences sociales.",
+        phone: '',
+        email: 'info@upaopnbenin-edu.org',
+        website: 'https://www.upaopnbenin-edu.org',
+        address: 'Porto-Novo, Bénin',
+        coverUrl: `${config.app.frontendUrl}/UPAO (2).jpg`,
+        formationUrls: [],
+    },
+    {
+        name: 'École Supérieure de Génie Civil Verechaguine A.K.',
+        acronym: 'VAK',
+        description:
+            "L'École Supérieure de Génie Civil VERECHAGUINE A.K. (ESGC-VAK) est un établissement privé fondé en 1998 à Cotonou. Spécialisée historiquement en Génie Civil et Géomètre Topographe, elle a intégré en 2024 la filière Génie Informatique. Reconnue par le MESRS et le CAMES, elle est plusieurs fois primée pour son excellence académique.",
+        phone: '+22921306917',
+        email: 'contact@esgcvak.com',
+        website: 'https://esgcvak.com',
+        address: 'Gbégamey, Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/VAK (2).jpg`,
+        formationUrls: ['https://esgcvak.com'],
+    },
+    {
+        name: 'École Supérieure Multinationale des Télécommunications',
+        acronym: 'ESMT',
+        description:
+            "L'École Supérieure Multinationale des Télécommunications (ESMT) est un Centre d'Excellence de l'Union Internationale des Télécommunications (UIT) depuis 2000. Elle forme des techniciens supérieurs dans les domaines techniques et managériaux des télécommunications et TIC.",
+        phone: '',
+        email: 'scolarite@esmt.sn',
+        website: 'https://www.esmt.sn',
+        address: 'Dakar, Sénégal (représentation au Bénin : Akpakpa, Cotonou)',
+        coverUrl: `${config.app.frontendUrl}/ESMT.webp`,
+        formationUrls: [],
+    },
+    {
+        name: 'École Supérieure de Gestion et de Technologie',
+        acronym: 'ESGT',
+        description:
+            "L'École Supérieure de Gestion et de Technologie (ESGT-BENIN) est un établissement privé d'enseignement supérieur à vocation universitaire. Elle propose des formations en gestion, management, ingénierie et technologie.",
+        phone: '+22961483075',
+        email: 'esgtbenin@gmail.com',
+        website: 'https://esgt-benin.com',
+        address: 'Cotonou, Bénin',
+        coverUrl: `${config.app.frontendUrl}/ESGT.jpg`,
+        formationUrls: [],
     },
 ];
 
@@ -185,27 +554,29 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
     console.log('\n📚 Seeding Training Institutions...');
 
     // --- Create Training Institutions ---
-    for (const inst of trainingInstitutions) {
-        const existing = await prisma.trainingInstitution.findFirst({
+    for (const inst of universities) {
+        const existing = await prisma.university.findFirst({
             where: { name: inst.name },
         });
 
         if (existing) {
-            await prisma.trainingInstitution.update({
+            await prisma.university.update({
                 where: { id: existing.id },
                 data: {
+                    name: inst.name,
                     acronym: inst.acronym,
-                    type: inst.type,
-                    department: inst.department,
-                    city: inst.city,
+                    description: inst.description,
                     phone: inst.phone,
                     email: inst.email,
                     website: inst.website,
+                    address: inst.address,
+                    coverUrl: inst.coverUrl,
+                    formationUrls: inst.formationUrls,
                     isActive: true,
                 },
             });
         } else {
-            await prisma.trainingInstitution.create({
+            await prisma.university.create({
                 data: {
                     ...inst,
                     isActive: true,
@@ -213,7 +584,7 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
             });
         }
     }
-    console.log(`✓ Created ${trainingInstitutions.length} training institutions`);
+    console.log(`✓ Created ${universities.length} training institutions`);
 
     // --- Create Institution Translations (French) ---
     const institutions = await prisma.trainingInstitution.findMany();
