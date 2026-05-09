@@ -27,6 +27,7 @@ async function bootstrap() {
             'X-Requested-With',
             'X-Device-Id',
             'X-Metrics-Token',
+            'X-Session-Token',
         ],
         exposedHeaders: ['Content-Disposition'],
         maxAge: 600,

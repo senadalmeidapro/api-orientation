@@ -17,7 +17,7 @@ export class RecommendationsController {
         description: 'Endpoint pour get recommendations.',
     })
     @ApiHeader({
-        name: 'x-session-token',
+        name: 'X-Session-Token',
         required: true,
         description: 'Token de session (éviter le query string).',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
@@ -42,7 +42,7 @@ export class RecommendationsController {
     @publicDecorator()
     @Get('recommendations')
     getRecommendations(
-        @Headers('x-session-token') sessionToken: string | undefined,
+        @Headers('X-Session-Token') sessionToken: string | undefined,
         @Query() dto: GetRecommendationsDto,
     ) {
         if (!sessionToken?.trim()) {
@@ -59,7 +59,7 @@ export class RecommendationsController {
         description: 'Endpoint pour recommendations de formations avec universites.',
     })
     @ApiHeader({
-        name: 'x-session-token',
+        name: 'X-Session-Token',
         required: true,
         description: 'Token de session (éviter le query string).',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
@@ -68,7 +68,7 @@ export class RecommendationsController {
     @publicDecorator()
     @Get('recommendations/formations')
     getFormationRecommendations(
-        @Headers('x-session-token') sessionToken: string | undefined,
+        @Headers('X-Session-Token') sessionToken: string | undefined,
         @Query() dto: GetRecommendationsDto,
     ) {
         if (!sessionToken?.trim()) {
