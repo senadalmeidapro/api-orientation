@@ -107,7 +107,18 @@ export class UpdateCareerDto {
     @IsBoolean()
     isActive?: boolean;
 
-    @ApiPropertyOptional({ description: 'Institution ids', type: [Number], example: [1, 2] })
+    @ApiPropertyOptional({ description: 'Formation ids', type: [Number], example: [1, 2] })
+    @IsOptional()
+    @IsArray()
+    @IsInt({ each: true })
+    formationIds?: number[];
+
+    @ApiPropertyOptional({
+        description: 'Institution ids (deprecated, use formationIds)',
+        type: [Number],
+        example: [1, 2],
+        deprecated: true,
+    })
     @IsOptional()
     @IsArray()
     @IsInt({ each: true })

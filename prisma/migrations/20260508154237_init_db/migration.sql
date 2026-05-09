@@ -416,13 +416,13 @@ CREATE TABLE "careers" (
 );
 
 -- CreateTable
-CREATE TABLE "career_institutions" (
+CREATE TABLE "career_f" (
     "career_id" INTEGER NOT NULL,
-    "institution_id" INTEGER NOT NULL,
+    "formation_id" INTEGER NOT NULL,
     "is_primary" BOOLEAN NOT NULL DEFAULT false,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "career_institutions_pkey" PRIMARY KEY ("career_id","institution_id")
+    CONSTRAINT "career_f_pkey" PRIMARY KEY ("career_id","formation_id")
 );
 
 -- CreateTable
@@ -597,77 +597,128 @@ CREATE TABLE "resource_translations" (
 );
 
 -- CreateTable
-CREATE TABLE "link_categories" (
+CREATE TABLE "universities" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-
-    CONSTRAINT "link_categories_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "links" (
-    "id" SERIAL NOT NULL,
-    "category_id" INTEGER NOT NULL,
-    "title" TEXT NOT NULL,
-    "url" TEXT,
-    "note" TEXT,
-
-    CONSTRAINT "links_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "training_institutions" (
-    "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
-    "acronym" TEXT,
-    "description" TEXT,
-    "type" TEXT,
+    "acronym" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "phone" TEXT,
+    "email" TEXT,
+    "website" TEXT NOT NULL,
     "department" TEXT,
     "city" TEXT,
     "address" TEXT,
     "latitude" DOUBLE PRECISION,
     "longitude" DOUBLE PRECISION,
-    "phone" TEXT,
-    "email" TEXT,
-    "website" TEXT,
-    "programs" JSONB,
     "logo_url" TEXT,
+    "cover_url" TEXT,
+    "formation_urls" TEXT[],
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "training_institutions_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "universities_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "training_paths" (
+CREATE TABLE "university_media" (
     "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
+    "university_id" INTEGER NOT NULL,
+    "media_url" TEXT NOT NULL,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "university_media_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "university_translations" (
+    "id" SERIAL NOT NULL,
+    "university_id" INTEGER NOT NULL,
+    "language_id" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
     "description" TEXT,
-    "level" TEXT,
-    "duration_months" INTEGER,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "university_translations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "formations" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "duration" TEXT NOT NULL,
+    "degree" TEXT NOT NULL,
+    "field" TEXT,
     "cost_min" INTEGER,
     "cost_max" INTEGER,
-    "career_id" INTEGER,
-    "institution_id" INTEGER,
+    "programs" JSONB,
+    "university_id" INTEGER,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "training_paths_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "formations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "training_institution_translations" (
+CREATE TABLE "formation_translations" (
     "id" SERIAL NOT NULL,
-    "institution_id" INTEGER NOT NULL,
+    "formation_id" INTEGER NOT NULL,
     "language_id" INTEGER NOT NULL,
-    "name" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
     "description" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "training_institution_translations_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "formation_translations_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "scholarships" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "amount" TEXT,
+    "benefits" TEXT[],
+    "conditions" TEXT[],
+    "level" TEXT NOT NULL,
+    "field" TEXT,
+    "country" TEXT,
+    "application_url" TEXT,
+    "start_date" TIMESTAMP(3),
+    "end_date" TIMESTAMP(3),
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "scholarships_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "university_scholarships" (
+    "id" SERIAL NOT NULL,
+    "university_id" INTEGER NOT NULL,
+    "scholarship_id" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "university_scholarships_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "scholarship_translations" (
+    "id" SERIAL NOT NULL,
+    "scholarship_id" INTEGER NOT NULL,
+    "language_id" INTEGER NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "scholarship_translations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -866,6 +917,9 @@ CREATE INDEX "assessment_results_phase2_code_idx" ON "assessment_results"("phase
 CREATE INDEX "assessment_results_consistency_level_idx" ON "assessment_results"("consistency_level");
 
 -- CreateIndex
+CREATE INDEX "assessment_results_created_at_idx" ON "assessment_results"("created_at");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "careers_name_key" ON "careers"("name");
 
 -- CreateIndex
@@ -875,7 +929,10 @@ CREATE INDEX "careers_category_idx" ON "careers"("category");
 CREATE INDEX "careers_is_featured_idx" ON "careers"("is_featured");
 
 -- CreateIndex
-CREATE INDEX "career_institutions_institution_id_idx" ON "career_institutions"("institution_id");
+CREATE INDEX "careers_is_active_category_idx" ON "careers"("is_active", "category");
+
+-- CreateIndex
+CREATE INDEX "career_f_formation_id_idx" ON "career_f"("formation_id");
 
 -- CreateIndex
 CREATE INDEX "career_resources_resource_id_idx" ON "career_resources"("resource_id");
@@ -971,34 +1028,64 @@ CREATE INDEX "resource_translations_language_id_idx" ON "resource_translations"(
 CREATE UNIQUE INDEX "resource_translations_resource_id_language_id_key" ON "resource_translations"("resource_id", "language_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "link_categories_name_key" ON "link_categories"("name");
+CREATE UNIQUE INDEX "universities_name_key" ON "universities"("name");
 
 -- CreateIndex
-CREATE INDEX "links_category_id_idx" ON "links"("category_id");
+CREATE UNIQUE INDEX "universities_acronym_key" ON "universities"("acronym");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "links_category_id_title_key" ON "links"("category_id", "title");
+CREATE UNIQUE INDEX "universities_phone_key" ON "universities"("phone");
 
 -- CreateIndex
-CREATE INDEX "training_institutions_department_idx" ON "training_institutions"("department");
+CREATE UNIQUE INDEX "universities_email_key" ON "universities"("email");
 
 -- CreateIndex
-CREATE INDEX "training_institutions_city_idx" ON "training_institutions"("city");
+CREATE INDEX "universities_is_active_idx" ON "universities"("is_active");
 
 -- CreateIndex
-CREATE INDEX "training_paths_career_id_idx" ON "training_paths"("career_id");
+CREATE INDEX "university_media_university_id_idx" ON "university_media"("university_id");
 
 -- CreateIndex
-CREATE INDEX "training_paths_institution_id_idx" ON "training_paths"("institution_id");
+CREATE INDEX "university_translations_language_id_idx" ON "university_translations"("language_id");
 
 -- CreateIndex
-CREATE INDEX "training_paths_is_active_idx" ON "training_paths"("is_active");
+CREATE UNIQUE INDEX "university_translations_university_id_language_id_key" ON "university_translations"("university_id", "language_id");
 
 -- CreateIndex
-CREATE INDEX "training_institution_translations_language_id_idx" ON "training_institution_translations"("language_id");
+CREATE INDEX "formations_university_id_idx" ON "formations"("university_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "training_institution_translations_institution_id_language_i_key" ON "training_institution_translations"("institution_id", "language_id");
+CREATE INDEX "formations_is_active_idx" ON "formations"("is_active");
+
+-- CreateIndex
+CREATE INDEX "formation_translations_language_id_idx" ON "formation_translations"("language_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "formation_translations_formation_id_language_id_key" ON "formation_translations"("formation_id", "language_id");
+
+-- CreateIndex
+CREATE INDEX "scholarships_level_idx" ON "scholarships"("level");
+
+-- CreateIndex
+CREATE INDEX "scholarships_field_idx" ON "scholarships"("field");
+
+-- CreateIndex
+CREATE INDEX "scholarships_country_idx" ON "scholarships"("country");
+
+-- CreateIndex
+CREATE INDEX "scholarships_is_active_idx" ON "scholarships"("is_active");
+
+-- CreateIndex
+CREATE INDEX "university_scholarships_scholarship_id_idx" ON "university_scholarships"("scholarship_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "university_scholarships_university_id_scholarship_id_key" ON "university_scholarships"("university_id", "scholarship_id");
+
+-- CreateIndex
+CREATE INDEX "scholarship_translations_language_id_idx" ON "scholarship_translations"("language_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "scholarship_translations_scholarship_id_language_id_key" ON "scholarship_translations"("scholarship_id", "language_id");
 
 -- AddForeignKey
 ALTER TABLE "auth_accounts" ADD CONSTRAINT "auth_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -1073,10 +1160,10 @@ ALTER TABLE "intermediate_profiles" ADD CONSTRAINT "intermediate_profiles_assess
 ALTER TABLE "assessment_results" ADD CONSTRAINT "assessment_results_assessment_id_fkey" FOREIGN KEY ("assessment_id") REFERENCES "assessments"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "career_institutions" ADD CONSTRAINT "career_institutions_career_id_fkey" FOREIGN KEY ("career_id") REFERENCES "careers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "career_f" ADD CONSTRAINT "career_f_career_id_fkey" FOREIGN KEY ("career_id") REFERENCES "careers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "career_institutions" ADD CONSTRAINT "career_institutions_institution_id_fkey" FOREIGN KEY ("institution_id") REFERENCES "training_institutions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "career_f" ADD CONSTRAINT "career_f_formation_id_fkey" FOREIGN KEY ("formation_id") REFERENCES "formations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "career_resources" ADD CONSTRAINT "career_resources_career_id_fkey" FOREIGN KEY ("career_id") REFERENCES "careers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -1133,16 +1220,31 @@ ALTER TABLE "resource_translations" ADD CONSTRAINT "resource_translations_resour
 ALTER TABLE "resource_translations" ADD CONSTRAINT "resource_translations_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "languages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "links" ADD CONSTRAINT "links_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "link_categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "university_media" ADD CONSTRAINT "university_media_university_id_fkey" FOREIGN KEY ("university_id") REFERENCES "universities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "training_paths" ADD CONSTRAINT "training_paths_career_id_fkey" FOREIGN KEY ("career_id") REFERENCES "careers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "university_translations" ADD CONSTRAINT "university_translations_university_id_fkey" FOREIGN KEY ("university_id") REFERENCES "universities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "training_paths" ADD CONSTRAINT "training_paths_institution_id_fkey" FOREIGN KEY ("institution_id") REFERENCES "training_institutions"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "university_translations" ADD CONSTRAINT "university_translations_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "languages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "training_institution_translations" ADD CONSTRAINT "training_institution_translations_institution_id_fkey" FOREIGN KEY ("institution_id") REFERENCES "training_institutions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "formations" ADD CONSTRAINT "formations_university_id_fkey" FOREIGN KEY ("university_id") REFERENCES "universities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "training_institution_translations" ADD CONSTRAINT "training_institution_translations_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "languages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "formation_translations" ADD CONSTRAINT "formation_translations_formation_id_fkey" FOREIGN KEY ("formation_id") REFERENCES "formations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "formation_translations" ADD CONSTRAINT "formation_translations_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "languages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "university_scholarships" ADD CONSTRAINT "university_scholarships_university_id_fkey" FOREIGN KEY ("university_id") REFERENCES "universities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "university_scholarships" ADD CONSTRAINT "university_scholarships_scholarship_id_fkey" FOREIGN KEY ("scholarship_id") REFERENCES "scholarships"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "scholarship_translations" ADD CONSTRAINT "scholarship_translations_scholarship_id_fkey" FOREIGN KEY ("scholarship_id") REFERENCES "scholarships"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "scholarship_translations" ADD CONSTRAINT "scholarship_translations_language_id_fkey" FOREIGN KEY ("language_id") REFERENCES "languages"("id") ON DELETE CASCADE ON UPDATE CASCADE;

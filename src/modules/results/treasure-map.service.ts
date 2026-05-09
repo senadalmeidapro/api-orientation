@@ -223,7 +223,7 @@ export class TreasureMapService {
         }
 
         const updateData: Prisma.TreasureMapUpdateInput = {
-            mapData: mapData as Prisma.InputJsonValue,
+            mapData: mapData,
             ...(generatePdf ? { pdfUrl } : {}),
         };
 
@@ -232,7 +232,7 @@ export class TreasureMapService {
             update: updateData,
             create: {
                 assessmentId: assessment.id,
-                mapData: mapData as Prisma.InputJsonValue,
+                mapData: mapData,
                 pdfUrl,
                 shareToken: randomUUID(),
             },

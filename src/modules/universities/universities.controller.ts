@@ -20,60 +20,63 @@ import {
     UpdateScholarshipDto,
 } from './dto';
 
-@ApiTags('universities')
-@Controller('api/v1/universities')
+@ApiTags('Universities')
+@Controller('api/v1')
 export class UniversitiesController {
     constructor(private readonly service: UniversitiesService) {}
 
-    // ===== UNIVERSITIES =====
-    @Post()
-    @ApiOperation({ summary: 'Create a new university' })
+    // ===================== UNIVERSITIES =====================
+
+    @Post('universities')
+    @ApiOperation({ summary: 'Create university' })
     createUniversity(@Body() dto: CreateUniversityDto) {
         return this.service.createUniversity(dto);
     }
 
-    @Get()
+    @Get('universities')
     @ApiOperation({ summary: 'Get all universities' })
-    getAllUniversities() {
+    findAllUniversities() {
         return this.service.findAllUniversities();
     }
 
-    @Get(':id')
+    @Get('universities/:id')
     @ApiOperation({ summary: 'Get university by ID' })
-    getUniversityById(@Param('id', ParseIntPipe) id: number) {
+    findUniversityById(@Param('id', ParseIntPipe) id: number) {
         return this.service.findUniversityById(id);
     }
 
-    @Patch(':id')
+    @Patch('universities/:id')
     @ApiOperation({ summary: 'Update university' })
     updateUniversity(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUniversityDto) {
         return this.service.updateUniversity(id, dto);
     }
 
-    @Delete(':id')
+    @Delete('universities/:id')
     @ApiOperation({ summary: 'Delete university' })
     deleteUniversity(@Param('id', ParseIntPipe) id: number) {
         return this.service.deleteUniversity(id);
     }
 
-    // ===== FORMATIONS =====
+    // ===================== FORMATIONS =====================
+
     @Post('formations')
-    @ApiOperation({ summary: 'Create a new formation' })
+    @ApiOperation({ summary: 'Create formation' })
     createFormation(@Body() dto: CreateFormationDto) {
         return this.service.createFormation(dto);
     }
 
-    @Get('formations/list')
-    @ApiOperation({ summary: 'Get all formations' })
-    getAllFormations(
-        @Query('universityId', new ParseIntPipe({ optional: true })) universityId?: number,
-    ) {
-        return this.service.findAllFormations(universityId);
+    @Get('formations')
+    @ApiOperation({ summary: 'Get all formations (optionally filter by university)' })
+    findAllFormations(@Query('universityId') universityId?: string) {
+        if (universityId) {
+            return this.service.findAllFormationsByUniversity(Number(universityId));
+        }
+        return this.service.findAllFormations();
     }
 
     @Get('formations/:id')
     @ApiOperation({ summary: 'Get formation by ID' })
-    getFormationById(@Param('id', ParseIntPipe) id: number) {
+    findFormationById(@Param('id', ParseIntPipe) id: number) {
         return this.service.findFormationById(id);
     }
 
@@ -89,22 +92,23 @@ export class UniversitiesController {
         return this.service.deleteFormation(id);
     }
 
-    // ===== SCHOLARSHIPS =====
+    // ===================== SCHOLARSHIPS =====================
+
     @Post('scholarships')
-    @ApiOperation({ summary: 'Create a new scholarship' })
+    @ApiOperation({ summary: 'Create scholarship' })
     createScholarship(@Body() dto: CreateScholarshipDto) {
         return this.service.createScholarship(dto);
     }
 
-    @Get('scholarships/list')
+    @Get('scholarships')
     @ApiOperation({ summary: 'Get all scholarships' })
-    getAllScholarships() {
+    findAllScholarships() {
         return this.service.findAllScholarships();
     }
 
     @Get('scholarships/:id')
     @ApiOperation({ summary: 'Get scholarship by ID' })
-    getScholarshipById(@Param('id', ParseIntPipe) id: number) {
+    findScholarshipById(@Param('id', ParseIntPipe) id: number) {
         return this.service.findScholarshipById(id);
     }
 
@@ -120,9 +124,10 @@ export class UniversitiesController {
         return this.service.deleteScholarship(id);
     }
 
-    // ===== SCHOLARSHIP-UNIVERSITY ASSOCIATIONS =====
-    @Post(':universityId/scholarships/:scholarshipId')
-    @ApiOperation({ summary: 'Associate scholarship with university' })
+    // ===================== RELATIONS =====================
+
+    @Post('universities/:universityId/scholarships/:scholarshipId')
+    @ApiOperation({ summary: 'Link scholarship to university' })
     addScholarshipToUniversity(
         @Param('universityId', ParseIntPipe) universityId: number,
         @Param('scholarshipId', ParseIntPipe) scholarshipId: number,
@@ -130,8 +135,8 @@ export class UniversitiesController {
         return this.service.addScholarshipToUniversity(universityId, scholarshipId);
     }
 
-    @Delete(':universityId/scholarships/:scholarshipId')
-    @ApiOperation({ summary: 'Remove scholarship from university' })
+    @Delete('universities/:universityId/scholarships/:scholarshipId')
+    @ApiOperation({ summary: 'Unlink scholarship from university' })
     removeScholarshipFromUniversity(
         @Param('universityId', ParseIntPipe) universityId: number,
         @Param('scholarshipId', ParseIntPipe) scholarshipId: number,

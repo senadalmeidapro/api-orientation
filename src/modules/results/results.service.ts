@@ -51,7 +51,7 @@ export class ResultsService {
                 return this.prisma.assessmentResult.update({
                     where: { assessmentId: assessment.id },
                     data: {
-                        subjectiveRanking: dto.subjectiveRanking as Prisma.InputJsonObject,
+                        subjectiveRanking: dto.subjectiveRanking,
                     },
                 });
             }
@@ -107,7 +107,7 @@ export class ResultsService {
                 profileStrength: scores.profileStrength,
                 strengths: scores.strengths,
                 ...(dto.subjectiveRanking !== undefined
-                    ? { subjectiveRanking: dto.subjectiveRanking as Prisma.InputJsonObject }
+                    ? { subjectiveRanking: dto.subjectiveRanking }
                     : {}),
             },
             create: {
@@ -127,7 +127,7 @@ export class ResultsService {
                 profileStrength: scores.profileStrength,
                 strengths: scores.strengths,
                 ...(dto.subjectiveRanking !== undefined
-                    ? { subjectiveRanking: dto.subjectiveRanking as Prisma.InputJsonObject }
+                    ? { subjectiveRanking: dto.subjectiveRanking }
                     : {}),
             },
         });

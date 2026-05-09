@@ -8,7 +8,7 @@ describe('QuestionsController', () => {
         } as unknown as QuestionsService;
         const controller = new QuestionsController(service);
 
-        const res = await controller.getPhase1({ sessionToken: 'tok' } as any);
+        const res = await controller.getPhase1({ sessionToken: 'tok' });
 
         expect(service.getPhase1Questions).toHaveBeenCalled();
         expect(res[0].id).toBe(1);

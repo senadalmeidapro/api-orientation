@@ -1,5 +1,6 @@
 import {
     IsBoolean,
+    IsDefined,
     IsEnum,
     IsInt,
     IsNumber,
@@ -7,15 +8,23 @@ import {
     IsString,
     Max,
     Min,
+    ValidateIf,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { CareerCategory } from '@prisma/client';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiHideProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { toBoolean } from '../../auth/dto/transforms';
+
+type GeoCoordinates = {
+    latitude?: number;
+    longitude?: number;
+};
 
 export class GetRecommendationsDto {
-    @ApiProperty({ description: 'Session token', type: String, example: 'tok_sample_123456' })
+    @ApiHideProperty()
+    @IsOptional()
     @IsString()
-    sessionToken!: string;
+    sessionToken?: string;
 
     @ApiPropertyOptional({ description: 'Assessment id', type: String, example: 'clx123abc0001' })
     @IsOptional()
@@ -27,6 +36,7 @@ export class GetRecommendationsDto {
     @Type(() => Number)
     @IsInt()
     @Min(1)
+    @Max(20)
     limit?: number;
 
     @ApiPropertyOptional({
@@ -40,26 +50,32 @@ export class GetRecommendationsDto {
 
     @ApiPropertyOptional({ description: 'Force', type: Boolean, example: true })
     @IsOptional()
-    @Type(() => Boolean)
+    @Transform(({ value }) => toBoolean(value))
     @IsBoolean()
     force?: boolean;
 
     @ApiPropertyOptional({ description: 'Advanced', type: Boolean, example: true })
     @IsOptional()
-    @Type(() => Boolean)
+    @Transform(({ value }) => toBoolean(value))
     @IsBoolean()
     advanced?: boolean;
 
     @ApiPropertyOptional({ description: 'Latitude', type: Number, example: 1 })
-    @IsOptional()
+    @ValidateIf((o: GeoCoordinates) => o.latitude !== undefined || o.longitude !== undefined)
+    @IsDefined()
     @Type(() => Number)
     @IsNumber()
+    @Min(-90)
+    @Max(90)
     latitude?: number;
 
     @ApiPropertyOptional({ description: 'Longitude', type: Number, example: 1 })
-    @IsOptional()
+    @ValidateIf((o: GeoCoordinates) => o.latitude !== undefined || o.longitude !== undefined)
+    @IsDefined()
     @Type(() => Number)
     @IsNumber()
+    @Min(-180)
+    @Max(180)
     longitude?: number;
 
     @ApiPropertyOptional({ description: 'Radius km', type: Number, example: 1 })

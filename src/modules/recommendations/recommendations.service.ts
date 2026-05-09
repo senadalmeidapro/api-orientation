@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
@@ -7,11 +7,63 @@ import { CacheService } from '@common/cache/cache.service';
 
 type CareerWithInstitutions = Career & {
     institutions: Array<{
-        institution: {
-            latitude: number | null;
-            longitude: number | null;
+        formation: {
+            university: {
+                id: number;
+                name: string;
+                latitude: number | null;
+                longitude: number | null;
+                city: string | null;
+                address: string | null;
+                website: string;
+            } | null;
+            id: number;
+            title: string;
+            degree: string;
+            duration: string;
+            field: string | null;
+            costMin: number | null;
+            costMax: number | null;
+            universityId: number | null;
         } | null;
+        isPrimary: boolean;
     }>;
+};
+
+type FormationRecommendation = {
+    formation: {
+        id: number;
+        name: string;
+        title: string;
+        degree: string;
+        duration: string;
+        field: string | null;
+        costMin: number | null;
+        costMax: number | null;
+        universityId: number;
+    };
+    university: {
+        id: number;
+        name: string;
+        latitude: number | null;
+        longitude: number | null;
+        city: string | null;
+        address: string | null;
+        website: string;
+    };
+    score: number;
+};
+
+type CareerRecommendationOutput = {
+    id: string;
+    resultId: string;
+    careerId: number;
+    matchScore: number;
+    rankPosition: number;
+    viewedAt: Date | null;
+    savedForLater: boolean;
+    createdAt: Date;
+    career: Career | null;
 };
 
 @Injectable()
@@ -41,6 +93,18 @@ export class RecommendationsService {
 
     private getInstitutions(career: Career | CareerWithInstitutions) {
         return this.hasInstitutions(career) ? career.institutions : [];
+    }
+
+    private getProximityBonus(
+        user: { lat: number; lon: number },
+        target: { lat: number | null; lon: number | null },
+        radiusKm: number,
+    ) {
+        if (target.lat === null || target.lon === null) return 0;
+        const distance = this.distanceKm(user, { lat: target.lat, lon: target.lon });
+        if (distance > radiusKm) return 0;
+        const ratio = 1 - distance / radiusKm;
+        return Math.round(Math.max(0, Math.min(1, ratio)) * 10);
     }
 
     private normalizeVector(raw?: Record<string, number> | null) {
@@ -114,12 +178,22 @@ export class RecommendationsService {
         return [0, 0, 0, 0, 0, 0];
     }
 
-    async getRecommendations(dto: GetRecommendationsDto) {
-        const session = await this.prisma.session.findUnique({
-            where: { sessionToken: dto.sessionToken },
+    async getRecommendations(dto: GetRecommendationsDto): Promise<CareerRecommendationOutput[]> {
+        if (!dto.sessionToken) {
+            throw new BadRequestException('Session token requis');
+        }
+
+        const session = await this.prisma.session.findFirst({
+            where: {
+                sessionToken: dto.sessionToken,
+                isActive: true,
+                expiresAt: { gt: new Date() },
+            },
             select: { id: true },
         });
-        if (!session) throw new NotFoundException('Session introuvable');
+        if (!session) {
+            throw new NotFoundException('Aucune recommandation disponible pour cette session');
+        }
 
         const assessment = dto.assessmentId
             ? await this.prisma.assessment.findFirst({
@@ -131,7 +205,7 @@ export class RecommendationsService {
               });
 
         if (!assessment) {
-            throw new NotFoundException('Aucun test disponible pour cette session');
+            throw new NotFoundException('Aucune recommandation disponible pour cette session');
         }
 
         let result = await this.prisma.assessmentResult.findUnique({
@@ -146,7 +220,9 @@ export class RecommendationsService {
         }
 
         const hasGeo = dto.latitude !== undefined && dto.longitude !== undefined;
-        if (!dto.force && !dto.advanced && !hasGeo) {
+        const isCanonicalMode = !hasGeo && !dto.category && !dto.advanced;
+
+        if (!dto.force && !dto.advanced && !hasGeo && !dto.category) {
             const cached = await this.prisma.assessmentCareerRecommendation.findMany({
                 where: { resultId: result.id },
                 include: { career: true },
@@ -178,7 +254,19 @@ export class RecommendationsService {
                     isActive: true,
                     ...(dto.category ? { category: dto.category } : {}),
                 },
-                include: { institutions: { include: { institution: true } } },
+                include: {
+                    institutions: {
+                        include: {
+                            formation: {
+                                include: {
+                                    university: {
+                                        select: { latitude: true, longitude: true },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             });
         }
 
@@ -206,9 +294,9 @@ export class RecommendationsService {
                     const institutions = this.getInstitutions(career);
                     let minDistance: number | null = null;
                     for (const link of institutions) {
-                        const inst = link.institution;
-                        const lat = inst?.latitude;
-                        const lon = inst?.longitude;
+                        const university = link.formation?.university;
+                        const lat = university?.latitude;
+                        const lon = university?.longitude;
                         if (lat === null || lat === undefined || lon === null || lon === undefined)
                             continue;
                         const distance = this.distanceKm(
@@ -237,9 +325,20 @@ export class RecommendationsService {
         let blended = scored;
         if (dto.advanced) {
             const currentVector = this.extractNormalizedScores(result);
+            const contextLookback = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
             const recentResults = await this.prisma.assessmentResult.findMany({
                 where: {
                     assessmentId: { not: assessment.id },
+                    createdAt: { gte: contextLookback },
+                    assessment: {
+                        status: AssessmentStatus.COMPLETED,
+                        type: assessment.type,
+                        testVersionId: assessment.testVersionId,
+                        currentPhase: assessment.currentPhase,
+                        ...(assessment.currentSection
+                            ? { currentSection: assessment.currentSection }
+                            : {}),
+                    },
                 },
                 select: { id: true, sectionScores: true, phase2Scores: true, phase1Scores: true },
                 orderBy: { createdAt: 'desc' },
@@ -287,35 +386,170 @@ export class RecommendationsService {
             }
         }
 
-        const limit = dto.limit ?? 6;
-        const top = blended.slice(0, limit);
+        blended = blended.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const demandA = a.career.localDemand ?? 0;
+            const demandB = b.career.localDemand ?? 0;
+            if (demandB !== demandA) return demandB - demandA;
+            return a.career.name.localeCompare(b.career.name);
+        });
 
-        const saved = await this.prisma.$transaction(
-            top.map((item, index) =>
-                this.prisma.assessmentCareerRecommendation.upsert({
-                    where: {
-                        resultId_careerId: {
+        const responseLimit = Math.min(dto.limit ?? 6, 20);
+        const canonicalPersistLimit = 20;
+        const top = blended.slice(0, responseLimit);
+
+        if (!isCanonicalMode) {
+            return top.map((item, index) => ({
+                id: `virtual-${result.id}-${item.career.id}`,
+                resultId: result.id,
+                careerId: item.career.id,
+                matchScore: item.score,
+                rankPosition: index + 1,
+                viewedAt: null,
+                savedForLater: false,
+                createdAt: new Date(),
+                career: item.career,
+            }));
+        }
+
+        const canonicalTop = blended.slice(0, canonicalPersistLimit);
+        const topCareerIds = canonicalTop.map((item) => item.career.id);
+        const saved = await this.prisma.$transaction(async (tx) => {
+            await tx.assessmentCareerRecommendation.deleteMany({
+                where: {
+                    resultId: result.id,
+                    ...(topCareerIds.length > 0 ? { careerId: { notIn: topCareerIds } } : {}),
+                },
+            });
+
+            const allSaved = await Promise.all(
+                canonicalTop.map((item, index) =>
+                    tx.assessmentCareerRecommendation.upsert({
+                        where: {
+                            resultId_careerId: {
+                                resultId: result.id,
+                                careerId: item.career.id,
+                            },
+                        },
+                        update: {
+                            matchScore: item.score,
+                            rankPosition: index + 1,
+                        },
+                        create: {
                             resultId: result.id,
                             careerId: item.career.id,
+                            matchScore: item.score,
+                            rankPosition: index + 1,
                         },
-                    },
-                    update: {
-                        matchScore: item.score,
-                        rankPosition: index + 1,
-                    },
-                    create: {
-                        resultId: result.id,
-                        careerId: item.career.id,
-                        matchScore: item.score,
-                        rankPosition: index + 1,
-                    },
-                }),
-            ),
-        );
+                    }),
+                ),
+            );
+            return allSaved.slice(0, responseLimit);
+        });
 
         return saved.map((rec, idx) => ({
             ...rec,
             career: top[idx]?.career ?? null,
         }));
+    }
+
+    async getFormationRecommendations(
+        dto: GetRecommendationsDto,
+    ): Promise<FormationRecommendation[]> {
+        const careerRecommendations = await this.getRecommendations(dto);
+        const careerScoreMap = new Map<number, number>();
+        for (const rec of careerRecommendations) {
+            careerScoreMap.set(
+                rec.careerId,
+                Math.max(careerScoreMap.get(rec.careerId) ?? 0, rec.matchScore),
+            );
+        }
+
+        const careerIds = Array.from(careerScoreMap.keys());
+        if (careerIds.length === 0) return [];
+
+        const careers = await this.prisma.career.findMany({
+            where: { id: { in: careerIds } },
+            include: {
+                institutions: {
+                    include: {
+                        formation: {
+                            include: {
+                                university: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        latitude: true,
+                                        longitude: true,
+                                        city: true,
+                                        address: true,
+                                        website: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        const hasGeo = dto.latitude !== undefined && dto.longitude !== undefined;
+        const radiusKm = dto.radiusKm ?? 50;
+        const formationMap = new Map<number, FormationRecommendation>();
+
+        for (const career of careers as CareerWithInstitutions[]) {
+            const parentScore = careerScoreMap.get(career.id) ?? 0;
+            const careerFormations = career.institutions;
+            for (const link of careerFormations) {
+                const formation = link.formation;
+                const university = formation?.university;
+                if (!formation || !university || formation.universityId === null) continue;
+
+                let score = parentScore + (link.isPrimary ? 3 : 0);
+                if (hasGeo && dto.latitude !== undefined && dto.longitude !== undefined) {
+                    score += this.getProximityBonus(
+                        { lat: dto.latitude, lon: dto.longitude },
+                        { lat: university.latitude, lon: university.longitude },
+                        radiusKm,
+                    );
+                }
+                score = Math.min(100, score);
+
+                const existing = formationMap.get(formation.id);
+                if (existing && existing.score >= score) continue;
+
+                formationMap.set(formation.id, {
+                    formation: {
+                        id: formation.id,
+                        name: formation.title,
+                        title: formation.title,
+                        degree: formation.degree,
+                        duration: formation.duration,
+                        field: formation.field,
+                        costMin: formation.costMin,
+                        costMax: formation.costMax,
+                        universityId: formation.universityId,
+                    },
+                    university: {
+                        id: university.id,
+                        name: university.name,
+                        latitude: university.latitude,
+                        longitude: university.longitude,
+                        city: university.city,
+                        address: university.address,
+                        website: university.website,
+                    },
+                    score,
+                });
+            }
+        }
+
+        const limit = Math.min(dto.limit ?? 6, 20);
+        return Array.from(formationMap.values())
+            .sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.formation.name.localeCompare(b.formation.name);
+            })
+            .slice(0, limit);
     }
 }

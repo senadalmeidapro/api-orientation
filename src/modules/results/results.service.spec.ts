@@ -56,7 +56,7 @@ describe('ResultsService', () => {
         const badges = { grantTestCompleted: jest.fn() } as unknown as BadgesService;
         const service = new ResultsService(prisma, scoring, badges);
 
-        const result = await service.compute({ sessionToken: 'tok' } as any);
+        const result = await service.compute({ sessionToken: 'tok' });
         expect(result).toEqual({ id: 'r1', assessmentId: 'a1' });
         expect(scoring.computeScores).not.toHaveBeenCalled();
     });

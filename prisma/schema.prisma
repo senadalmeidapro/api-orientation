@@ -273,7 +273,6 @@ model Language {
   phase2QuestionTranslations Phase2QuestionTranslation[]
   careerTranslations         CareerTranslation[]
   resourceTranslations       ResourceTranslation[]
-  institutionTranslations    TrainingInstitutionTranslation[]
   universityTranslations     UniversityTranslation[]
   formationTranslations      FormationTranslation[]
   scholarshipTranslations    ScholarshipTranslation[]
@@ -690,6 +689,7 @@ model AssessmentResult {
   @@index([assessmentId])
   @@index([phase2Code])
   @@index([consistencyLevel])
+  @@index([createdAt])
   @@map("assessment_results")
 }
 
@@ -727,29 +727,29 @@ model Career {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   recommendations AssessmentCareerRecommendation[]
-  institutions    CareerInstitution[]
+  institutions    CareerFormation[]
   resources       CareerResource[]
   translations    CareerTranslation[]
   outcomes        AssessmentOutcome[]
-  trainingPaths   TrainingPath[]
 
   @@index([category])
   @@index([isFeatured])
+  @@index([isActive, category])
   @@map("careers")
 }
 
-model CareerInstitution {
-  careerId      Int                 @map("career_id")
-  career        Career              @relation(fields: [careerId], references: [id], onDelete: Cascade)
-  institutionId Int                 @map("institution_id")
-  institution   TrainingInstitution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
-  isPrimary     Boolean             @default(false) @map("is_primary")
+model CareerFormation {
+  careerId    Int       @map("career_id")
+  career      Career    @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  formationId Int       @map("formation_id")
+  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
+  isPrimary   Boolean   @default(false) @map("is_primary")
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@id([careerId, institutionId])
-  @@index([institutionId])
-  @@map("career_institutions")
+  @@id([careerId, formationId])
+  @@index([formationId])
+  @@map("career_f")
 }
 
 model CareerResource {
@@ -1025,15 +1025,22 @@ model ResourceTranslation {
 // =====================================================
 
 model University {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  acronym     String? @unique
-  description String? @db.Text
-  phone       String? @unique
-  email       String? @unique
-  website     String?
-  address     String?
+  id          Int    @id @default(autoincrement())
+  name        String @unique
+  acronym     String @unique
+  description String @db.Text
 
+  phone   String? @unique
+  email   String? @unique
+  website String
+
+  department String?
+  city       String?
+  address    String?
+  latitude   Float?
+  longitude  Float?
+
+  logoUrl       String?  @map("logo_url")
   coverUrl      String?  @map("cover_url")
   formationUrls String[] @map("formation_urls")
 
@@ -1085,19 +1092,25 @@ model UniversityTranslation {
 model Formation {
   id          Int     @id @default(autoincrement())
   title       String
-  description String? @db.Text
-  duration    String?
-  degree      String?
+  description String  @db.Text
+  duration    String
+  degree      String
   field       String?
 
-  universityId Int        @map("university_id")
-  university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  costMin Int? @map("cost_min")
+  costMax Int? @map("cost_max")
+
+  programs Json?
+
+  universityId Int?        @map("university_id")
+  university   University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
 
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   translations FormationTranslation[]
+  career       CareerFormation[]
 
   @@index([universityId])
   @@index([isActive])
@@ -1183,82 +1196,4 @@ model ScholarshipTranslation {
   @@unique([scholarshipId, languageId])
   @@index([languageId])
   @@map("scholarship_translations")
-}
-
-model TrainingInstitution {
-  id          Int     @id @default(autoincrement())
-  name        String
-  acronym     String?
-  description String? @db.Text
-
-  type String? // 'UNIVERSITE', 'ECOLE', 'CENTRE', 'LYCEE_TECHNIQUE'
-
-  department String?
-  city       String?
-  address    String?
-  latitude   Float?
-  longitude  Float?
-
-  phone   String?
-  email   String?
-  website String?
-
-  programs Json?
-
-  logoUrl  String? @map("logo_url")
-  isActive Boolean @default(true) @map("is_active")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  careers       CareerInstitution[]
-  translations  TrainingInstitutionTranslation[]
-  trainingPaths TrainingPath[]
-
-  @@index([department])
-  @@index([city])
-  @@map("training_institutions")
-}
-
-model TrainingPath {
-  id             Int     @id @default(autoincrement())
-  name           String
-  description    String? @db.Text
-  level          String?
-  durationMonths Int?    @map("duration_months")
-  costMin        Int?    @map("cost_min")
-  costMax        Int?    @map("cost_max")
-
-  careerId      Int?                 @map("career_id")
-  career        Career?              @relation(fields: [careerId], references: [id], onDelete: SetNull)
-  institutionId Int?                 @map("institution_id")
-  institution   TrainingInstitution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
-
-  isActive Boolean @default(true) @map("is_active")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@index([careerId])
-  @@index([institutionId])
-  @@index([isActive])
-  @@map("training_paths")
-}
-
-model TrainingInstitutionTranslation {
-  id            Int                 @id @default(autoincrement())
-  institutionId Int                 @map("institution_id")
-  institution   TrainingInstitution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
-  languageId    Int                 @map("language_id")
-  language      Language            @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  name        String
-  description String? @db.Text
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([institutionId, languageId])
-  @@index([languageId])
-  @@map("training_institution_translations")
 }

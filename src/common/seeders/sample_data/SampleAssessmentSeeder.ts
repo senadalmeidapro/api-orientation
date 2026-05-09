@@ -1,25 +1,15 @@
-import type { PrismaService } from '../../prisma/prisma.service';
+import type { PrismaService } from '../../../prisma/prisma.service';
 import { Phase2Type } from '@prisma/client';
-import { ConfigService } from '../config/config.service';
-
-/**
- * SAMPLE DATA SEEDER
- *
- * Populates the database with:
- * - Training Institutions (schools, universities, training centers)
- * - Training Paths (linking careers to institutions)
- * - Educational Resources (articles, videos, PDFs)
- * - Sample Assessment Flow (User → Session → Assessment → Responses → Results)
- *
- * Respects all relations and referential integrity.
- * Uses realistic generic data suitable for testing.
- */
+import { ConfigService } from '../../config/config.service';
+import { PasswordService } from '../../../modules/auth/services/password.service';
 
 const config = new ConfigService();
+const passwd = new PasswordService(config);
 
 // ============================================================
 // TRAINING INSTITUTIONS
 // ============================================================
+
 const universities = [
     {
         name: "Centre International de Formation à l'Expertise Comptable",
@@ -68,7 +58,7 @@ const universities = [
         acronym: 'ENA',
         description:
             "L'École Nationale d'Administration et de Magistrature (ENAM) du Bénin, située à Abomey-Calavi, est un établissement public de formation professionnelle et de recherche affilié à l'Université d'Abomey-Calavi. Créée en 1984, elle a pour mission de former et perfectionner les cadres et agents publics béninois.",
-        phone: '',
+        phone: null,
         email: 'enambenin@yahoo.fr',
         website: 'https://www.enam.uac.bj',
         address: 'Abomey-Calavi, Bénin',
@@ -164,7 +154,7 @@ const universities = [
         acronym: 'FADESP',
         description:
             "La Faculté de Droit et des Sciences Politiques (FADESP) est une unité de formation et de recherche de l'Université d'Abomey-Calavi. Elle propose des formations en droit et en science politique, incluant un cycle de capacité en droit et des études universitaires complètes.",
-        phone: '',
+        phone: null,
         email: 'contact@fadesp.net',
         website: 'https://www.fadesp.net',
         address: "Campus d'Abomey-Calavi, Bénin",
@@ -200,9 +190,10 @@ const universities = [
         acronym: 'FASHS',
         description:
             "La Faculté des Sciences Humaines et Sociales (FASHS) est une unité de formation et de recherche de l'Université d'Abomey-Calavi. Créée en 2017 suite à la scission de l'ex FLASH, elle a pour vocation de former dans les domaines des sciences humaines et sociales.",
-        phone: '',
-        email: '',
-        website: '',
+        phone: null,
+        email: null,
+        website:
+            'https://fr.wikipedia.org/wiki/Facult%C3%A9_des_sciences_humaines_et_sociales_(B%C3%A9nin)',
         address: "Campus d'Abomey-Calavi, Bénin",
         coverUrl: `${config.app.frontendUrl}/FASHS.png`,
         formationUrls: [],
@@ -212,9 +203,10 @@ const universities = [
         acronym: 'FAST',
         description:
             "La Faculté des Sciences et Techniques (FAST) est une unité de formation et de recherche de l'Université d'Abomey-Calavi. Elle offre des formations dans les domaines des sciences naturelles, mathématiques, physique et autres disciplines scientifiques.",
-        phone: '',
-        email: '',
-        website: '',
+        phone: null,
+        email: null,
+        website:
+            'https://www.oreilleducampus.org/universite-abomey-calavi/129-faculte-des-sciences-et-techniques-fast-uac-benin-etudes-mathematique-physique-chimie-sciences-naturelles-geologie-biochimie-biotechnologie-alimentaire-physiologie-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html',
         address: "Campus d'Abomey-Calavi, Bénin",
         coverUrl: `${config.app.frontendUrl}/FAST.jpg`,
         formationUrls: [],
@@ -333,7 +325,7 @@ const universities = [
         description:
             "Pigier Bénin est une institution privée d'enseignement supérieur, franchise de la marque Pigier fondée en France en 1850. Agréée par la CREFECF/UEMOA, elle propose des formations Licence et Master Professionnels en banque, finance, audit, contrôle de gestion et informatique.",
         phone: '+22921302906',
-        email: '',
+        email: null,
         website: 'https://pigier-benin.com',
         address: 'Carré 1270, Rue 320 Agontinkon-Ayidote, Cotonou, Bénin',
         coverUrl: `${config.app.frontendUrl}/PIGIER.jpg`,
@@ -344,7 +336,7 @@ const universities = [
         acronym: 'Saint-Jean-Paul',
         description:
             "L'Institut Jean-Paul II, situé à Cotonou, est un établissement privé d'enseignement supérieur spécialisé en sciences humaines. Il propose des formations variées en philosophie, psychologie, sociologie et domaines connexes, agréées par l'État.",
-        phone: '',
+        phone: null,
         email: 'jpacademie@yahoo.fr',
         website: 'https://institutjeanpaul2.org',
         address: 'Cotonou, Bénin',
@@ -392,8 +384,8 @@ const universities = [
         acronym: 'UNA',
         description:
             "L'Université Nationale d'Agriculture (UNA) est une université publique béninoise créée en 2016. Elle dispense des formations en Licence Professionnelle, Master et Doctorat dans les domaines de l'agriculture, l'aquaculture, l'horticulture, la foresterie et les industries agroalimentaires.",
-        phone: '',
-        email: '',
+        phone: null,
+        email: null,
         website: 'https://una.bj',
         address: 'Porto-Novo, Bénin',
         coverUrl: `${config.app.frontendUrl}/una.png`,
@@ -416,7 +408,7 @@ const universities = [
         acronym: 'UPAO',
         description:
             "L'Université Protestante de l'Afrique de l'Ouest (UPAO) est un établissement privé bilingue situé à Porto-Novo, au Bénin. Fondée en 2003 et accréditée par le Ministère de l'Enseignement Supérieur, elle propose des formations en gestion, management, informatique et sciences sociales.",
-        phone: '',
+        phone: null,
         email: 'info@upaopnbenin-edu.org',
         website: 'https://www.upaopnbenin-edu.org',
         address: 'Porto-Novo, Bénin',
@@ -440,7 +432,7 @@ const universities = [
         acronym: 'ESMT',
         description:
             "L'École Supérieure Multinationale des Télécommunications (ESMT) est un Centre d'Excellence de l'Union Internationale des Télécommunications (UIT) depuis 2000. Elle forme des techniciens supérieurs dans les domaines techniques et managériaux des télécommunications et TIC.",
-        phone: '',
+        phone: null,
         email: 'scolarite@esmt.sn',
         website: 'https://www.esmt.sn',
         address: 'Dakar, Sénégal (représentation au Bénin : Akpakpa, Cotonou)',
@@ -464,6 +456,7 @@ const universities = [
 // ============================================================
 // EDUCATIONAL RESOURCES
 // ============================================================
+
 const resources = [
     {
         title: 'Guide Complet du Développeur Web',
@@ -543,158 +536,70 @@ const resources = [
 ];
 
 // ============================================================
-// SAMPLE ASSESSMENT DATA (for testing)
+// HELPERS
 // ============================================================
 
-/**
- * Creates sample assessment flow for testing
- * Includes: User → Session → Assessment → Responses → Results → Recommendations
- */
-export async function seedSampleAssessmentData(prisma: PrismaService) {
-    console.log('\n📚 Seeding Training Institutions...');
-
-    // --- Create Training Institutions ---
+async function upsertUniversities(prisma: PrismaService) {
     for (const inst of universities) {
-        const existing = await prisma.university.findFirst({
-            where: { name: inst.name },
-        });
+        const existing = await prisma.university.findFirst({ where: { name: inst.name } });
 
         if (existing) {
             await prisma.university.update({
                 where: { id: existing.id },
-                data: {
-                    name: inst.name,
-                    acronym: inst.acronym,
-                    description: inst.description,
-                    phone: inst.phone,
-                    email: inst.email,
-                    website: inst.website,
-                    address: inst.address,
-                    coverUrl: inst.coverUrl,
-                    formationUrls: inst.formationUrls,
-                    isActive: true,
-                },
+                data: { ...inst, website: inst.website ?? existing.website, isActive: true },
             });
         } else {
             await prisma.university.create({
-                data: {
-                    ...inst,
-                    isActive: true,
-                },
+                data: { ...inst, website: inst.website, isActive: true },
             });
         }
     }
-    console.log(`✓ Created ${universities.length} training institutions`);
+    console.log(`✓ ${universities.length} institutions upserted`);
+}
 
-    // --- Create Institution Translations (French) ---
-    const institutions = await prisma.trainingInstitution.findMany();
-    const frenchLang = await prisma.language.findUnique({ where: { code: 'fr' } });
-
-    if (frenchLang) {
-        for (const inst of institutions.slice(0, 3)) {
-            await prisma.trainingInstitutionTranslation.upsert({
-                where: {
-                    institutionId_languageId: {
-                        institutionId: inst.id,
-                        languageId: frenchLang.id,
-                    },
-                },
-                update: {
-                    name: inst.name,
-                    description: `${inst.name} - Institution de formation`,
-                },
-                create: {
-                    institutionId: inst.id,
-                    languageId: frenchLang.id,
-                    name: inst.name,
-                    description: `${inst.name} - Institution de formation`,
-                },
-            });
-        }
-    }
-    console.log('✓ Institution translations created');
-
-    // --- Create Educational Resources ---
-    console.log('📖 Seeding Educational Resources...');
-
+async function upsertResources(prisma: PrismaService) {
     for (const res of resources) {
-        const existingRes = await prisma.resource.findFirst({
-            where: { title: res.title },
-        });
+        const existing = await prisma.resource.findFirst({ where: { title: res.title } });
+        const publishedAt = res.isPublished ? new Date() : null;
 
-        if (existingRes) {
+        if (existing) {
             await prisma.resource.update({
-                where: { id: existingRes.id },
-                data: {
-                    description: res.description,
-                    contentType: res.contentType,
-                    category: res.category,
-                    tags: res.tags,
-                    author: res.author,
-                    isPublished: res.isPublished,
-                    publishedAt: res.isPublished ? new Date() : null,
-                },
+                where: { id: existing.id },
+                data: { ...res, publishedAt },
             });
         } else {
-            await prisma.resource.create({
-                data: {
-                    ...res,
-                    publishedAt: res.isPublished ? new Date() : null,
-                },
-            });
+            await prisma.resource.create({ data: { ...res, publishedAt } });
         }
     }
-    console.log(`✓ Created ${resources.length} educational resources`);
+    console.log(`✓ ${resources.length} resources upserted`);
+}
 
-    // --- Create Training Paths (linking careers to institutions) ---
-    console.log('📚 Seeding Training Paths...');
+// ============================================================
+// MAIN SEEDER
+// ============================================================
 
-    const careers = await prisma.career.findMany({ take: 4 });
-    const firstInstitution = institutions[0];
-    const secondInstitution = institutions[1];
+export async function seedSampleAssessmentData(prisma: PrismaService) {
+    console.log('\n🌱 Seeding sample data...\n');
 
-    for (let i = 0; i < careers.length; i++) {
-        const career = careers[i];
-        const institution = i % 2 === 0 ? firstInstitution : secondInstitution;
+    await upsertUniversities(prisma);
+    await upsertResources(prisma);
 
-        if (career && institution) {
-            await prisma.trainingPath.create({
-                data: {
-                    name: `Formation ${career.name}`,
-                    description: `Programme de formation spécialisé en ${career.name}`,
-                    level: 'Bac+2/3',
-                    durationMonths: 24,
-                    costMin: 100000,
-                    costMax: 300000,
-                    careerId: career.id,
-                    institutionId: institution.id,
-                    isActive: true,
-                },
-            });
-        }
-    }
-    console.log(`✓ Created training paths for ${Math.min(careers.length, 4)} careers`);
-
-    // --- Create Sample Assessment Flow ---
-    console.log('👤 Seeding Sample Assessment Flow...');
-
-    // Create sample user
+    // User & Session
     const user = await prisma.user.upsert({
-        where: { email: 'sample.user@example.com' },
+        where: { email: 'senadalmeidapro@gmail.com' },
         update: { status: 'ACTIVE' },
         create: {
-            email: 'sample.user@example.com',
-            firstName: 'Marie',
-            lastName: 'Akoèdo',
-            displayName: 'Marie A.',
+            email: 'senadalmeidapro@gmail.com',
+            firstName: 'Sena Gedeon',
+            lastName: "D'almeida",
+            displayName: "Sena Gedeon D'almeida",
+            password: await passwd.hashPassword('senadegno'),
             role: 'USER',
             status: 'ACTIVE',
             emailVerifiedAt: new Date(),
         },
     });
-    console.log(`✓ Sample user created: ${user.email}`);
 
-    // Create session
     const session = await prisma.session.upsert({
         where: { id: 'session_sample_v1' },
         update: { isActive: true },
@@ -705,24 +610,21 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
             sessionHash: `hash_sample_${Date.now()}`,
             isActive: true,
             isCurrent: true,
-            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             totalXp: 150,
             level: 2,
         },
     });
-    console.log(`✓ Session created: ${session.id}`);
+    console.log(`✓ User & session ready (${user.email})`);
 
-    // Get test version
-    const testVersion = await prisma.testVersion.findUnique({
-        where: { code: 'v1' },
-    });
-
+    // Test version
+    const testVersion = await prisma.testVersion.findUnique({ where: { code: 'v1' } });
     if (!testVersion) {
-        console.log('⚠️  Test version not found. Skipping assessment creation.');
+        console.warn('⚠️  Test version "v1" not found — skipping assessment seeding.');
         return;
     }
 
-    // Create assessment
+    // Assessment
     const assessment = await prisma.assessment.upsert({
         where: { id: 'assessment_sample_v1' },
         update: { status: 'COMPLETED' },
@@ -739,24 +641,17 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
             batchSize: 5,
             currentBatch: 2,
             completionPercentage: 100,
-            startedAt: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
+            startedAt: new Date(Date.now() - 15 * 60 * 1000),
             completedAt: new Date(),
             adaptiveState: {
-                probabilities: {
-                    R: 0.15,
-                    I: 0.25,
-                    A: 0.2,
-                    S: 0.15,
-                    E: 0.1,
-                    C: 0.15,
-                },
+                probabilities: { R: 0.15, I: 0.25, A: 0.2, S: 0.15, E: 0.1, C: 0.15 },
                 askedQuestions: [],
             },
         },
     });
-    console.log(`✓ Assessment created: ${assessment.id}`);
+    console.log(`✓ Assessment ready (${assessment.id})`);
 
-    // Get some Phase 1 questions and create responses
+    // Phase 1 responses
     const phase1Questions = await prisma.phase1Question.findMany({
         where: { testVersionId: testVersion.id },
         take: 12,
@@ -764,35 +659,28 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
 
     for (let i = 0; i < phase1Questions.length; i++) {
         const question = phase1Questions[i];
-        if (question) {
-            await prisma.phase1Response.upsert({
-                where: {
-                    assessmentId_questionId: {
-                        assessmentId: assessment.id,
-                        questionId: question.id,
-                    },
-                },
-                update: {
-                    responseValue: i % 2,
-                },
-                create: {
-                    id: `phase1_resp_sample_${i}`,
-                    assessmentId: assessment.id,
-                    questionId: question.id,
-                    responseValue: i % 2,
-                    responseTimeMs: 3000 + i * 500,
-                    timeTakenMs: 3000 + i * 500,
-                    changeCount: i % 3,
-                    metadata: {
-                        hesitation: i % 4 === 0,
-                    },
-                },
-            });
-        }
-    }
-    console.log(`✓ Created ${phase1Questions.length} Phase 1 responses`);
+        if (!question) continue;
 
-    // Create behavioral indicators from Phase 1 responses
+        await prisma.phase1Response.upsert({
+            where: {
+                assessmentId_questionId: { assessmentId: assessment.id, questionId: question.id },
+            },
+            update: { responseValue: i % 2 },
+            create: {
+                id: `phase1_resp_sample_${i}`,
+                assessmentId: assessment.id,
+                questionId: question.id,
+                responseValue: i % 2,
+                responseTimeMs: 3000 + i * 500,
+                timeTakenMs: 3000 + i * 500,
+                changeCount: i % 3,
+                metadata: { hesitation: i % 4 === 0 },
+            },
+        });
+    }
+    console.log(`✓ ${phase1Questions.length} Phase 1 responses created`);
+
+    // Behavioral indicators
     const phase1Responses = await prisma.phase1Response.findMany({
         where: { assessmentId: assessment.id },
         take: 4,
@@ -800,130 +688,93 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
 
     for (let i = 0; i < phase1Responses.length; i++) {
         const response = phase1Responses[i];
-        if (response) {
-            await prisma.behavioralIndicator.upsert({
-                where: {
-                    id: `behavior_sample_${i}`,
-                },
-                update: {},
-                create: {
-                    id: `behavior_sample_${i}`,
-                    assessmentId: assessment.id,
-                    responseId: response.id,
-                    indicatorType:
-                        i % 3 === 0 ? 'hesitation' : i % 3 === 1 ? 'change' : 'consistent',
-                    timeTakenMs: 3000 + i * 500,
-                    changeCount: i % 2,
-                    metadata: {
-                        pattern: 'normal',
-                    },
-                },
-            });
-        }
-    }
-    console.log(`✓ Created behavioral indicators`);
+        if (!response) continue;
 
-    // Get Phase 2 Occupations questions
+        await prisma.behavioralIndicator.upsert({
+            where: { id: `behavior_sample_${i}` },
+            update: {},
+            create: {
+                id: `behavior_sample_${i}`,
+                assessmentId: assessment.id,
+                responseId: response.id,
+                indicatorType: i % 3 === 0 ? 'hesitation' : i % 3 === 1 ? 'change' : 'consistent',
+                timeTakenMs: 3000 + i * 500,
+                changeCount: i % 2,
+                metadata: { pattern: 'normal' },
+            },
+        });
+    }
+    console.log(`✓ ${phase1Responses.length} behavioral indicators created`);
+
+    // Phase 2 — Occupations
     const phase2Occupations = await prisma.phase2Question.findMany({
-        where: {
-            testVersionId: testVersion.id,
-            phase2Type: Phase2Type.OCCUPATIONS,
-        },
+        where: { testVersionId: testVersion.id, phase2Type: Phase2Type.OCCUPATIONS },
         take: 6,
     });
 
     for (let i = 0; i < phase2Occupations.length; i++) {
         const question = phase2Occupations[i];
-        if (question) {
-            await prisma.phase2Response.upsert({
-                where: {
-                    assessmentId_questionId: {
-                        assessmentId: assessment.id,
-                        questionId: question.id,
-                    },
-                },
-                update: {
-                    responseValue: i % 2,
-                },
-                create: {
-                    id: `phase2_occ_resp_sample_${i}`,
-                    assessmentId: assessment.id,
-                    questionId: question.id,
-                    phase2Type: Phase2Type.OCCUPATIONS,
-                    responseValue: i % 2,
-                    responseTimeMs: 4000 + i * 600,
-                    timeTakenMs: 4000 + i * 600,
-                    changeCount: 0,
-                },
-            });
-        }
-    }
-    console.log(`✓ Created Phase 2 Occupations responses`);
+        if (!question) continue;
 
-    // Get Phase 2 Aptitudes questions
+        await prisma.phase2Response.upsert({
+            where: {
+                assessmentId_questionId: { assessmentId: assessment.id, questionId: question.id },
+            },
+            update: { responseValue: i % 2 },
+            create: {
+                id: `phase2_occ_resp_sample_${i}`,
+                assessmentId: assessment.id,
+                questionId: question.id,
+                phase2Type: Phase2Type.OCCUPATIONS,
+                responseValue: i % 2,
+                responseTimeMs: 4000 + i * 600,
+                timeTakenMs: 4000 + i * 600,
+                changeCount: 0,
+            },
+        });
+    }
+    console.log(`✓ ${phase2Occupations.length} Phase 2 Occupations responses created`);
+
+    // Phase 2 — Aptitudes
     const phase2Aptitudes = await prisma.phase2Question.findMany({
-        where: {
-            testVersionId: testVersion.id,
-            phase2Type: Phase2Type.APTITUDES,
-        },
+        where: { testVersionId: testVersion.id, phase2Type: Phase2Type.APTITUDES },
         take: 6,
     });
 
     for (let i = 0; i < phase2Aptitudes.length; i++) {
         const question = phase2Aptitudes[i];
-        if (question) {
-            await prisma.phase2Response.upsert({
-                where: {
-                    assessmentId_questionId: {
-                        assessmentId: assessment.id,
-                        questionId: question.id,
-                    },
-                },
-                update: {
-                    responseValue: (i % 3) + 1, // 1-3 scale for aptitudes
-                },
-                create: {
-                    id: `phase2_apt_resp_sample_${i}`,
-                    assessmentId: assessment.id,
-                    questionId: question.id,
-                    phase2Type: Phase2Type.APTITUDES,
-                    responseValue: (i % 3) + 1,
-                    responseTimeMs: 3000 + i * 700,
-                    timeTakenMs: 3000 + i * 700,
-                    changeCount: i % 2,
-                },
-            });
-        }
-    }
-    console.log(`✓ Created Phase 2 Aptitudes responses`);
+        if (!question) continue;
 
-    // Create assessment result
+        await prisma.phase2Response.upsert({
+            where: {
+                assessmentId_questionId: { assessmentId: assessment.id, questionId: question.id },
+            },
+            update: { responseValue: (i % 3) + 1 },
+            create: {
+                id: `phase2_apt_resp_sample_${i}`,
+                assessmentId: assessment.id,
+                questionId: question.id,
+                phase2Type: Phase2Type.APTITUDES,
+                responseValue: (i % 3) + 1,
+                responseTimeMs: 3000 + i * 700,
+                timeTakenMs: 3000 + i * 700,
+                changeCount: i % 2,
+            },
+        });
+    }
+    console.log(`✓ ${phase2Aptitudes.length} Phase 2 Aptitudes responses created`);
+
+    // Assessment result
     const result = await prisma.assessmentResult.upsert({
         where: { assessmentId: assessment.id },
-        update: {
-            profileStrength: 'FORT',
-        },
+        update: { profileStrength: 'FORT' },
         create: {
-            id: `result_sample_v1`,
+            id: 'result_sample_v1',
             assessmentId: assessment.id,
             phase1Code: 'IAS',
             phase2Code: 'IAE',
-            phase1Scores: {
-                R: 12,
-                I: 18,
-                A: 15,
-                S: 10,
-                E: 8,
-                C: 10,
-            },
-            phase2Scores: {
-                R: 25,
-                I: 35,
-                A: 30,
-                S: 20,
-                E: 15,
-                C: 20,
-            },
+            phase1Scores: { R: 12, I: 18, A: 15, S: 10, E: 8, C: 10 },
+            phase2Scores: { R: 25, I: 35, A: 30, S: 20, E: 15, C: 20 },
             consistencyScore: 0.82,
             consistencyLevel: 'FORTE',
             differentiationScore: 0.72,
@@ -937,61 +788,43 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
             weaknesses: ['Préférence modérée pour le travail manuel', 'Leadership moins développé'],
         },
     });
-    console.log(`✓ Assessment result created`);
+    console.log(`✓ Assessment result ready`);
 
-    // Create career recommendations
-    const topCareers = await prisma.career.findMany({
-        where: { isActive: true },
-        take: 3,
-    });
+    // Career recommendations
+    const topCareers = await prisma.career.findMany({ where: { isActive: true }, take: 3 });
 
     for (let i = 0; i < topCareers.length; i++) {
         const career = topCareers[i];
-        if (career) {
-            await prisma.assessmentCareerRecommendation.upsert({
-                where: {
-                    resultId_careerId: {
-                        resultId: result.id,
-                        careerId: career.id,
-                    },
-                },
-                update: {
-                    matchScore: 85 - i * 15,
-                    rankPosition: i + 1,
-                },
-                create: {
-                    id: `rec_sample_${i}`,
-                    resultId: result.id,
-                    careerId: career.id,
-                    matchScore: 85 - i * 15,
-                    rankPosition: i + 1,
-                    savedForLater: false,
-                },
-            });
-        }
-    }
-    console.log(`✓ Created ${topCareers.length} career recommendations`);
+        if (!career) continue;
 
-    // Create treasure map
+        await prisma.assessmentCareerRecommendation.upsert({
+            where: { resultId_careerId: { resultId: result.id, careerId: career.id } },
+            update: { matchScore: 85 - i * 15, rankPosition: i + 1 },
+            create: {
+                id: `rec_sample_${i}`,
+                resultId: result.id,
+                careerId: career.id,
+                matchScore: 85 - i * 15,
+                rankPosition: i + 1,
+                savedForLater: false,
+            },
+        });
+    }
+    console.log(`✓ ${topCareers.length} career recommendations created`);
+
+    // Treasure map
     await prisma.treasureMap.upsert({
         where: { assessmentId: assessment.id },
         update: {},
         create: {
-            id: `treasure_map_sample_v1`,
+            id: 'treasure_map_sample_v1',
             assessmentId: assessment.id,
             shareToken: `share_${Date.now()}`,
             mapData: {
                 riasecProfile: 'IAS',
                 phase1Code: 'IAS',
                 phase2Code: 'IAE',
-                scores: {
-                    R: 12,
-                    I: 18,
-                    A: 15,
-                    S: 10,
-                    E: 8,
-                    C: 10,
-                },
+                scores: { R: 12, I: 18, A: 15, S: 10, E: 8, C: 10 },
                 topCareers: topCareers.slice(0, 3).map((c) => c.name),
                 strengths: ['Pensée analytique', 'Créativité', 'Curiosité intellectuelle'],
                 nextSteps: [
@@ -1005,20 +838,20 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
             downloadCount: 0,
         },
     });
-    console.log('✓ Treasure map created');
+    console.log(`✓ Treasure map created`);
 
-    // Create XP history
+    // XP history
     await prisma.xPHistory.createMany({
         data: [
             {
-                id: `xp_sample_${1}`,
+                id: 'xp_sample_1',
                 sessionId: session.id,
                 amount: 100,
                 reason: 'phase1_completion',
                 assessmentId: assessment.id,
             },
             {
-                id: `xp_sample_${2}`,
+                id: 'xp_sample_2',
                 sessionId: session.id,
                 amount: 50,
                 reason: 'phase2_completion',
@@ -1027,43 +860,28 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
         ],
         skipDuplicates: true,
     });
-    console.log('✓ XP history created');
+    console.log(`✓ XP history created`);
 
-    // Unlock badge
+    // Badge
     const badge = await prisma.badge.findFirst();
     if (badge) {
         await prisma.sessionBadge.upsert({
-            where: {
-                sessionId_badgeId: {
-                    sessionId: session.id,
-                    badgeId: badge.id,
-                },
-            },
+            where: { sessionId_badgeId: { sessionId: session.id, badgeId: badge.id } },
             update: {},
             create: {
-                id: `session_badge_sample_${1}`,
+                id: 'session_badge_sample_1',
                 sessionId: session.id,
                 badgeId: badge.id,
                 unlockedAt: new Date(),
             },
         });
-        console.log('✓ Badge unlocked');
+        console.log(`✓ Badge unlocked`);
     }
 
-    console.log('\n✅ Sample assessment data seeded successfully!\n');
-    console.log('📊 Summary:');
-    console.log(`  - Training Institutions: ${institutions.length}`);
-    console.log(`  - Resources: ${resources.length}`);
-    console.log('  - Sample User: 1');
-    console.log('  - Sample Session: 1');
-    console.log('  - Sample Assessment: 1');
-    console.log(`  - Phase 1 Responses: ${phase1Questions.length}`);
-    console.log(`  - Phase 2 Occupations Responses: ${phase2Occupations.length}`);
-    console.log(`  - Phase 2 Aptitudes Responses: ${phase2Aptitudes.length}`);
-    console.log('  - Career Recommendations: 3');
-    console.log('\n💡 Test Data:');
-    console.log(`  - User Email: ${user.email}`);
-    console.log(`  - Session ID: ${session.id}`);
-    console.log(`  - Assessment ID: ${assessment.id}`);
-    console.log(`  - Treasure Map Share Token: Available in results`);
+    console.log(`
+✅ Seeding complete!
+   User     : ${user.email}
+   Session  : ${session.id}
+   Assessment: ${assessment.id}
+    `);
 }

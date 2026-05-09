@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsObject } from 'class-validator';
 
 export class CreateFormationDto {
     @IsString()
@@ -6,20 +6,32 @@ export class CreateFormationDto {
 
     @IsOptional()
     @IsString()
-    description?: string;
+    description!: string;
 
     @IsOptional()
     @IsString()
-    duration?: string;
+    duration!: string;
 
     @IsOptional()
     @IsString()
-    degree?: string;
+    degree!: string;
 
     @IsOptional()
     @IsString()
     field?: string;
 
+    @IsOptional()
     @IsNumber()
-    universityId!: number;
+    costMin?: number;
+
+    @IsOptional()
+    @IsNumber()
+    costMax?: number;
+
+    @IsOptional()
+    @IsObject()
+    programs?: Record<string, unknown>;
+
+    @IsNumber()
+    universityAcronym!: number;
 }

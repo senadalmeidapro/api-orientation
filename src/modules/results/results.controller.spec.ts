@@ -8,7 +8,7 @@ describe('ResultsController', () => {
         } as unknown as ResultsService;
         const controller = new ResultsController(service);
 
-        await controller.compute({ sessionToken: 's' } as any);
+        await controller.compute({ sessionToken: 's' });
         expect(service.compute).toHaveBeenCalled();
     });
 });

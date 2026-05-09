@@ -1,4 +1,14 @@
-import { IsString, IsOptional, IsArray, IsDateString, IsNumber } from 'class-validator';
+import {
+    IsString,
+    IsOptional,
+    IsArray,
+    IsDateString,
+    IsNumber,
+    IsUrl,
+    ArrayNotEmpty,
+    IsInt,
+    Min,
+} from 'class-validator';
 
 export class CreateScholarshipDto {
     @IsString()
@@ -14,15 +24,13 @@ export class CreateScholarshipDto {
     @IsString()
     amount?: string;
 
-    @IsOptional()
     @IsArray()
     @IsString({ each: true })
-    benefits?: string[];
+    benefits!: string[];
 
-    @IsOptional()
     @IsArray()
     @IsString({ each: true })
-    conditions?: string[];
+    conditions!: string[];
 
     @IsString()
     level!: string;
@@ -36,7 +44,7 @@ export class CreateScholarshipDto {
     country?: string;
 
     @IsOptional()
-    @IsString()
+    @IsUrl()
     applicationUrl?: string;
 
     @IsOptional()
@@ -49,6 +57,7 @@ export class CreateScholarshipDto {
 
     @IsOptional()
     @IsArray()
-    @IsNumber({}, { each: true })
+    @IsInt({ each: true })
+    @Min(1, { each: true })
     universityIds?: number[];
 }

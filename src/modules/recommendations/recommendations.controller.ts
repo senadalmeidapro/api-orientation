@@ -1,9 +1,9 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Headers, Query, UnauthorizedException } from '@nestjs/common';
 import { RecommendationsService } from './recommendations.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { publicDecorator } from '@common/decorators/public.decorator';
 import { Throttle } from '@nestjs/throttler';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 // import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Careers')
@@ -16,10 +16,10 @@ export class RecommendationsController {
         summary: 'Recuperer - Get Recommendations',
         description: 'Endpoint pour get recommendations.',
     })
-    @ApiQuery({
-        name: 'sessionToken',
+    @ApiHeader({
+        name: 'x-session-token',
         required: true,
-        description: 'Token de session.',
+        description: 'Token de session (éviter le query string).',
         example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
     })
     // @ApiStandardOkResponse({
@@ -41,7 +41,42 @@ export class RecommendationsController {
     @Throttle({ default: { limit: 60, ttl: 60 } })
     @publicDecorator()
     @Get('recommendations')
-    getRecommendations(@Query() dto: GetRecommendationsDto) {
-        return this.service.getRecommendations(dto);
+    getRecommendations(
+        @Headers('x-session-token') sessionToken: string | undefined,
+        @Query() dto: GetRecommendationsDto,
+    ) {
+        if (!sessionToken?.trim()) {
+            throw new UnauthorizedException('Session invalide ou expirée');
+        }
+        return this.service.getRecommendations({
+            ...dto,
+            sessionToken: sessionToken.trim(),
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Recuperer - Get Formation Recommendations',
+        description: 'Endpoint pour recommendations de formations avec universites.',
+    })
+    @ApiHeader({
+        name: 'x-session-token',
+        required: true,
+        description: 'Token de session (éviter le query string).',
+        example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
+    })
+    @Throttle({ default: { limit: 60, ttl: 60 } })
+    @publicDecorator()
+    @Get('recommendations/formations')
+    getFormationRecommendations(
+        @Headers('x-session-token') sessionToken: string | undefined,
+        @Query() dto: GetRecommendationsDto,
+    ) {
+        if (!sessionToken?.trim()) {
+            throw new UnauthorizedException('Session invalide ou expirée');
+        }
+        return this.service.getFormationRecommendations({
+            ...dto,
+            sessionToken: sessionToken.trim(),
+        });
     }
 }

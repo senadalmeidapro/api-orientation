@@ -8,7 +8,7 @@ describe('TreasureMapController', () => {
         } as unknown as TreasureMapService;
         const controller = new TreasureMapController(service);
 
-        await controller.generate({ sessionToken: 's', generatePdf: false } as any);
+        await controller.generate({ sessionToken: 's', generatePdf: false });
         expect(service.generate).toHaveBeenCalled();
     });
 });

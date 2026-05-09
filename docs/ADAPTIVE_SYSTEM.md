@@ -20,48 +20,48 @@ Ce document fournit un guide détaillé pour les développeurs travaillant sur l
 ### Vue d'ensemble
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Client (Frontend)                        │
-│  • Capture timeTakenMs, changeCount                             │
+┌────────────────────────────────────────────────────────────────┐
+│                         Client (Frontend)                      │
+│  • Capture timeTakenMs, changeCount                            │
 │  • Appels GET /next-batch → POST /batch (répété)               │
-└───────────────────────┬─────────────────────────────────────────┘
+└───────────────────────┬────────────────────────────────────────┘
                         │
                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     Controllers Layer                            │
-│  • QuestionsController → getNextBatch()                         │
-│  • ResponsesController → submitBatch()                          │
-│  • ResultsController → getEnhanced()                            │
-└───────────────────────┬─────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                     Controllers Layer                          │
+│  • QuestionsController → getNextBatch()                        │
+│  • ResponsesController → submitBatch()                         │
+│  • ResultsController → getEnhanced()                           │
+└───────────────────────┬────────────────────────────────────────┘
                         │
                         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      Services Layer                              │
+┌────────────────────────────────────────────────────────────────┐
+│                      Services Layer                            │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ QuestionsService                                         │   │
+│  │ QuestionsService                                        │   │
 │  │  → getNextBatchQuestions()                              │   │
 │  │     ├─ AdaptiveSelectionService.selectNextBatch()       │   │
 │  │     └─ BatchManagementService.startNewBatch()           │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ ResponsesService                                         │   │
+│  │ ResponsesService                                        │   │
 │  │  → submitBatchResponses()                               │   │
 │  │     ├─ BehavioralAnalysisService.analyzeResponse()      │   │
 │  │     ├─ BatchManagementService.completeBatch()           │   │
 │  │     └─ AdaptiveSelectionService.calculateIntermediate() │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │ ResultsService                                           │   │
+│  │ ResultsService                                          │   │
 │  │  → computeEnhancedResult()                              │   │
 │  │     ├─ EnhancedResultsService.generateReport()          │   │
 │  │     ├─ AIAdaptiveService.enrichFinalReport()            │   │
 │  │     └─ BehavioralAnalysisService.generateInsights()     │   │
 │  └─────────────────────────────────────────────────────────┘   │
-└───────────────────────┬─────────────────────────────────────────┘
+└───────────────────────┬────────────────────────────────────────┘
                         │
                         ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    Database (PostgreSQL)                         │
+│                    Database (PostgreSQL)                        │
 │  • QuestionProfile (multi-profil weights)                       │
 │  • BatchHistory (lots présentés)                                │
 │  • IntermediateProfile (profils intermédiaires)                 │
@@ -684,7 +684,7 @@ Le système adaptatif réutilise les variables existantes. Aucune nouvelle confi
 
 ### Seed data
 
-**Fichier** : `prisma/seeders/seed-question-profiles.ts`
+**Fichier** : `src/common/seeders/assessment/QuestionProfileSeeder.ts`
 
 **Exécution** :
 
@@ -732,7 +732,7 @@ const PROFILE_WEIGHT = 0.4; // Favorise la spécificité
 ### Ajouter une nouvelle question multi-profils
 
 1. Identifier la question existante (ID)
-2. Éditer `prisma/seeders/seed-question-profiles.ts`
+2. Éditer `src/common/seeders/assessment/QuestionProfileSeeder.ts`
 3. Ajouter l'entrée :
     ```typescript
     {

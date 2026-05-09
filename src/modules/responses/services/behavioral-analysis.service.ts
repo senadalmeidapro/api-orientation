@@ -85,7 +85,7 @@ export class BehavioralAnalysisService {
                 ? { changeCount: i.changeCount }
                 : {}),
             ...(i.metadata && typeof i.metadata === 'object' && !Array.isArray(i.metadata)
-                ? { metadata: i.metadata as Record<string, unknown> }
+                ? { metadata: i.metadata }
                 : {}),
         }));
     }

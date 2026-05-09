@@ -388,7 +388,7 @@ Aucune variable supplémentaire nécessaire. Le système utilise la configuratio
 
 ### Seed data
 
-Les questions multi-profils sont configurées dans `prisma/seeders/seed-question-profiles.ts` :
+Les questions multi-profils sont configurées dans `src/common/seeders/assessment/QuestionProfileSeeder.ts` :
 
 ```typescript
 // Exemple de question avec 2 profils
@@ -493,4 +493,3 @@ R: Vérifier que `timeTakenMs` et `changeCount` sont envoyés dans les réponses
 
 **Q: L'IA ne répond pas**
 R: Vérifier `OPENAI_API_KEY` dans `.env` et que le service IA est actif
-

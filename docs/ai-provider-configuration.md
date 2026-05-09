@@ -57,7 +57,7 @@ GOOGLE_AI_API_KEY=AIzaSy...
 ```
 AiService (injecte AiProviderFactory)
   ↓
-AiProviderFactory.getProvider() 
+AiProviderFactory.getProvider()
   ↓
 AiClient (OpenAI) OU GoogleAiClient (Google)
 ```

@@ -32,7 +32,7 @@ describe('SessionsService', () => {
         });
 
         const service = new SessionsService(lifecycleService, flowService);
-        const res = await service.createSession('user-1', { testVersionId: 1 } as any);
+        const res = await service.createSession('user-1', { testVersionId: 1 });
 
         expect(res.sessionToken).toBe('token');
         expect(res.assessment.id).toBe('a1');

@@ -24,9 +24,9 @@ export class AiProviderFactory {
 
     constructor(openaiClient: AiClient, googleAiClient: GoogleAiClient) {
         if (this.selectedProvider === 'google') {
-            this.provider = googleAiClient as IAiProvider;
+            this.provider = googleAiClient;
         } else {
-            this.provider = openaiClient as IAiProvider;
+            this.provider = openaiClient;
         }
 
         if (!this.provider) {

@@ -1,5 +1,5 @@
 import { PhaseType, type Phase2Type, type RiasecType } from '@prisma/client';
-import type { PrismaService } from '../../prisma/prisma.service';
+import type { PrismaService } from '../../../prisma/prisma.service';
 
 /**
  * Configuration manuelle des profils multi‑RIASEC.

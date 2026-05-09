@@ -39,7 +39,7 @@ describe('QuestionsService', () => {
         const adaptive = {} as any;
         const batch = {} as any;
         const service = new QuestionsService(prisma, cache, adaptive, batch);
-        const res = await service.getPhase1Questions({ sessionToken: 's', lang: 'fr' } as any);
+        const res = await service.getPhase1Questions({ sessionToken: 's', lang: 'fr' });
 
         expect(res[0].text).toBe('t');
     });
