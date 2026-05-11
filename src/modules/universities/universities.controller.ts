@@ -45,6 +45,12 @@ export class UniversitiesController {
         return this.service.findUniversityById(id);
     }
 
+    @Get('universities/search')
+    @ApiOperation({ summary: 'Search universities by acronym, name, or formation' })
+    findUniversityByAcronymOrNameOrFormation(@Query('q') query: string) {
+        return this.service.findUniversityByAcronymOrNameOrFormation(query);
+    }
+
     @Patch('universities/:id')
     @ApiOperation({ summary: 'Update university' })
     updateUniversity(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateUniversityDto) {

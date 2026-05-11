@@ -73,6 +73,29 @@ export class UniversitiesService {
         });
     }
 
+    async findUniversityByAcronymOrNameOrFormation(query: string) {
+        return this.prisma.university.findMany({
+            where: {
+                isActive: true,
+                OR: [
+                    { acronym: { contains: query, mode: 'insensitive' } },
+                    { name: { contains: query, mode: 'insensitive' } },
+                    {
+                        formations: {
+                            some: {
+                                title: { contains: query, mode: 'insensitive' },
+                            },
+                        },
+                    },
+                ],
+            },
+            include: {
+                formations: true,
+                media: true,
+            },
+        });
+    }
+
     async updateUniversity(id: number, dto: UpdateUniversityDto) {
         const { mediaUrls, ...data } = dto;
 
