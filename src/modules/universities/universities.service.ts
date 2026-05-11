@@ -187,6 +187,20 @@ export class UniversitiesService {
         });
     }
 
+    async findFormationByTitleOrDegreeOrField(query: string) {
+        return this.prisma.formation.findMany({
+            where: {
+                isActive: true,
+                OR: [
+                    { title: { contains: query, mode: 'insensitive' } },
+                    { degree: { contains: query, mode: 'insensitive' } },
+                    { field: { contains: query, mode: 'insensitive' } },
+                ],
+            },
+            include: { university: true },
+        });
+    }
+
     async updateFormation(id: number, dto: UpdateFormationDto) {
         return this.prisma.formation.update({
             where: { id },
@@ -256,6 +270,20 @@ export class UniversitiesService {
     async findScholarshipById(id: number) {
         return this.prisma.scholarship.findUnique({
             where: { id },
+            include: { universities: { include: { university: true } } },
+        });
+    }
+
+    async findScholarshipByTitleOrProviderOrField(query: string) {
+        return this.prisma.scholarship.findMany({
+            where: {
+                isActive: true,
+                OR: [
+                    { title: { contains: query, mode: 'insensitive' } },
+                    { provider: { contains: query, mode: 'insensitive' } },
+                    { field: { contains: query, mode: 'insensitive' } },
+                ],
+            },
             include: { universities: { include: { university: true } } },
         });
     }

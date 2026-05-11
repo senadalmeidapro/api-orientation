@@ -86,6 +86,18 @@ export class UniversitiesController {
         return this.service.findFormationById(id);
     }
 
+    @Get('formations/university/:universityId')
+    @ApiOperation({ summary: 'Get all formations for a specific university' })
+    findAllFormationsByUniversity(@Param('universityId', ParseIntPipe) universityId: number) {
+        return this.service.findAllFormationsByUniversity(universityId);
+    }
+
+    @Get('formations/search')
+    @ApiOperation({ summary: 'Search formations by title, degree, or field' })
+    findFormationByTitleOrDegreeOrField(@Query('q') query: string) {
+        return this.service.findFormationByTitleOrDegreeOrField(query);
+    }
+
     @Patch('formations/:id')
     @ApiOperation({ summary: 'Update formation' })
     updateFormation(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateFormationDto) {
@@ -116,6 +128,12 @@ export class UniversitiesController {
     @ApiOperation({ summary: 'Get scholarship by ID' })
     findScholarshipById(@Param('id', ParseIntPipe) id: number) {
         return this.service.findScholarshipById(id);
+    }
+
+    @Get('scholarships/search')
+    @ApiOperation({ summary: 'Search scholarships by title, provider, or field' })
+    findScholarshipByTitleOrProviderOrField(@Query('q') query: string) {
+        return this.service.findScholarshipByTitleOrProviderOrField(query);
     }
 
     @Patch('scholarships/:id')
