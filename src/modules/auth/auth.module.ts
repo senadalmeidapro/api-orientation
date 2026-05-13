@@ -14,25 +14,25 @@ import { ConfigService } from '@common/config/config.service';
 
 @Global()
 @Module({
-    imports: [
-        PrismaModule,
-        PassportModule,
-        EmailModule,
-        JwtModule.registerAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (config: ConfigService) => ({
-                secret: config.jwt.accessSecret,
-                signOptions: {
-                    expiresIn: config.jwt.accessExpiresIn ?? 900,
-                    issuer: config.jwt.issuer ?? 'api-orientation-issue',
-                    audience: 'api-orientation-audience',
-                },
-            }),
-        }),
-    ],
-    controllers: [AuthController],
-    providers: [AuthService, JwtStrategy, PasswordService, AuthDeviceService, AuthTokenService],
-    exports: [AuthService, PasswordService, AuthDeviceService, AuthTokenService],
+  imports: [
+    PrismaModule,
+    PassportModule,
+    EmailModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.jwt.accessSecret,
+        signOptions: {
+          expiresIn: config.jwt.accessExpiresIn ?? 900,
+          issuer: config.jwt.issuer ?? 'api-orientation-issue',
+          audience: 'api-orientation-audience',
+        },
+      }),
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy, PasswordService, AuthDeviceService, AuthTokenService],
+  exports: [AuthService, PasswordService, AuthDeviceService, AuthTokenService],
 })
 export class AuthModule {}

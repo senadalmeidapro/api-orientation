@@ -8,9 +8,9 @@ import { ResultsModule } from '../results/results.module';
 import { RecommendationsModule } from '../recommendations/recommendations.module';
 
 @Module({
-    imports: [ResultsModule, RecommendationsModule],
-    controllers: [AiController],
-    providers: [AiClient, GoogleAiClient, AiProviderFactory, AiService],
-    exports: [AiService, AiProviderFactory],
+  imports: [ResultsModule, RecommendationsModule],
+  controllers: [AiController],
+  providers: [AiClient, GoogleAiClient, AiProviderFactory, AiService],
+  exports: [AiService, AiProviderFactory],
 })
 export class AiModule {}

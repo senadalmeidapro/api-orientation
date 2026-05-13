@@ -5,8 +5,8 @@ import { SessionLifecycleService } from './services/session-lifecycle.service';
 import { AssessmentFlowService } from './services/assessment-flow.service';
 
 @Module({
-    controllers: [SessionsController],
-    providers: [SessionsService, SessionLifecycleService, AssessmentFlowService],
-    exports: [SessionsService, SessionLifecycleService, AssessmentFlowService],
+  controllers: [SessionsController],
+  providers: [SessionsService, SessionLifecycleService, AssessmentFlowService],
+  exports: [SessionsService, SessionLifecycleService, AssessmentFlowService],
 })
 export class SessionsModule {}

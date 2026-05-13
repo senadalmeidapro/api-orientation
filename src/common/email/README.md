@@ -68,7 +68,7 @@ FRONTEND_URL=https://yourapp.com
 import { EmailModule } from './common/email/email.module';
 
 @Module({
-    imports: [EmailModule],
+  imports: [EmailModule],
 })
 export class AppModule {}
 ```
@@ -81,16 +81,16 @@ import { EmailService } from './common/email/email.service';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly emailService: EmailService) {}
+  constructor(private readonly emailService: EmailService) {}
 
-    async welcomeUser(email: string, name: string) {
-        await this.emailService.sendEmail({
-            to: email,
-            subject: 'Welcome!',
-            html: `<h1>Welcome ${name}!</h1>`,
-            text: `Welcome ${name}!`,
-        });
-    }
+  async welcomeUser(email: string, name: string) {
+    await this.emailService.sendEmail({
+      to: email,
+      subject: 'Welcome!',
+      html: `<h1>Welcome ${name}!</h1>`,
+      text: `Welcome ${name}!`,
+    });
+  }
 }
 ```
 
@@ -100,10 +100,10 @@ export class UserService {
 
 ```typescript
 await emailService.sendEmail({
-    to: 'user@example.com',
-    subject: 'Hello World',
-    html: '<h1>Hello!</h1>',
-    text: 'Hello!',
+  to: 'user@example.com',
+  subject: 'Hello World',
+  html: '<h1>Hello!</h1>',
+  text: 'Hello!',
 });
 ```
 
@@ -111,12 +111,12 @@ await emailService.sendEmail({
 
 ```typescript
 await emailService.sendEmail({
-    to: [
-        { email: 'user1@example.com', name: 'User 1' },
-        { email: 'user2@example.com', name: 'User 2' },
-    ],
-    subject: 'Team Update',
-    html: '<p>Important announcement</p>',
+  to: [
+    { email: 'user1@example.com', name: 'User 1' },
+    { email: 'user2@example.com', name: 'User 2' },
+  ],
+  subject: 'Team Update',
+  html: '<p>Important announcement</p>',
 });
 ```
 
@@ -124,18 +124,18 @@ await emailService.sendEmail({
 
 ```typescript
 await emailService.sendEmail(
-    {
-        to: 'user@example.com',
-        subject: 'Newsletter',
-        html: '<p>Content...</p>',
-    },
-    {
-        replyTo: 'hello@example.com',
-        cc: ['manager@example.com'],
-        bcc: ['archive@example.com'],
-        tags: ['newsletter', 'monthly'],
-        headers: { 'X-Campaign-ID': 'march-2024' },
-    },
+  {
+    to: 'user@example.com',
+    subject: 'Newsletter',
+    html: '<p>Content...</p>',
+  },
+  {
+    replyTo: 'hello@example.com',
+    cc: ['manager@example.com'],
+    bcc: ['archive@example.com'],
+    tags: ['newsletter', 'monthly'],
+    headers: { 'X-Campaign-ID': 'march-2024' },
+  },
 );
 ```
 
@@ -143,12 +143,12 @@ await emailService.sendEmail(
 
 ```typescript
 await emailService.sendTemplateEmail({
-    to: 'user@example.com',
-    templateId: 1, // Configured in Brevo
-    params: {
-        firstName: 'John',
-        verificationUrl: 'https://example.com/verify?token=abc',
-    },
+  to: 'user@example.com',
+  templateId: 1, // Configured in Brevo
+  params: {
+    firstName: 'John',
+    verificationUrl: 'https://example.com/verify?token=abc',
+  },
 });
 ```
 
@@ -157,18 +157,18 @@ await emailService.sendTemplateEmail({
 ```typescript
 // Verification email
 await emailService.sendVerificationEmail({
-    to: 'user@example.com',
-    firstName: 'John',
-    token: 'verification-token',
-    userId: 'user-123',
+  to: 'user@example.com',
+  firstName: 'John',
+  token: 'verification-token',
+  userId: 'user-123',
 });
 
 // Password reset email
 await emailService.sendPasswordResetEmail({
-    to: 'user@example.com',
-    firstName: 'John',
-    token: 'reset-token',
-    userId: 'user-123',
+  to: 'user@example.com',
+  firstName: 'John',
+  token: 'reset-token',
+  userId: 'user-123',
 });
 ```
 
@@ -176,15 +176,15 @@ await emailService.sendPasswordResetEmail({
 
 ```typescript
 await emailService.sendEmailFromTemplate({
-    to: 'user@example.com',
-    subject: 'Order #{{orderNumber}}',
-    htmlTemplate: '<h1>Thank you {{name}}!</h1><p>Total: ${{total}}</p>',
-    textTemplate: 'Thank you {{name}}! Total: ${{total}}',
-    params: {
-        name: 'John',
-        orderNumber: '12345',
-        total: 99.99,
-    },
+  to: 'user@example.com',
+  subject: 'Order #{{orderNumber}}',
+  htmlTemplate: '<h1>Thank you {{name}}!</h1><p>Total: ${{total}}</p>',
+  textTemplate: 'Thank you {{name}}! Total: ${{total}}',
+  params: {
+    name: 'John',
+    orderNumber: '12345',
+    total: 99.99,
+  },
 });
 ```
 
@@ -194,28 +194,28 @@ await emailService.sendEmailFromTemplate({
 import { EmailSendError, EmailValidationError } from './common/email';
 
 try {
-    await emailService.sendEmail(payload);
+  await emailService.sendEmail(payload);
 } catch (error) {
-    if (error instanceof EmailValidationError) {
-        // Invalid input (bad email format, etc.)
-        console.error('Validation error:', error.field);
-    } else if (error instanceof EmailSendError) {
-        switch (error.code) {
-            case 'rate_limited':
-                // Rate limit hit
-                console.error('Rate limited, retry later');
-                break;
-            case 'unauthorized':
-                // Invalid API key
-                console.error('Check BREVO_API_KEY');
-                break;
-            case 'network_error':
-            case 'timeout':
-                // Transient errors (retries already attempted)
-                console.error('Network issue');
-                break;
-        }
+  if (error instanceof EmailValidationError) {
+    // Invalid input (bad email format, etc.)
+    console.error('Validation error:', error.field);
+  } else if (error instanceof EmailSendError) {
+    switch (error.code) {
+      case 'rate_limited':
+        // Rate limit hit
+        console.error('Rate limited, retry later');
+        break;
+      case 'unauthorized':
+        // Invalid API key
+        console.error('Check BREVO_API_KEY');
+        break;
+      case 'network_error':
+      case 'timeout':
+        // Transient errors (retries already attempted)
+        console.error('Network issue');
+        break;
     }
+  }
 }
 ```
 
@@ -274,18 +274,18 @@ import { EmailService } from './common/email';
 import { EMAIL_CONFIG, EMAIL_PROVIDER } from './common/email/email.constants';
 
 const mockProvider = {
-    sendEmail: jest.fn().mockResolvedValue({
-        provider: 'brevo',
-        messageId: 'test-id',
-    }),
+  sendEmail: jest.fn().mockResolvedValue({
+    provider: 'brevo',
+    messageId: 'test-id',
+  }),
 };
 
 const module = await Test.createTestingModule({
-    providers: [
-        EmailService,
-        { provide: EMAIL_PROVIDER, useValue: mockProvider },
-        { provide: EMAIL_CONFIG, useValue: mockConfig },
-    ],
+  providers: [
+    EmailService,
+    { provide: EMAIL_PROVIDER, useValue: mockProvider },
+    { provide: EMAIL_CONFIG, useValue: mockConfig },
+  ],
 }).compile();
 
 const emailService = module.get<EmailService>(EmailService);
@@ -308,9 +308,9 @@ By default, all template parameters are HTML-escaped:
 ```typescript
 // Safe - HTML will be escaped
 await emailService.sendTemplateEmail({
-    to: 'user@example.com',
-    templateId: 1,
-    params: { content: '<script>alert("XSS")</script>' },
+  to: 'user@example.com',
+  templateId: 1,
+  params: { content: '<script>alert("XSS")</script>' },
 });
 // Result: &lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;
 ```
@@ -319,10 +319,10 @@ To allow HTML (use with caution):
 
 ```typescript
 await emailService.sendTemplateEmail(
-    {
-        /* payload */
-    },
-    { allowUnsafeHtml: true },
+  {
+    /* payload */
+  },
+  { allowUnsafeHtml: true },
 );
 ```
 
@@ -332,10 +332,10 @@ await emailService.sendTemplateEmail(
 
 ```typescript
 await emailService.sendEmail({
-    to: 'user@example.com',
-    subject: 'Newsletter',
-    html: '<h1>Newsletter</h1>',
-    text: 'Newsletter', // Always include text version
+  to: 'user@example.com',
+  subject: 'Newsletter',
+  html: '<h1>Newsletter</h1>',
+  text: 'Newsletter', // Always include text version
 });
 ```
 
@@ -357,7 +357,7 @@ Track email delivery and errors in your monitoring system (Sentry, DataDog, etc.
 import { isEmail } from 'class-validator';
 
 if (!isEmail(userEmail)) {
-    throw new BadRequestException('Invalid email');
+  throw new BadRequestException('Invalid email');
 }
 ```
 

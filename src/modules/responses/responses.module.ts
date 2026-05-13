@@ -7,14 +7,14 @@ import { BatchManagementService } from '../sessions/services/batch-management.se
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';
 
 @Module({
-    imports: [BadgesModule],
-    controllers: [ResponsesController],
-    providers: [
-        ResponsesService,
-        BehavioralAnalysisService,
-        BatchManagementService,
-        AdaptiveSelectionService,
-    ],
-    exports: [ResponsesService, BehavioralAnalysisService],
+  imports: [BadgesModule],
+  controllers: [ResponsesController],
+  providers: [
+    ResponsesService,
+    BehavioralAnalysisService,
+    BatchManagementService,
+    AdaptiveSelectionService,
+  ],
+  exports: [ResponsesService, BehavioralAnalysisService],
 })
 export class ResponsesModule {}

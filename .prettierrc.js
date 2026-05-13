@@ -3,7 +3,7 @@ module.exports = {
     // FORMATTAGE GÉNÉRAL
     // ==========================
     printWidth: 100, // largeur max avant retour à la ligne
-    tabWidth: 4, // indentation standard
+    tabWidth: 2, // indentation standard
     useTabs: false, // utiliser des espaces plutôt que des tabs
     semi: true, // points-virgules obligatoires
     singleQuote: true, // quotes simples pour les chaînes

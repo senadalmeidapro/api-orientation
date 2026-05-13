@@ -1,63 +1,53 @@
-import {
-    IsString,
-    IsOptional,
-    IsArray,
-    IsDateString,
-    IsNumber,
-    IsUrl,
-    ArrayNotEmpty,
-    IsInt,
-    Min,
-} from 'class-validator';
+import { IsString, IsOptional, IsArray, IsDateString, IsUrl, IsInt, Min } from 'class-validator';
 
 export class CreateScholarshipDto {
-    @IsString()
-    title!: string;
+  @IsString()
+  title!: string;
 
-    @IsString()
-    description!: string;
+  @IsString()
+  description!: string;
 
-    @IsString()
-    provider!: string;
+  @IsString()
+  provider!: string;
 
-    @IsOptional()
-    @IsString()
-    amount?: string;
+  @IsOptional()
+  @IsString()
+  amount?: string;
 
-    @IsArray()
-    @IsString({ each: true })
-    benefits!: string[];
+  @IsArray()
+  @IsString({ each: true })
+  benefits!: string[];
 
-    @IsArray()
-    @IsString({ each: true })
-    conditions!: string[];
+  @IsArray()
+  @IsString({ each: true })
+  conditions!: string[];
 
-    @IsString()
-    level!: string;
+  @IsString()
+  level!: string;
 
-    @IsOptional()
-    @IsString()
-    field?: string;
+  @IsOptional()
+  @IsString()
+  field?: string;
 
-    @IsOptional()
-    @IsString()
-    country?: string;
+  @IsOptional()
+  @IsString()
+  country?: string;
 
-    @IsOptional()
-    @IsUrl()
-    applicationUrl?: string;
+  @IsOptional()
+  @IsUrl()
+  applicationUrl?: string;
 
-    @IsOptional()
-    @IsDateString()
-    startDate?: string;
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
 
-    @IsOptional()
-    @IsDateString()
-    endDate?: string;
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
 
-    @IsOptional()
-    @IsArray()
-    @IsInt({ each: true })
-    @Min(1, { each: true })
-    universityIds?: number[];
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(1, { each: true })
+  universityIds?: number[];
 }

@@ -3,82 +3,82 @@ import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateResourceDto {
-    @ApiPropertyOptional({ description: 'Title', type: String, example: 'Titre exemple' })
-    @IsOptional()
-    @IsString()
-    title?: string;
+  @ApiPropertyOptional({ description: 'Title', type: String, example: 'Titre exemple' })
+  @IsOptional()
+  @IsString()
+  title?: string;
 
-    @ApiPropertyOptional({
-        description: 'Description',
-        type: String,
-        example: 'Description exemple',
-    })
-    @IsOptional()
-    @IsString()
-    description?: string;
+  @ApiPropertyOptional({
+    description: 'Description',
+    type: String,
+    example: 'Description exemple',
+  })
+  @IsOptional()
+  @IsString()
+  description?: string;
 
-    @ApiPropertyOptional({ description: 'Content', type: String, example: 'value' })
-    @IsOptional()
-    @IsString()
-    content?: string;
+  @ApiPropertyOptional({ description: 'Content', type: String, example: 'value' })
+  @IsOptional()
+  @IsString()
+  content?: string;
 
-    @ApiPropertyOptional({ description: 'Content type', type: String, example: 'value' })
-    @IsOptional()
-    @IsString()
-    contentType?: string;
+  @ApiPropertyOptional({ description: 'Content type', type: String, example: 'value' })
+  @IsOptional()
+  @IsString()
+  contentType?: string;
 
-    @ApiPropertyOptional({
-        description: 'Thumbnail url',
-        type: String,
-        example: 'https://example.com',
-    })
-    @IsOptional()
-    @IsString()
-    thumbnailUrl?: string;
+  @ApiPropertyOptional({
+    description: 'Thumbnail url',
+    type: String,
+    example: 'https://example.com',
+  })
+  @IsOptional()
+  @IsString()
+  thumbnailUrl?: string;
 
-    @ApiPropertyOptional({ description: 'Media url', type: String, example: 'https://example.com' })
-    @IsOptional()
-    @IsString()
-    mediaUrl?: string;
+  @ApiPropertyOptional({ description: 'Media url', type: String, example: 'https://example.com' })
+  @IsOptional()
+  @IsString()
+  mediaUrl?: string;
 
-    @ApiPropertyOptional({
-        description: 'Category',
-        type: String,
-        example: '2026-01-01T00:00:00.000Z',
-    })
-    @IsOptional()
-    @IsString()
-    category?: string;
+  @ApiPropertyOptional({
+    description: 'Category',
+    type: String,
+    example: '2026-01-01T00:00:00.000Z',
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
 
-    @ApiPropertyOptional({ description: 'Tags', type: [String], example: ['value-1', 'value-2'] })
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    tags?: string[];
+  @ApiPropertyOptional({ description: 'Tags', type: [String], example: ['value-1', 'value-2'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
-    @ApiPropertyOptional({ description: 'Author', type: String, example: 'value' })
-    @IsOptional()
-    @IsString()
-    author?: string;
+  @ApiPropertyOptional({ description: 'Author', type: String, example: 'value' })
+  @IsOptional()
+  @IsString()
+  author?: string;
 
-    @ApiPropertyOptional({ description: 'Is published', type: Boolean, example: true })
-    @IsOptional()
-    @IsBoolean()
-    isPublished?: boolean;
+  @ApiPropertyOptional({ description: 'Is published', type: Boolean, example: true })
+  @IsOptional()
+  @IsBoolean()
+  isPublished?: boolean;
 
-    @ApiPropertyOptional({
-        description: 'Published at',
-        type: String,
-        example: '2026-01-01T00:00:00.000Z',
-    })
-    @IsOptional()
-    @IsDateString()
-    publishedAt?: string;
+  @ApiPropertyOptional({
+    description: 'Published at',
+    type: String,
+    example: '2026-01-01T00:00:00.000Z',
+  })
+  @IsOptional()
+  @IsDateString()
+  publishedAt?: string;
 
-    @ApiPropertyOptional({ description: 'Career ids', type: [Number], example: [1, 2] })
-    @IsOptional()
-    @IsArray()
-    @IsInt({ each: true })
-    @Type(() => Number)
-    careerIds?: number[];
+  @ApiPropertyOptional({ description: 'Career ids', type: [Number], example: [1, 2] })
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  @Type(() => Number)
+  careerIds?: number[];
 }

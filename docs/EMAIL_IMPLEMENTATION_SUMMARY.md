@@ -9,75 +9,75 @@ A complete, production-ready email service has been generated for your NestJS ap
 ### Core Implementation
 
 1. **`src/common/email/providers/brevo.provider.ts`** (346 lines)
-    - Complete Brevo API integration
-    - Exponential backoff retry logic
-    - Comprehensive error handling and categorization
-    - Rate limit detection
-    - Request/response logging
-    - Configurable timeouts
+   - Complete Brevo API integration
+   - Exponential backoff retry logic
+   - Comprehensive error handling and categorization
+   - Rate limit detection
+   - Request/response logging
+   - Configurable timeouts
 
 2. **`src/common/email/email.service.ts`** (Updated, 370 lines)
-    - High-level email orchestration
-    - Template-based emails
-    - Direct HTML/text emails
-    - Input validation and sanitization
-    - Pre-configured templates (verification, password reset)
-    - HTML escaping for XSS prevention
+   - High-level email orchestration
+   - Template-based emails
+   - Direct HTML/text emails
+   - Input validation and sanitization
+   - Pre-configured templates (verification, password reset)
+   - HTML escaping for XSS prevention
 
 3. **`src/common/email/email.module.ts`** (Updated, 45 lines)
-    - Module configuration with dependency injection
-    - Provider factory with config integration
-    - Clean exports
+   - Module configuration with dependency injection
+   - Provider factory with config integration
+   - Clean exports
 
 ### DTOs
 
 4. **`src/common/email/dto/send-email.dto.ts`** (225 lines)
-    - `EmailAddressDto` - Email with optional name
-    - `EmailRetryOptionsDto` - Retry configuration
-    - `SendEmailOptionsDto` - Email options (from, cc, bcc, etc.)
-    - `SendEmailDto` - Standard email payload
-    - `SendTemplateEmailDto` - Template email payload
-    - `EmailSendResultDto` - Response structure
-    - Full validation with class-validator
-    - Swagger/OpenAPI decorators
+   - `EmailAddressDto` - Email with optional name
+   - `EmailRetryOptionsDto` - Retry configuration
+   - `SendEmailOptionsDto` - Email options (from, cc, bcc, etc.)
+   - `SendEmailDto` - Standard email payload
+   - `SendTemplateEmailDto` - Template email payload
+   - `EmailSendResultDto` - Response structure
+   - Full validation with class-validator
+   - Swagger/OpenAPI decorators
 
 ### Tests
 
 5. **`src/common/email/email.service.spec.ts`** (Updated, 430 lines)
-    - 21 test cases covering all EmailService methods
-    - 100% code coverage
-    - Tests for validation, error handling, templates
+   - 21 test cases covering all EmailService methods
+   - 100% code coverage
+   - Tests for validation, error handling, templates
 
 6. **`src/common/email/providers/brevo.provider.spec.ts`** (355 lines)
-    - 15 test cases covering all BrevoProvider methods
-    - Tests for retry logic, error handling, API integration
-    - Mock-based testing with axios
+   - 15 test cases covering all BrevoProvider methods
+   - Tests for retry logic, error handling, API integration
+   - Mock-based testing with axios
 
 ### Documentation
 
 7. **`docs/EMAIL_USAGE.md`** (520 lines)
-    - Comprehensive usage examples
-    - Setup instructions
-    - Best practices
-    - Error handling guide
-    - Troubleshooting tips
-    - Testing examples
+   - Comprehensive usage examples
+   - Setup instructions
+   - Best practices
+   - Error handling guide
+   - Troubleshooting tips
+   - Testing examples
 
 8. **`src/common/email/README.md`** (360 lines)
-    - Module overview
-    - Architecture documentation
-    - Quick start guide
-    - Configuration reference
-    - Security guidelines
-    - API reference
+   - Module overview
+   - Architecture documentation
+   - Quick start guide
+   - Configuration reference
+   - Security guidelines
+   - API reference
 
 ### Configuration
 
 9. **`.env.example`** (Updated)
-    - Added Brevo configuration variables
-    - Email defaults
-    - Template IDs
-    - Frontend URL for links
+   - Added Brevo configuration variables
+   - Email defaults
+   - Template IDs
+   - Frontend URL for links
 
 10. **`src/common/email/index.ts`** (New)
     - Public API exports
@@ -184,25 +184,25 @@ import { EmailService } from './common/email/email.service';
 
 @Injectable()
 export class UserService {
-    constructor(private readonly emailService: EmailService) {}
+  constructor(private readonly emailService: EmailService) {}
 
-    async sendWelcome(email: string, name: string) {
-        await this.emailService.sendEmail({
-            to: email,
-            subject: `Welcome ${name}!`,
-            html: `<h1>Welcome to our platform!</h1>`,
-            text: 'Welcome to our platform!',
-        });
-    }
+  async sendWelcome(email: string, name: string) {
+    await this.emailService.sendEmail({
+      to: email,
+      subject: `Welcome ${name}!`,
+      html: `<h1>Welcome to our platform!</h1>`,
+      text: 'Welcome to our platform!',
+    });
+  }
 
-    async sendVerification(user: User, token: string) {
-        await this.emailService.sendVerificationEmail({
-            to: user.email,
-            firstName: user.firstName,
-            token,
-            userId: user.id,
-        });
-    }
+  async sendVerification(user: User, token: string) {
+    await this.emailService.sendVerificationEmail({
+      to: user.email,
+      firstName: user.firstName,
+      token,
+      userId: user.id,
+    });
+  }
 }
 ```
 
@@ -221,55 +221,55 @@ Time:        2.202 s
 ## SOLID Principles Applied
 
 1. **Single Responsibility**
-    - `EmailService`: Email orchestration and validation
-    - `BrevoProvider`: Brevo API communication
-    - `email.config.ts`: Configuration management
-    - `email.utils.ts`: Utility functions
+   - `EmailService`: Email orchestration and validation
+   - `BrevoProvider`: Brevo API communication
+   - `email.config.ts`: Configuration management
+   - `email.utils.ts`: Utility functions
 
 2. **Open/Closed**
-    - `EmailProvider` interface allows new providers without modifying service
-    - Provider pattern enables extension
+   - `EmailProvider` interface allows new providers without modifying service
+   - Provider pattern enables extension
 
 3. **Liskov Substitution**
-    - Any `EmailProvider` implementation works with `EmailService`
-    - Mock providers for testing
+   - Any `EmailProvider` implementation works with `EmailService`
+   - Mock providers for testing
 
 4. **Interface Segregation**
-    - Clean `EmailProvider` interface with minimal methods
-    - Separated DTOs for different use cases
+   - Clean `EmailProvider` interface with minimal methods
+   - Separated DTOs for different use cases
 
 5. **Dependency Inversion**
-    - `EmailService` depends on `EmailProvider` abstraction
-    - Configuration injected via DI
-    - No direct dependencies on Brevo implementation
+   - `EmailService` depends on `EmailProvider` abstraction
+   - Configuration injected via DI
+   - No direct dependencies on Brevo implementation
 
 ## Next Steps
 
 1. **Get Brevo API Key**
-    - Sign up at https://www.brevo.com/
-    - Get API key from Settings → API Keys
-    - Add to `.env` file
+   - Sign up at https://www.brevo.com/
+   - Get API key from Settings → API Keys
+   - Add to `.env` file
 
 2. **Configure Templates** (Optional)
-    - Create email templates in Brevo dashboard
-    - Note template IDs
-    - Add to `.env` file
+   - Create email templates in Brevo dashboard
+   - Note template IDs
+   - Add to `.env` file
 
 3. **Test the Implementation**
 
-    ```bash
-    npm run test -- src/common/email
-    ```
+   ```bash
+   npm run test -- src/common/email
+   ```
 
 4. **Use in Your Application**
-    - Import `EmailModule` in your modules
-    - Inject `EmailService` where needed
-    - Start sending emails!
+   - Import `EmailModule` in your modules
+   - Inject `EmailService` where needed
+   - Start sending emails!
 
 5. **Monitor Usage**
-    - Check Brevo dashboard for delivery stats
-    - Monitor application logs for errors
-    - Set up alerts for failures
+   - Check Brevo dashboard for delivery stats
+   - Monitor application logs for errors
+   - Set up alerts for failures
 
 ## Support
 

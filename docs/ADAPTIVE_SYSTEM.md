@@ -170,12 +170,12 @@ model IntermediateProfile {
 
 ```json
 {
-    "R": 0.25,
-    "I": 0.2,
-    "A": 0.15,
-    "S": 0.15,
-    "E": 0.13,
-    "C": 0.12
+  "R": 0.25,
+  "I": 0.2,
+  "A": 0.15,
+  "S": 0.15,
+  "E": 0.13,
+  "C": 0.12
 }
 ```
 
@@ -553,28 +553,28 @@ analyzeProfileStability(
 
 ```json
 {
-    "batchIndex": 0,
-    "questions": [
-        {
-            "id": 123,
-            "question_text": "Réparer des objets",
-            "phase": "PHASE1",
-            "profiles": [
-                { "riasec_type": "R", "weight": 0.8 },
-                { "riasec_type": "I", "weight": 0.2 }
-            ]
-        }
-    ],
-    "totalBatches": 6,
-    "progress": 0,
-    "intermediateProfile": {
-        "R": 0.25,
-        "I": 0.2,
-        "A": 0.15,
-        "S": 0.15,
-        "E": 0.13,
-        "C": 0.12
+  "batchIndex": 0,
+  "questions": [
+    {
+      "id": 123,
+      "question_text": "Réparer des objets",
+      "phase": "PHASE1",
+      "profiles": [
+        { "riasec_type": "R", "weight": 0.8 },
+        { "riasec_type": "I", "weight": 0.2 }
+      ]
     }
+  ],
+  "totalBatches": 6,
+  "progress": 0,
+  "intermediateProfile": {
+    "R": 0.25,
+    "I": 0.2,
+    "A": 0.15,
+    "S": 0.15,
+    "E": 0.13,
+    "C": 0.12
+  }
 }
 ```
 
@@ -591,16 +591,16 @@ analyzeProfileStability(
 
 ```json
 {
-    "assessmentId": "uuid-xxx",
-    "batchIndex": 0,
-    "responses": [
-        {
-            "questionId": 123,
-            "responseValue": 4,
-            "timeTakenMs": 5400,
-            "changeCount": 1
-        }
-    ]
+  "assessmentId": "uuid-xxx",
+  "batchIndex": 0,
+  "responses": [
+    {
+      "questionId": 123,
+      "responseValue": 4,
+      "timeTakenMs": 5400,
+      "changeCount": 1
+    }
+  ]
 }
 ```
 
@@ -608,17 +608,17 @@ analyzeProfileStability(
 
 ```json
 {
-    "success": true,
-    "batchIndex": 0,
-    "intermediateProfile": {
-        "R": 0.28,
-        "I": 0.22,
-        "A": 0.14,
-        "S": 0.14,
-        "E": 0.12,
-        "C": 0.1
-    },
-    "behaviorsDetected": ["hesitation", "consistent"]
+  "success": true,
+  "batchIndex": 0,
+  "intermediateProfile": {
+    "R": 0.28,
+    "I": 0.22,
+    "A": 0.14,
+    "S": 0.14,
+    "E": 0.12,
+    "C": 0.1
+  },
+  "behaviorsDetected": ["hesitation", "consistent"]
 }
 ```
 
@@ -638,27 +638,27 @@ analyzeProfileStability(
 
 ```json
 {
-    "indicators": [
-        {
-            "type": "hesitation",
-            "count": 5,
-            "avgTime": 18500
-        },
-        {
-            "type": "doubt",
-            "count": 2,
-            "avgTime": null
-        }
-    ],
-    "metrics": {
-        "hesitationRate": 0.15,
-        "doubtRate": 0.08,
-        "avgResponseTime": 6500
+  "indicators": [
+    {
+      "type": "hesitation",
+      "count": 5,
+      "avgTime": 18500
     },
-    "insights": [
-        "L'utilisateur a montré de l'hésitation sur 15% des questions",
-        "Très peu de changements de réponses, indiquant une forte confiance"
-    ]
+    {
+      "type": "doubt",
+      "count": 2,
+      "avgTime": null
+    }
+  ],
+  "metrics": {
+    "hesitationRate": 0.15,
+    "doubtRate": 0.08,
+    "avgResponseTime": 6500
+  },
+  "insights": [
+    "L'utilisateur a montré de l'hésitation sur 15% des questions",
+    "Très peu de changements de réponses, indiquant une forte confiance"
+  ]
 }
 ```
 
@@ -734,27 +734,27 @@ const PROFILE_WEIGHT = 0.4; // Favorise la spécificité
 1. Identifier la question existante (ID)
 2. Éditer `src/common/seeders/assessment/QuestionProfileSeeder.ts`
 3. Ajouter l'entrée :
-    ```typescript
-    {
-      questionId: 42,
-      phase: PhaseType.PHASE1,
-      profiles: [
-        { riasecType: RiasecType.A, weight: 0.6 },
-        { riasecType: RiasecType.S, weight: 0.4 }
-      ]
-    }
-    ```
+   ```typescript
+   {
+     questionId: 42,
+     phase: PhaseType.PHASE1,
+     profiles: [
+       { riasecType: RiasecType.A, weight: 0.6 },
+       { riasecType: RiasecType.S, weight: 0.4 }
+     ]
+   }
+   ```
 4. Lancer `npm run seed`
 
 ### Ajouter un nouvel indicateur comportemental
 
 1. Éditer `behavioral.util.ts`
 2. Ajouter une fonction de détection :
-    ```typescript
-    export function detectMyNewPattern(data): boolean {
-        // logique
-    }
-    ```
+   ```typescript
+   export function detectMyNewPattern(data): boolean {
+     // logique
+   }
+   ```
 3. Mettre à jour `analyzeResponse()` pour appeler la nouvelle fonction
 4. Ajouter le type dans `BehavioralIndicatorDto`
 
@@ -821,10 +821,10 @@ npm run test:e2e -- test/adaptive-flow.e2e-spec.ts
 1. Démarrer l'API : `npm run start:dev`
 2. Ouvrir `http://localhost:3000/api`
 3. Tester les endpoints dans l'ordre :
-    - POST `/sessions` → créer assessment
-    - GET `/questions/next-batch?assessmentId=xxx`
-    - POST `/responses/batch`
-    - GET `/results/enhanced/:assessmentId`
+   - POST `/sessions` → créer assessment
+   - GET `/questions/next-batch?assessmentId=xxx`
+   - POST `/responses/batch`
+   - GET `/results/enhanced/:assessmentId`
 
 **Via REST Client** :
 Voir `request.http` pour des exemples de requêtes
@@ -841,9 +841,9 @@ Voir `request.http` pour des exemples de requêtes
 
 1. Vérifier que `npm run seed` a été exécuté
 2. Vérifier la table `question_profiles` :
-    ```sql
-    SELECT * FROM question_profiles WHERE phase = 'PHASE1';
-    ```
+   ```sql
+   SELECT * FROM question_profiles WHERE phase = 'PHASE1';
+   ```
 3. S'assurer que les `question_id` correspondent aux questions existantes
 
 ### Profil intermédiaire toujours vide
@@ -865,9 +865,9 @@ Voir `request.http` pour des exemples de requêtes
 1. S'assurer que `timeTakenMs` et `changeCount` sont envoyés dans le body
 2. Vérifier les seuils dans `behavioral.util.ts`
 3. Check table `behavioral_indicators` :
-    ```sql
-    SELECT * FROM behavioral_indicators WHERE assessment_id = 'xxx';
-    ```
+   ```sql
+   SELECT * FROM behavioral_indicators WHERE assessment_id = 'xxx';
+   ```
 
 ### IA ne répond pas
 

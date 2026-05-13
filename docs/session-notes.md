@@ -7,16 +7,16 @@ PHASE 5 — Validation & Testing (not started).
 ## Next Steps (Resume Order)
 
 1. Install dependencies:
-    - npm install
+   - npm install
 2. Run unit tests:
-    - src/modules/scoring/scoring.service.spec.ts
-    - src/modules/recommendations/recommendations.service.spec.ts
-    - src/modules/results/results.service.spec.ts
-    - src/modules/questions/questions.service.spec.ts
+   - src/modules/scoring/scoring.service.spec.ts
+   - src/modules/recommendations/recommendations.service.spec.ts
+   - src/modules/results/results.service.spec.ts
+   - src/modules/questions/questions.service.spec.ts
 3. Run E2E tests:
-    - Auth flow (register/login/refresh/logout)
-    - Content modules (careers, training-centers, resources, links, training-paths)
-    - Analytics ingestion + summary
+   - Auth flow (register/login/refresh/logout)
+   - Content modules (careers, training-centers, resources, links, training-paths)
+   - Analytics ingestion + summary
 4. Fix any failing tests, then move to PHASE 6 (Refactor & Optimization).
 
 ## Key Changes Completed

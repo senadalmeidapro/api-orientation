@@ -20,10 +20,10 @@ await this.emailService.sendEmail({
 
 ```typescript
 await this.emailService.sendEmail({
-    to: user.email,
-    subject: 'Welcome to Our Platform!',
-    html: `<h1>Welcome ${user.name}!</h1>`,
-    text: `Welcome ${user.name}!`,
+  to: user.email,
+  subject: 'Welcome to Our Platform!',
+  html: `<h1>Welcome ${user.name}!</h1>`,
+  text: `Welcome ${user.name}!`,
 });
 ```
 
@@ -31,10 +31,10 @@ await this.emailService.sendEmail({
 
 ```typescript
 await this.emailService.sendVerificationEmail({
-    to: user.email,
-    firstName: user.firstName,
-    token: verificationToken,
-    userId: user.id,
+  to: user.email,
+  firstName: user.firstName,
+  token: verificationToken,
+  userId: user.id,
 });
 ```
 
@@ -42,10 +42,10 @@ await this.emailService.sendVerificationEmail({
 
 ```typescript
 await this.emailService.sendPasswordResetEmail({
-    to: user.email,
-    firstName: user.firstName,
-    token: resetToken,
-    userId: user.id,
+  to: user.email,
+  firstName: user.firstName,
+  token: resetToken,
+  userId: user.id,
 });
 ```
 
@@ -53,10 +53,10 @@ await this.emailService.sendPasswordResetEmail({
 
 ```typescript
 await this.emailService.sendEmail({
-    to: user.email,
-    subject: 'New Message',
-    html: `<p>You have a new message from ${sender}</p>`,
-    text: `You have a new message from ${sender}`,
+  to: user.email,
+  subject: 'New Message',
+  html: `<p>You have a new message from ${sender}</p>`,
+  text: `You have a new message from ${sender}`,
 });
 ```
 
@@ -64,9 +64,9 @@ await this.emailService.sendEmail({
 
 ```typescript
 await this.emailService.sendEmail({
-    to: ['user1@example.com', 'user2@example.com', 'user3@example.com'],
-    subject: 'Team Announcement',
-    html: '<p>Important update...</p>',
+  to: ['user1@example.com', 'user2@example.com', 'user3@example.com'],
+  subject: 'Team Announcement',
+  html: '<p>Important update...</p>',
 });
 ```
 
@@ -74,9 +74,9 @@ await this.emailService.sendEmail({
 
 ```typescript
 await this.emailService.sendTemplateEmail({
-    to: user.email,
-    templateId: 1,
-    params: { name: user.name, date: new Date() },
+  to: user.email,
+  templateId: 1,
+  params: { name: user.name, date: new Date() },
 });
 ```
 
@@ -84,10 +84,10 @@ await this.emailService.sendTemplateEmail({
 
 ```typescript
 await this.emailService.sendEmailFromTemplate({
-    to: user.email,
-    subject: 'Order #{{orderNumber}}',
-    htmlTemplate: '<h1>Order #{{orderNumber}}</h1><p>Total: ${{total}}</p>',
-    params: { orderNumber: '12345', total: 99.99 },
+  to: user.email,
+  subject: 'Order #{{orderNumber}}',
+  htmlTemplate: '<h1>Order #{{orderNumber}}</h1><p>Total: ${{total}}</p>',
+  params: { orderNumber: '12345', total: 99.99 },
 });
 ```
 
@@ -97,11 +97,11 @@ await this.emailService.sendEmailFromTemplate({
 
 ```typescript
 await this.emailService.sendEmail(
-    { to: 'user@example.com', subject: 'Test', html: '<p>Test</p>' },
-    {
-        cc: ['manager@example.com'],
-        bcc: ['archive@example.com'],
-    },
+  { to: 'user@example.com', subject: 'Test', html: '<p>Test</p>' },
+  {
+    cc: ['manager@example.com'],
+    bcc: ['archive@example.com'],
+  },
 );
 ```
 
@@ -109,8 +109,8 @@ await this.emailService.sendEmail(
 
 ```typescript
 await this.emailService.sendEmail(
-    { to: 'user@example.com', subject: 'Support', html: '<p>Reply</p>' },
-    { from: { email: 'support@example.com', name: 'Support Team' } },
+  { to: 'user@example.com', subject: 'Support', html: '<p>Reply</p>' },
+  { from: { email: 'support@example.com', name: 'Support Team' } },
 );
 ```
 
@@ -118,8 +118,8 @@ await this.emailService.sendEmail(
 
 ```typescript
 await this.emailService.sendEmail(
-    { to: 'user@example.com', subject: 'Promo', html: '<p>Sale!</p>' },
-    { tags: ['promotional', 'summer-sale'] },
+  { to: 'user@example.com', subject: 'Promo', html: '<p>Sale!</p>' },
+  { tags: ['promotional', 'summer-sale'] },
 );
 ```
 
@@ -127,11 +127,11 @@ await this.emailService.sendEmail(
 
 ```typescript
 await this.emailService.sendEmail(
-    { to: 'user@example.com', subject: 'Critical', html: '<p>Alert</p>' },
-    {
-        retry: { maxAttempts: 5, baseDelayMs: 500, maxDelayMs: 5000 },
-        timeoutMs: 15000,
-    },
+  { to: 'user@example.com', subject: 'Critical', html: '<p>Alert</p>' },
+  {
+    retry: { maxAttempts: 5, baseDelayMs: 500, maxDelayMs: 5000 },
+    timeoutMs: 15000,
+  },
 );
 ```
 
@@ -141,9 +141,9 @@ await this.emailService.sendEmail(
 
 ```typescript
 try {
-    await this.emailService.sendEmail(payload);
+  await this.emailService.sendEmail(payload);
 } catch (error) {
-    this.logger.error('Email failed', error);
+  this.logger.error('Email failed', error);
 }
 ```
 
@@ -153,18 +153,18 @@ try {
 import { EmailSendError, EmailValidationError } from './common/email';
 
 try {
-    await this.emailService.sendEmail(payload);
+  await this.emailService.sendEmail(payload);
 } catch (error) {
-    if (error instanceof EmailValidationError) {
-        throw new BadRequestException(`Invalid ${error.field}`);
+  if (error instanceof EmailValidationError) {
+    throw new BadRequestException(`Invalid ${error.field}`);
+  }
+  if (error instanceof EmailSendError) {
+    if (error.retryable) {
+      // Queue for later retry
+    } else {
+      // Log and alert
     }
-    if (error instanceof EmailSendError) {
-        if (error.retryable) {
-            // Queue for later retry
-        } else {
-            // Log and alert
-        }
-    }
+  }
 }
 ```
 
@@ -174,10 +174,10 @@ try {
 
 ```typescript
 await this.emailService.sendTemplateEmail({
-    to: 'user@example.com',
-    templateId: 1,
-    params: { content: '<script>alert("XSS")</script>' },
-    // Result: &lt;script&gt;...
+  to: 'user@example.com',
+  templateId: 1,
+  params: { content: '<script>alert("XSS")</script>' },
+  // Result: &lt;script&gt;...
 });
 ```
 
@@ -185,8 +185,8 @@ await this.emailService.sendTemplateEmail({
 
 ```typescript
 await this.emailService.sendTemplateEmail(
-    { to: 'user@example.com', templateId: 1, params: { html: '<b>Bold</b>' } },
-    { allowUnsafeHtml: true }, // Use with caution!
+  { to: 'user@example.com', templateId: 1, params: { html: '<b>Bold</b>' } },
+  { allowUnsafeHtml: true }, // Use with caution!
 );
 ```
 
@@ -196,16 +196,16 @@ await this.emailService.sendTemplateEmail(
 
 ```typescript
 const mockProvider = {
-    sendEmail: jest.fn().mockResolvedValue({ provider: 'brevo', messageId: 'test' }),
-    sendTemplateEmail: jest.fn().mockResolvedValue({ provider: 'brevo', messageId: 'test' }),
+  sendEmail: jest.fn().mockResolvedValue({ provider: 'brevo', messageId: 'test' }),
+  sendTemplateEmail: jest.fn().mockResolvedValue({ provider: 'brevo', messageId: 'test' }),
 };
 
 const module = await Test.createTestingModule({
-    providers: [
-        EmailService,
-        { provide: EMAIL_PROVIDER, useValue: mockProvider },
-        { provide: EMAIL_CONFIG, useValue: mockConfig },
-    ],
+  providers: [
+    EmailService,
+    { provide: EMAIL_PROVIDER, useValue: mockProvider },
+    { provide: EMAIL_CONFIG, useValue: mockConfig },
+  ],
 }).compile();
 ```
 
@@ -213,11 +213,11 @@ const module = await Test.createTestingModule({
 
 ```typescript
 it('should send email', async () => {
-    const spy = jest.spyOn(emailService, 'sendEmail');
+  const spy = jest.spyOn(emailService, 'sendEmail');
 
-    await service.welcomeUser('user@example.com');
+  await service.welcomeUser('user@example.com');
 
-    expect(spy).toHaveBeenCalledWith(expect.objectContaining({ to: 'user@example.com' }));
+  expect(spy).toHaveBeenCalledWith(expect.objectContaining({ to: 'user@example.com' }));
 });
 ```
 

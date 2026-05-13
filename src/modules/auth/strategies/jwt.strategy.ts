@@ -7,26 +7,26 @@ import { JwtPayload } from '../interfaces';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(
-        private readonly auth: AuthService,
-        config: ConfigService,
-    ) {
-        const secret = config.jwt.accessSecret;
-        if (!secret) {
-            throw new Error('JWT access secret not configured');
-        }
-        const issuer = config.jwt.issuer;
-        const audience = config.jwt.audience;
-        super({
-            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            ignoreExpiration: false,
-            secretOrKey: secret,
-            issuer,
-            audience,
-        });
+  constructor(
+    private readonly auth: AuthService,
+    config: ConfigService,
+  ) {
+    const secret = config.jwt.accessSecret;
+    if (!secret) {
+      throw new Error('JWT access secret not configured');
     }
+    const issuer = config.jwt.issuer;
+    const audience = config.jwt.audience;
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: secret,
+      issuer,
+      audience,
+    });
+  }
 
-    async validate(payload: JwtPayload) {
-        return await this.auth.validateUserFromJwt(payload);
-    }
+  async validate(payload: JwtPayload) {
+    return await this.auth.validateUserFromJwt(payload);
+  }
 }

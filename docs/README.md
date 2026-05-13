@@ -23,20 +23,20 @@ Le projet est **fonctionnel en compilation** mais **non prêt pour une livraison
 ### 2.1 Qualité CI / dette lint
 
 - Erreurs dominantes:
-    - `@typescript-eslint/no-unsafe-member-access` (121)
-    - `@typescript-eslint/no-unsafe-assignment` (86)
-    - `@typescript-eslint/no-unused-vars` (25)
-    - `@typescript-eslint/require-await` (10)
+  - `@typescript-eslint/no-unsafe-member-access` (121)
+  - `@typescript-eslint/no-unsafe-assignment` (86)
+  - `@typescript-eslint/no-unused-vars` (25)
+  - `@typescript-eslint/require-await` (10)
 - 22 erreurs de parsing lint sur fichiers `*.spec.ts` ("not found by project service"), signe d'un **décalage ESLint/tsconfig**.
 
 ### 2.2 Tests cassés
 
 - **Unit tests**:
-    - `health.controller.spec.ts` ne suit plus la signature actuelle du controller (dépendances `ConfigService` + cache).
-    - `config.service.spec.ts` utilise des hypothèses d'env obsolètes (`JWT_SECRET`, etc.), alors que le code exige `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` et d'autres variables strictes.
+  - `health.controller.spec.ts` ne suit plus la signature actuelle du controller (dépendances `ConfigService` + cache).
+  - `config.service.spec.ts` utilise des hypothèses d'env obsolètes (`JWT_SECRET`, etc.), alors que le code exige `JWT_ACCESS_SECRET`/`JWT_REFRESH_SECRET` et d'autres variables strictes.
 - **E2E**:
-    - Les tests appellent `/auth/login`, `/health`, etc.
-    - Les controllers exposent les routes en `/api/v1/...`, d'où les 404.
+  - Les tests appellent `/auth/login`, `/health`, etc.
+  - Les controllers exposent les routes en `/api/v1/...`, d'où les 404.
 
 ### 2.3 Cohérence API / contrat
 
@@ -91,14 +91,14 @@ Le projet est **fonctionnel en compilation** mais **non prêt pour une livraison
 **Objectif:** avoir `lint`, `test`, `test:e2e`, `build` verts sur une branche propre.
 
 1. **Lint config**
-    - Ajouter une stratégie claire pour les fichiers de test (`tsconfig` dédié tests ou override ESLint).
-    - Vérifier que tous les `*.spec.ts` sont résolus par TypeScript project service.
+   - Ajouter une stratégie claire pour les fichiers de test (`tsconfig` dédié tests ou override ESLint).
+   - Vérifier que tous les `*.spec.ts` sont résolus par TypeScript project service.
 2. **Dette TypeScript ESLint**
-    - Traiter en priorité les modules à forte densité d'erreurs (`ai`, `recommendations`, `results`, `sessions`, `email`, `auth`).
-    - Remplacer les `any` non nécessaires par des types Prisma/Nest explicites.
-    - Éliminer `async` inutiles et variables non utilisées.
+   - Traiter en priorité les modules à forte densité d'erreurs (`ai`, `recommendations`, `results`, `sessions`, `email`, `auth`).
+   - Remplacer les `any` non nécessaires par des types Prisma/Nest explicites.
+   - Éliminer `async` inutiles et variables non utilisées.
 3. **Validation**
-    - Exécuter la séquence CI locale dans l'ordre: lint → unit → e2e → build.
+   - Exécuter la séquence CI locale dans l'ordre: lint → unit → e2e → build.
 
 **Critère de sortie:** 0 erreur lint, 0 test en échec, build OK.
 
@@ -109,11 +109,11 @@ Le projet est **fonctionnel en compilation** mais **non prêt pour une livraison
 **Objectif:** rétablir une suite de tests alignée avec l'API actuelle.
 
 1. **Unit**
-    - Mettre à jour `health.controller.spec.ts` pour mocker correctement les dépendances actuelles.
-    - Rebaser `config.service.spec.ts` sur les variables d'env réellement requises par `ConfigService`.
+   - Mettre à jour `health.controller.spec.ts` pour mocker correctement les dépendances actuelles.
+   - Rebaser `config.service.spec.ts` sur les variables d'env réellement requises par `ConfigService`.
 2. **E2E**
-    - Préfixer tous les endpoints testés en `/api/v1`.
-    - Vérifier les statuts attendus (`201`, `200`, `401`, etc.) selon le comportement réel des controllers.
+   - Préfixer tous les endpoints testés en `/api/v1`.
+   - Vérifier les statuts attendus (`201`, `200`, `401`, etc.) selon le comportement réel des controllers.
 
 **Critère de sortie:** suites unitaires et e2e entièrement vertes.
 
@@ -126,9 +126,9 @@ Le projet est **fonctionnel en compilation** mais **non prêt pour une livraison
 1. Activer (ou officiellement abandonner) le pattern d'enveloppe standard des réponses.
 2. Uniformiser les annotations Swagger standard et corriger les exemples.
 3. Mettre à jour le README racine:
-    - variables env actuelles,
-    - routes `/api/v1`,
-    - comportement réel SMTP/Redis/cache/auth.
+   - variables env actuelles,
+   - routes `/api/v1`,
+   - comportement réel SMTP/Redis/cache/auth.
 
 **Critère de sortie:** doc et code racontent la même chose.
 

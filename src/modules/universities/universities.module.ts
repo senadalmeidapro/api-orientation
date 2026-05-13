@@ -3,8 +3,8 @@ import { UniversitiesService } from './universities.service';
 import { UniversitiesController } from './universities.controller';
 
 @Module({
-    providers: [UniversitiesService],
-    controllers: [UniversitiesController],
-    exports: [UniversitiesService],
+  providers: [UniversitiesService],
+  controllers: [UniversitiesController],
+  exports: [UniversitiesService],
 })
 export class UniversitiesModule {}

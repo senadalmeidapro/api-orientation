@@ -4,9 +4,9 @@ import { ResourcesController } from './resources.controller';
 import { ResourcesService } from './resources.service';
 
 @Module({
-    imports: [PrismaModule],
-    controllers: [ResourcesController],
-    providers: [ResourcesService],
-    exports: [ResourcesService],
+  imports: [PrismaModule],
+  controllers: [ResourcesController],
+  providers: [ResourcesService],
+  exports: [ResourcesService],
 })
 export class ResourcesModule {}

@@ -8,53 +8,53 @@ import { AssessmentFlowService } from './services/assessment-flow.service';
 
 @Injectable()
 export class SessionsService {
-    private readonly logger = new Logger(SessionsService.name);
+  private readonly logger = new Logger(SessionsService.name);
 
-    constructor(
-        private readonly lifecycleService: SessionLifecycleService,
-        private readonly flowService: AssessmentFlowService,
-    ) {}
+  constructor(
+    private readonly lifecycleService: SessionLifecycleService,
+    private readonly flowService: AssessmentFlowService,
+  ) {}
 
-    async createSession(userId: string, dto: CreateSessionDto) {
-        const session = await this.lifecycleService.createSession(userId);
+  async createSession(userId: string, dto: CreateSessionDto) {
+    const session = await this.lifecycleService.createSession(userId);
 
-        const testVersionId = await this.flowService.resolveTestVersionId(dto.testVersionId);
+    const testVersionId = await this.flowService.resolveTestVersionId(dto.testVersionId);
 
-        const assessmentType = dto.initialAssessmentType ?? AssessmentType.PHASE1;
-        const depth = dto.depth ?? 5; // DEFAULT_DEPTH
+    const assessmentType = dto.initialAssessmentType ?? AssessmentType.PHASE1;
+    const depth = dto.depth ?? 5; // DEFAULT_DEPTH
 
-        const assessment = await this.flowService.createAssessment(session.id, testVersionId, {
-            type: assessmentType,
-            depth,
-        });
+    const assessment = await this.flowService.createAssessment(session.id, testVersionId, {
+      type: assessmentType,
+      depth,
+    });
 
-        // Ensure user profile is updated immediately if passed (and if it's an authenticated session)
-        if (dto.profile) {
-            await this.lifecycleService.updateProfile(session.sessionToken, dto.profile);
-        }
-
-        return {
-            sessionId: session.id,
-            sessionToken: session.sessionToken,
-            shareToken: session.shareToken,
-            startedAt: session.createdAt,
-            assessment,
-        };
+    // Ensure user profile is updated immediately if passed (and if it's an authenticated session)
+    if (dto.profile) {
+      await this.lifecycleService.updateProfile(session.sessionToken, dto.profile);
     }
 
-    async getByToken(sessionToken: string) {
-        return this.lifecycleService.getByToken(sessionToken);
-    }
+    return {
+      sessionId: session.id,
+      sessionToken: session.sessionToken,
+      shareToken: session.shareToken,
+      startedAt: session.createdAt,
+      assessment,
+    };
+  }
 
-    async createAssessmentForSession(sessionToken: string, dto: CreateAssessmentDto) {
-        return this.flowService.createAssessmentForSession(sessionToken, dto);
-    }
+  async getByToken(sessionToken: string) {
+    return this.lifecycleService.getByToken(sessionToken);
+  }
 
-    async listAssessments(sessionToken: string) {
-        return this.flowService.listAssessments(sessionToken);
-    }
+  async createAssessmentForSession(sessionToken: string, dto: CreateAssessmentDto) {
+    return this.flowService.createAssessmentForSession(sessionToken, dto);
+  }
 
-    async updateProfile(sessionToken: string, dto: UpdateSessionProfileDto) {
-        return this.lifecycleService.updateProfile(sessionToken, dto.profile);
-    }
+  async listAssessments(sessionToken: string) {
+    return this.flowService.listAssessments(sessionToken);
+  }
+
+  async updateProfile(sessionToken: string, dto: UpdateSessionProfileDto) {
+    return this.lifecycleService.updateProfile(sessionToken, dto.profile);
+  }
 }

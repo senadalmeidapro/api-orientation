@@ -11,18 +11,18 @@ const config = new ConfigService();
 const prisma = new PrismaService(config);
 
 async function main() {
-    await seedAssessmentQuestionData(prisma);
-    await seedEnhancedCareers(prisma);
-    await seedEnhancedBadges(prisma);
-    await seedSampleAssessmentData(prisma);
-    await seedQuestionProfiles(prisma);
+  await seedAssessmentQuestionData(prisma);
+  await seedEnhancedCareers(prisma);
+  await seedEnhancedBadges(prisma);
+  await seedSampleAssessmentData(prisma);
+  await seedQuestionProfiles(prisma);
 }
 
 main()
-    .catch((error) => {
-        console.error('Seed failed:', error);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await prisma.$disconnect();
-    });
+  .catch((error) => {
+    console.error('Seed failed:', error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

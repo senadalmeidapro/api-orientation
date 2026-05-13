@@ -1,40 +1,40 @@
 import { SessionsService } from './sessions.service';
 
 const lifecycleService = {
-    createSession: jest.fn(),
-    updateProfile: jest.fn(),
-    getByToken: jest.fn(),
+  createSession: jest.fn(),
+  updateProfile: jest.fn(),
+  getByToken: jest.fn(),
 } as any;
 
 const flowService = {
-    resolveTestVersionId: jest.fn(),
-    createAssessment: jest.fn(),
-    createAssessmentForSession: jest.fn(),
-    listAssessments: jest.fn(),
+  resolveTestVersionId: jest.fn(),
+  createAssessment: jest.fn(),
+  createAssessmentForSession: jest.fn(),
+  listAssessments: jest.fn(),
 } as any;
 
 describe('SessionsService', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('creates session with initial assessment', async () => {
+    lifecycleService.createSession.mockResolvedValue({
+      id: 1,
+      session_token: 'token',
+      share_token: 'share',
+      created_at: new Date(),
+    });
+    flowService.resolveTestVersionId.mockResolvedValue(1);
+    flowService.createAssessment.mockResolvedValue({
+      id: 'a1',
+      type: 'PHASE1',
     });
 
-    it('creates session with initial assessment', async () => {
-        lifecycleService.createSession.mockResolvedValue({
-            id: 1,
-            session_token: 'token',
-            share_token: 'share',
-            created_at: new Date(),
-        });
-        flowService.resolveTestVersionId.mockResolvedValue(1);
-        flowService.createAssessment.mockResolvedValue({
-            id: 'a1',
-            type: 'PHASE1',
-        });
+    const service = new SessionsService(lifecycleService, flowService);
+    const res = await service.createSession('user-1', { testVersionId: 1 });
 
-        const service = new SessionsService(lifecycleService, flowService);
-        const res = await service.createSession('user-1', { testVersionId: 1 });
-
-        expect(res.sessionToken).toBe('token');
-        expect(res.assessment.id).toBe('a1');
-    });
+    expect(res.sessionToken).toBe('token');
+    expect(res.assessment.id).toBe('a1');
+  });
 });

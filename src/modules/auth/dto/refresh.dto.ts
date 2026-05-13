@@ -4,10 +4,10 @@ import { trimString } from './transforms';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RefreshDto {
-    @ApiProperty({ description: 'Refresh token', type: String, example: 'tok_sample_123456' })
-    @Transform(({ value }) => trimString(value))
-    @IsString()
-    @IsJWT()
-    @IsNotEmpty()
-    refreshToken!: string;
+  @ApiProperty({ description: 'Refresh token', type: String, example: 'tok_sample_123456' })
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @IsJWT()
+  @IsNotEmpty()
+  refreshToken!: string;
 }

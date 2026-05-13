@@ -29,66 +29,68 @@ import { UniversitiesModule } from '@modules/universities/universities.module';
 import { ResourcesModule } from '@modules/resources/resources.module';
 import { AnalyticsModule } from '@modules/analytics/analytics.module';
 import { AiModule } from '@modules/ai/ai.module';
+import { BackofficeModule } from '@modules/backoffice/backoffice.module';
 
 import { HealthController } from './health.controller';
 
 @Module({
-    imports: [
-        ConfigModule,
+  imports: [
+    ConfigModule,
 
-        NestCacheModule.registerAsync({
-            isGlobal: true,
-            imports: [ConfigModule],
-            useFactory: (config: ConfigService) => ({
-                stores: [createKeyv(config.redis.url)],
-                ttl: 0,
-            }),
-            inject: [ConfigService],
-        }),
+    NestCacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: (config: ConfigService) => ({
+        stores: [createKeyv(config.redis.url)],
+        ttl: 0,
+      }),
+      inject: [ConfigService],
+    }),
 
-        ThrottlerModule.forRoot([
-            {
-                ttl: 60,
-                limit: 120,
-            },
-        ]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 120,
+      },
+    ]),
 
-        PrismaModule,
-        AppCacheModule,
-        EmailModule,
+    PrismaModule,
+    AppCacheModule,
+    EmailModule,
 
-        AuthModule,
-        UsersModule,
+    AuthModule,
+    UsersModule,
 
-        SessionsModule,
-        QuestionsModule,
-        ResponsesModule,
-        ScoringModule,
-        ResultsModule,
-        RecommendationsModule,
+    SessionsModule,
+    QuestionsModule,
+    ResponsesModule,
+    ScoringModule,
+    ResultsModule,
+    RecommendationsModule,
 
-        AssessmentsModule,
-        CareersModule,
-        UniversitiesModule,
-        ResourcesModule,
+    AssessmentsModule,
+    CareersModule,
+    UniversitiesModule,
+    ResourcesModule,
 
-        AnalyticsModule,
-        AiModule,
-    ],
-    controllers: [HealthController],
-    providers: [
-        {
-            provide: APP_GUARD,
-            useClass: ThrottlerBehindProxyGuard,
-        },
-        {
-            provide: APP_GUARD,
-            useClass: JwtAuthGuard,
-        },
-        {
-            provide: APP_GUARD,
-            useClass: RolesGuard,
-        },
-    ],
+    AnalyticsModule,
+    AiModule,
+    BackofficeModule,
+  ],
+  controllers: [HealthController],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerBehindProxyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

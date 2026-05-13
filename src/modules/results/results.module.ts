@@ -13,17 +13,17 @@ import { AIAdaptiveService } from '../ai/services/ai-adaptive.service';
 import { AiClient } from '../ai/ai.client';
 
 @Module({
-    imports: [ScoringModule, MediaModule, BadgesModule],
-    controllers: [ResultsController, TreasureMapController],
-    providers: [
-        ResultsService,
-        TreasureMapService,
-        EnhancedResultsService,
-        BehavioralAnalysisService,
-        AdaptiveSelectionService,
-        AIAdaptiveService,
-        AiClient,
-    ],
-    exports: [ResultsService, EnhancedResultsService],
+  imports: [ScoringModule, MediaModule, BadgesModule],
+  controllers: [ResultsController, TreasureMapController],
+  providers: [
+    ResultsService,
+    TreasureMapService,
+    EnhancedResultsService,
+    BehavioralAnalysisService,
+    AdaptiveSelectionService,
+    AIAdaptiveService,
+    AiClient,
+  ],
+  exports: [ResultsService, EnhancedResultsService],
 })
 export class ResultsModule {}

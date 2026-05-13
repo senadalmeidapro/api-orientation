@@ -10,73 +10,73 @@ import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 // @ApiStandardErrorResponses({ includeNotFound: true })
 @Controller('api/v1/careers')
 export class RecommendationsController {
-    constructor(private readonly service: RecommendationsService) {}
+  constructor(private readonly service: RecommendationsService) {}
 
-    @ApiOperation({
-        summary: 'Recuperer - Get Recommendations',
-        description: 'Endpoint pour get recommendations.',
-    })
-    @ApiHeader({
-        name: 'X-Session-Token',
-        required: true,
-        description: 'Token de session (éviter le query string).',
-        example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
-    })
-    // @ApiStandardOkResponse({
-    //     description: 'Recommandations de carrières récupérées.',
-    //     dataExample: [
-    //         {
-    //             result_id: 'clx-result-id',
-    //             career_id: 12,
-    //             rank_position: 1,
-    //             match_score: 91,
-    //             career: {
-    //                 id: 12,
-    //                 name: 'Ingénieur logiciel',
-    //                 category: 'TECH',
-    //             },
-    //         },
-    //     ],
-    // })
-    @Throttle({ default: { limit: 60, ttl: 60 } })
-    @publicDecorator()
-    @Get('recommendations')
-    getRecommendations(
-        @Headers('X-Session-Token') sessionToken: string | undefined,
-        @Query() dto: GetRecommendationsDto,
-    ) {
-        if (!sessionToken?.trim()) {
-            throw new UnauthorizedException('Session invalide ou expirée');
-        }
-        return this.service.getRecommendations({
-            ...dto,
-            sessionToken: sessionToken.trim(),
-        });
+  @ApiOperation({
+    summary: 'Recuperer - Get Recommendations',
+    description: 'Endpoint pour get recommendations.',
+  })
+  @ApiHeader({
+    name: 'X-Session-Token',
+    required: true,
+    description: 'Token de session (éviter le query string).',
+    example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
+  })
+  // @ApiStandardOkResponse({
+  //     description: 'Recommandations de carrières récupérées.',
+  //     dataExample: [
+  //         {
+  //             result_id: 'clx-result-id',
+  //             career_id: 12,
+  //             rank_position: 1,
+  //             match_score: 91,
+  //             career: {
+  //                 id: 12,
+  //                 name: 'Ingénieur logiciel',
+  //                 category: 'TECH',
+  //             },
+  //         },
+  //     ],
+  // })
+  @Throttle({ default: { limit: 60, ttl: 60 } })
+  @publicDecorator()
+  @Get('recommendations')
+  getRecommendations(
+    @Headers('X-Session-Token') sessionToken: string | undefined,
+    @Query() dto: GetRecommendationsDto,
+  ) {
+    if (!sessionToken?.trim()) {
+      throw new UnauthorizedException('Session invalide ou expirée');
     }
+    return this.service.getRecommendations({
+      ...dto,
+      sessionToken: sessionToken.trim(),
+    });
+  }
 
-    @ApiOperation({
-        summary: 'Recuperer - Get Formation Recommendations',
-        description: 'Endpoint pour recommendations de formations avec universites.',
-    })
-    @ApiHeader({
-        name: 'X-Session-Token',
-        required: true,
-        description: 'Token de session (éviter le query string).',
-        example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
-    })
-    @Throttle({ default: { limit: 60, ttl: 60 } })
-    @publicDecorator()
-    @Get('recommendations/formations')
-    getFormationRecommendations(
-        @Headers('X-Session-Token') sessionToken: string | undefined,
-        @Query() dto: GetRecommendationsDto,
-    ) {
-        if (!sessionToken?.trim()) {
-            throw new UnauthorizedException('Session invalide ou expirée');
-        }
-        return this.service.getFormationRecommendations({
-            ...dto,
-            sessionToken: sessionToken.trim(),
-        });
+  @ApiOperation({
+    summary: 'Recuperer - Get Formation Recommendations',
+    description: 'Endpoint pour recommendations de formations avec universites.',
+  })
+  @ApiHeader({
+    name: 'X-Session-Token',
+    required: true,
+    description: 'Token de session (éviter le query string).',
+    example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
+  })
+  @Throttle({ default: { limit: 60, ttl: 60 } })
+  @publicDecorator()
+  @Get('recommendations/formations')
+  getFormationRecommendations(
+    @Headers('X-Session-Token') sessionToken: string | undefined,
+    @Query() dto: GetRecommendationsDto,
+  ) {
+    if (!sessionToken?.trim()) {
+      throw new UnauthorizedException('Session invalide ou expirée');
     }
+    return this.service.getFormationRecommendations({
+      ...dto,
+      sessionToken: sessionToken.trim(),
+    });
+  }
 }
