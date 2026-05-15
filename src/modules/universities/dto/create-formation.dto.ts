@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray } from 'class-validator';
 
 export class CreateFormationDto {
   @IsString()
@@ -29,8 +29,9 @@ export class CreateFormationDto {
   costMax?: number;
 
   @IsOptional()
-  @IsObject()
-  programs?: Record<string, unknown>;
+  @IsArray()
+  @IsString({ each: true })
+  programs?: string[];
 
   @IsNumber()
   universityAcronym!: number;

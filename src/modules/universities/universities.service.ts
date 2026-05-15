@@ -8,7 +8,6 @@ import {
   CreateScholarshipDto,
   UpdateScholarshipDto,
 } from './dto';
-import type { InputJsonObject } from '@prisma/client/runtime/client';
 
 @Injectable()
 export class UniversitiesService {
@@ -156,7 +155,7 @@ export class UniversitiesService {
         field: dto.field ?? null,
         costMin: dto.costMin ?? null,
         costMax: dto.costMax ?? null,
-        programs: (dto.programs as InputJsonObject) ?? {},
+        programs: dto.programs ?? [],
         universityId: dto.universityAcronym,
       },
       include: { university: true },
@@ -212,7 +211,7 @@ export class UniversitiesService {
         ...(dto.field !== undefined ? { field: dto.field } : {}),
         ...(dto.costMin !== undefined ? { costMin: dto.costMin } : {}),
         ...(dto.costMax !== undefined ? { costMax: dto.costMax } : {}),
-        ...(dto.programs !== undefined ? { programs: dto.programs as InputJsonObject } : {}),
+        ...(dto.programs !== undefined ? { programs: dto.programs } : {}),
         ...(dto.universityAcronym !== undefined ? { universityId: dto.universityAcronym } : {}),
       },
       include: { university: true },
