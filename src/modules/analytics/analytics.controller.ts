@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { roles } from '@common/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { AnalyticsService } from './analytics.service';
@@ -8,7 +8,6 @@ import {
   CreateInteractionDto,
   CreateOutcomeDto,
 } from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 // import {
 //     ApiStandardCreatedResponse,
@@ -17,7 +16,6 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs
 // } from '@common/swagger';
 
 @ApiTags('Analytics')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/analytics')

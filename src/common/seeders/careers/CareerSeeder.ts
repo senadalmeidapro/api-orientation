@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * ENHANCED SEED DATA FOR CAREERS, BADGES, AND LINK CATEGORIES
  *

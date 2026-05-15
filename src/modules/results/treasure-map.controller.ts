@@ -7,7 +7,6 @@ import {
   Post,
   Res,
   StreamableFile,
-  UseGuards,
 } from '@nestjs/common';
 import { TreasureMapService } from './treasure-map.service';
 import { CreateTreasureMapDto } from './dto/create-treasure-map.dto';
@@ -15,7 +14,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -33,7 +31,6 @@ import {
 // } from '@common/swagger';
 
 @ApiTags('Treasure map')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/treasure-map')

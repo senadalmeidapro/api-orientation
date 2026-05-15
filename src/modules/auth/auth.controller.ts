@@ -1,16 +1,6 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UnauthorizedException } from '@nestjs/common';
 import type { Request } from 'express';
 
-import { JwtAuthGuard } from './guards/jwt.guard';
 import { publicDecorator } from '@common/decorators/public.decorator';
 import { AuthService } from './auth.service';
 
@@ -202,7 +192,6 @@ export class AuthController {
       },
     },
   })
-  @UseGuards(JwtAuthGuard)
   @Throttle(throttleAuthRefresh)
   @Post('logout')
   logout(@Req() req: Request, @Body() dto: LogoutDto) {

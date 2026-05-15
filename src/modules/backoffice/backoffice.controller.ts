@@ -8,13 +8,11 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { roles } from '@common/decorators/roles.decorator';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard } from '@modules/auth/guards/jwt.guard';
 import { BackofficeService } from './backoffice.service';
 import { DashboardSummaryDto } from './dto/dashboard-summary.dto';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
@@ -49,7 +47,6 @@ import {
 } from '@modules/universities/dto';
 
 @ApiTags('Backoffice')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @roles(UserRole.ADMIN)
 @Controller('api/v1/backoffice')

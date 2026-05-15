@@ -1,13 +1,11 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { GetPhase1QuestionsDto, GetPhase2QuestionsDto, GetNextBatchDto } from './dto';
 // import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Questions')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/questions')

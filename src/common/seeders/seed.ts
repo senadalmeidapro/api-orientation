@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import 'dotenv/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ConfigService } from '../config/config.service';

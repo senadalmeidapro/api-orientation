@@ -1,13 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import { AssessmentsService } from './assessments.service';
 import { AbandonAssessmentDto, GetAssessmentDto } from './dto';
 import { Throttle } from '@nestjs/throttler';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 // import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Assessments')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/assessments')

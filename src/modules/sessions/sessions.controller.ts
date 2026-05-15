@@ -1,11 +1,10 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionTokenParam } from './dto/session-token.param';
 import { Throttle } from '@nestjs/throttler';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateSessionProfileDto } from './dto/update-session-profile.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { currentUser } from '@common/decorators';
 import type { User } from '@prisma/client';
 import {
@@ -24,7 +23,6 @@ import { ApiErrorResponseDto } from '@common/dto/api-response.dto';
 // } from '@common/swagger';
 
 @ApiTags('Sessions')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 // @ApiStandardErrorResponses({ includeUnauthorized: true })
 @Controller('api/v1/sessions')

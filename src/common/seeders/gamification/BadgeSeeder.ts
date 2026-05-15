@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { BadgeRarity, type Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 

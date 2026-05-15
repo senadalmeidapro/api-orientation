@@ -1,8 +1,7 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AiService } from './ai.service';
 import { AiChatDto, AiCoachDto, AiSummaryDto } from './dto';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 import { publicDecorator } from '@common/decorators';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 // import { ApiStandardCreatedResponse, ApiStandardErrorResponses } from '@common/swagger';
@@ -37,7 +36,6 @@ export class AiController {
   // })
   // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
   @Throttle({ default: { limit: 10, ttl: 60 } })
-  @UseGuards(JwtAuthGuard)
   @Post('summary')
   summary(@Body() dto: AiSummaryDto) {
     return this.service.summary(dto);
@@ -66,7 +64,6 @@ export class AiController {
   // })
   // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
   @Throttle({ default: { limit: 10, ttl: 60 } })
-  @UseGuards(JwtAuthGuard)
   @Post('coach')
   coach(@Body() dto: AiCoachDto) {
     return this.service.coach(dto);

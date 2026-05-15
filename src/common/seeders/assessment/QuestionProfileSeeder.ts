@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { PhaseType, type Phase2Type, type RiasecType } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 

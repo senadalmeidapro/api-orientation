@@ -1,9 +1,8 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { ResultsService } from './results.service';
 import { ComputeResultDto } from './dto/compute-result.dto';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 // import {
 //     ApiStandardCreatedResponse,
 //     ApiStandardErrorResponses,
@@ -11,7 +10,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt.guard';
 // } from '@common/swagger';
 
 @ApiTags('Results')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 // @ApiStandardErrorResponses({ includeUnauthorized: true, includeNotFound: true })
 @Controller('api/v1/results')

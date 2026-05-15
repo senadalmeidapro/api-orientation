@@ -1,7 +1,9 @@
 # Plateforme Orientation API - Dossier Complet UML et Cas d'Usage
 
 ## 1. Objectif du document
+
 Ce document formalise l'analyse complète de la plateforme backend NestJS d'orientation RIASEC:
+
 - cas de figure métier,
 - cas d'usage fonctionnels,
 - structures d'objets et relations,
@@ -12,13 +14,16 @@ Ce document formalise l'analyse complète de la plateforme backend NestJS d'orie
 Le but est de servir de base de référence pour le produit, le backend, le front back-office, QA et architecture.
 
 ## 2. Périmètre
+
 Le périmètre couvre les domaines observés dans le code:
+
 - `auth`, `users`, `sessions`, `assessments`, `questions`, `responses`, `scoring`, `results`, `treasure-map`
 - `recommendations`, `careers`, `resources`, `universities`, `formations`, `scholarships`
 - `analytics`, `ai`, `badges`, `backoffice`
 - couches transverses: sécurité JWT/RBAC, throttling, Prisma, email, cache.
 
 ## 3. Acteurs de la plateforme
+
 - `Visiteur` : utilisateur non authentifié.
 - `Utilisateur Authentifié` : candidat qui passe le test, consulte ses résultats.
 - `Admin` : gestion complète via back-office.
@@ -27,7 +32,9 @@ Le périmètre couvre les domaines observés dans le code:
 - `Service Email` : envoi vérification/réinitialisation.
 
 ## 4. Vue d'ensemble des cas d'usage
+
 ### 4.1 Diagramme global de cas d'utilisation
+
 ```mermaid
 flowchart LR
     V[Visiteur] --> UC1[Inscription/Connexion]
@@ -57,6 +64,7 @@ flowchart LR
 ```
 
 ### 4.2 Cas d'usage détaillés (catalogue)
+
 1. `AUTH-01` Inscription email/mot de passe.
 2. `AUTH-02` Connexion + émission JWT.
 3. `AUTH-03` Refresh token.
@@ -96,7 +104,9 @@ flowchart LR
 37. `BO-02` CRUD administratifs transverses.
 
 ## 5. Diagrammes de classes d'objets
+
 ### 5.1 Domaine utilisateur/auth/session
+
 ```mermaid
 classDiagram
     class User {
@@ -141,6 +151,7 @@ classDiagram
 ```
 
 ### 5.2 Domaine test/question/réponse/résultat
+
 ```mermaid
 classDiagram
     class TestVersion {
@@ -201,6 +212,7 @@ classDiagram
 ```
 
 ### 5.3 Domaine recommandations/formation/contenu
+
 ```mermaid
 classDiagram
     class Career {
@@ -254,6 +266,7 @@ classDiagram
 ```
 
 ### 5.4 Domaine adaptatif et comportemental
+
 ```mermaid
 classDiagram
     class QuestionProfile {
@@ -293,7 +306,9 @@ classDiagram
 ```
 
 ## 6. Diagrammes de séquence (scénarios clés)
+
 ### 6.1 Parcours nominal complet (de login à recommandations)
+
 ```mermaid
 sequenceDiagram
     actor U as Utilisateur
@@ -329,6 +344,7 @@ sequenceDiagram
 ```
 
 ### 6.2 Flux adaptatif par batch
+
 ```mermaid
 sequenceDiagram
     actor U as Utilisateur
@@ -353,6 +369,7 @@ sequenceDiagram
 ```
 
 ### 6.3 Génération de carte au trésor
+
 ```mermaid
 sequenceDiagram
     actor U as Utilisateur
@@ -372,6 +389,7 @@ sequenceDiagram
 ```
 
 ### 6.4 Back-office supervision
+
 ```mermaid
 sequenceDiagram
     actor Admin
@@ -388,7 +406,9 @@ sequenceDiagram
 ```
 
 ## 7. Diagrammes d'activité
+
 ### 7.1 Activité: Passage d'un test
+
 ```mermaid
 flowchart TD
     A[Start] --> B[Utilisateur authentifié]
@@ -409,6 +429,7 @@ flowchart TD
 ```
 
 ### 7.2 Activité: Gouvernance back-office
+
 ```mermaid
 flowchart TD
     A[Admin login] --> B[Consulter dashboard]
@@ -422,7 +443,9 @@ flowchart TD
 ```
 
 ## 8. Diagrammes d'état
+
 ### 8.1 État d'un assessment
+
 ```mermaid
 stateDiagram-v2
     [*] --> IN_PROGRESS
@@ -433,6 +456,7 @@ stateDiagram-v2
 ```
 
 ### 8.2 État d'un utilisateur
+
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING
@@ -445,6 +469,7 @@ stateDiagram-v2
 ```
 
 ### 8.3 État publication ressource
+
 ```mermaid
 stateDiagram-v2
     [*] --> DRAFT
@@ -455,6 +480,7 @@ stateDiagram-v2
 ```
 
 ## 9. Diagramme de composants
+
 ```mermaid
 flowchart TB
     subgraph API[NestJS API]
@@ -499,6 +525,7 @@ flowchart TB
 ```
 
 ## 10. Diagramme de déploiement (logique)
+
 ```mermaid
 flowchart LR
     Client[Web/Mobile Client] --> LB[Reverse Proxy / Load Balancer]
@@ -511,18 +538,21 @@ flowchart LR
 ```
 
 ## 11. Matrice cas d'usage → modules
-| Domaine | Cas d'usage principaux | Modules backend |
-|---|---|---|
-| Authentification | login/register/refresh/reset/verify | `auth`, `users`, `email` |
-| Parcours test | création session, progression assessment | `sessions`, `assessments` |
-| Questionnaire | chargement questions, sélection adaptative | `questions`, `responses` |
-| Calcul | scoring, résultat, synthèse | `scoring`, `results`, `ai` |
-| Recommandation | ranking métiers, feedback loop | `recommendations`, `careers`, `analytics` |
-| Contenus | ressources, établissements, formations, bourses | `resources`, `universities`, `careers` |
-| Pilotage | dashboard, CRUD admin transverse | `backoffice`, `analytics`, tous modules métier |
+
+| Domaine          | Cas d'usage principaux                          | Modules backend                                |
+| ---------------- | ----------------------------------------------- | ---------------------------------------------- |
+| Authentification | login/register/refresh/reset/verify             | `auth`, `users`, `email`                       |
+| Parcours test    | création session, progression assessment        | `sessions`, `assessments`                      |
+| Questionnaire    | chargement questions, sélection adaptative      | `questions`, `responses`                       |
+| Calcul           | scoring, résultat, synthèse                     | `scoring`, `results`, `ai`                     |
+| Recommandation   | ranking métiers, feedback loop                  | `recommendations`, `careers`, `analytics`      |
+| Contenus         | ressources, établissements, formations, bourses | `resources`, `universities`, `careers`         |
+| Pilotage         | dashboard, CRUD admin transverse                | `backoffice`, `analytics`, tous modules métier |
 
 ## 12. Cas de figure (nominal + alternatifs)
+
 ### 12.1 Nominal
+
 1. Utilisateur se connecte.
 2. Crée session + assessment initial.
 3. Répond aux questions (phase 1 puis phase 2).
@@ -530,6 +560,7 @@ flowchart LR
 5. Fournit feedback et poursuit exploration.
 
 ### 12.2 Alternatifs/erreurs
+
 1. `JWT absent/invalide` → `401 Unauthorized`.
 2. `Rôle insuffisant` → `403 Forbidden`.
 3. `Session introuvable/expirée` → `404/400`.
@@ -540,12 +571,14 @@ flowchart LR
 8. `Ressource métier inexistante` → `404`.
 
 ### 12.3 Cas back-office
+
 1. Supervision état global et période (`from/to`).
 2. Détection déséquilibre pipeline (beaucoup `IN_PROGRESS`, peu `COMPLETED`).
 3. Audit qualité contenu (`active/inactive`, `published/draft`).
 4. Correction rapide via CRUD centralisé.
 
 ## 13. KPIs recommandés pour exploitation
+
 - Taux de complétion assessment: `COMPLETED / total`.
 - Taux d'abandon: `ABANDONED / total`.
 - Temps médian par question et par batch.
@@ -556,6 +589,7 @@ flowchart LR
 - Cohérence profil moyenne (`consistencyScore`).
 
 ## 14. Limites actuelles et améliorations possibles
+
 1. Ajouter diagrammes BPMN détaillés par rôle back-office.
 2. Ajouter diagramme C4 niveau 1/2/3.
 3. Ajouter traçabilité explicite endpoint -> règles métier -> tests.
@@ -563,4 +597,5 @@ flowchart LR
 5. Ajouter catalogue événements asynchrones (email, IA, notifications).
 
 ## 15. Conclusion
+
 La plateforme implémente une architecture modulaire robuste avec un noyau d'orientation RIASEC, un pipeline adaptatif, un écosystème de contenu et un back-office transversal. Les diagrammes ci-dessus couvrent les cas d'usage métier et techniques majeurs, et servent de base pour industrialiser design, QA, sécurité et roadmap produit.

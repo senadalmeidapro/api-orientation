@@ -19,8 +19,10 @@ import {
   CreateScholarshipDto,
   UpdateScholarshipDto,
 } from './dto';
+import { publicDecorator } from '../../common/decorators';
 
 @ApiTags('Universities')
+@publicDecorator()
 @Controller('api/v1')
 export class UniversitiesController {
   constructor(private readonly service: UniversitiesService) {}

@@ -1096,11 +1096,12 @@ model Formation {
     duration    String
     degree      String
     field       String?
+    link        String?
 
     costMin Int? @map("cost_min")
     costMax Int? @map("cost_max")
 
-    programs Json?
+    programs String[]
 
     universityId Int?        @map("university_id")
     university   University? @relation(fields: [universityId], references: [id], onDelete: Cascade)
