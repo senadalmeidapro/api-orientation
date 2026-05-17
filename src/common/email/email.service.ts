@@ -314,8 +314,8 @@ export class EmailService implements OnModuleInit {
       email: recipient.email,
       appName: this.config.app.name,
       supportEmail: this.config.app.supportEmail,
-      privacyPolicyUrl: `${this.config.app.frontendUrl}/privacy-policy`,
-      contactUrl: `${this.config.app.frontendUrl}/contact`,
+      privacyPolicyUrl: `${this.config.app.front}/privacy-policy`,
+      contactUrl: `${this.config.app.front}/contact`,
       currentYear: new Date().getFullYear(),
       ...extra,
     };

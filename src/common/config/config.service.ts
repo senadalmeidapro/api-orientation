@@ -25,6 +25,8 @@ export class ConfigService {
     host: this.str('APP_HOST', '0.0.0.0'),
     port: this.num('APP_PORT', 3000),
     url: this.str('APP_URL'),
+    back: this.str('BACK_URL'),
+    front: this.str('FRONT_URL'),
     frontendUrl: this.str('FRONTEND_URL'),
     debug: this.bool('APP_DEBUG'),
     local: this.str('APP_LOCAL'),
@@ -42,10 +44,17 @@ export class ConfigService {
     origin: this.list('CORS_ORIGIN'),
     credentials: this.bool('CORS_CREDENTIALS'),
     maxAge: this.num('CORS_MAX_AGE', 600),
+    methods: this.str('CORS_METHODS', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS'),
+    allowedHeaders: this.str(
+      'CORS_ALLOWED_HEADERS',
+      'Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Device-Id,X-Metrics-Token',
+    ),
+    exposedHeaders: this.str('CORS_EXPOSED_HEADERS', 'Content-Disposition'),
     rateLimit: {
       windowMs: this.num('RATE_LIMIT_WINDOW_MS'),
       max: this.num('RATE_LIMIT_MAX'),
     },
+    optionsSuccessStatus: this.num('CORS_OPTIONS_SUCCESS_STATUS', 204),
     sessionKey: this.str('SECURE_SESSION_KEY'),
     csrfEnabled: this.bool('CSRF_ENABLED'),
   };
@@ -63,6 +72,19 @@ export class ConfigService {
    * ───────────────────────────────────────── */
   readonly database = {
     url: this.str('DATABASE_URL'),
+  };
+
+  /* ─────────────────────────────────────────
+   * REDIS
+   * ───────────────────────────────────────── */
+  readonly redis = {
+    url: this.str('REDIS_URL'),
+    // Accès direct (si besoin de construire le client manuellement)
+    // host: this.str('REDIS_HOST'),
+    // port: this.num('REDIS_PORT'),
+    // password: this.str('REDIS_PASSWORD'),
+    // db: this.num('REDIS_DB', 0),
+    // ttl: this.num('REDIS_TTL'),
   };
 
   /* ─────────────────────────────────────────
@@ -90,10 +112,9 @@ export class ConfigService {
   };
 
   /* ─────────────────────────────────────────
-   * EMAIL — SMTP (dev) + Brevo (prod)
+   * EMAIL — SMTP + Brevo
    * ───────────────────────────────────────── */
   readonly email = {
-    // SMTP
     host: this.str('EMAIL_HOST'),
     port: this.num('EMAIL_PORT'),
     secure: this.bool('EMAIL_SECURE'),
@@ -102,7 +123,6 @@ export class ConfigService {
     password: this.str('EMAIL_PASSWORD'),
     fromAddress: this.str('EMAIL_FROM_ADDRESS'),
     fromName: this.str('EMAIL_FROM_NAME'),
-    // helper formatté pour nodemailer : "Orient BJ <email@...>"
     get from() {
       return `${this.fromName} <${this.fromAddress}>`;
     },
@@ -112,7 +132,6 @@ export class ConfigService {
     connectionTimeout: this.num('EMAIL_CONNECTION_TIMEOUT'),
     greetingTimeout: this.num('EMAIL_GREETING_TIMEOUT'),
     socketTimeout: this.num('EMAIL_SOCKET_TIMEOUT'),
-    // Brevo API
     brevo: {
       apiKey: this.str('BREVO_API_KEY'),
       baseUrl: this.str('BREVO_BASE_URL'),
@@ -124,15 +143,21 @@ export class ConfigService {
   };
 
   /* ─────────────────────────────────────────
-   * REDIS
+   * IA
    * ───────────────────────────────────────── */
-  readonly redis = {
-    url: this.str('REDIS_URL'),
-    // host: this.str('REDIS_HOST'),
-    // port: this.num('REDIS_PORT'),
-    // password: this.str('REDIS_PASSWORD'),
-    // db: this.num('REDIS_DB', 0),
-    // ttl: this.num('REDIS_TTL'),
+  readonly ai = {
+    provider: this.str('AI_PROVIDER', 'google'), // 'google' | 'openai'
+    temperature: this.num('AI_TEMPERATURE'),
+    timeoutMs: this.num('AI_TIMEOUT_MS'),
+    google: {
+      apiKey: this.str('GOOGLE_AI_API_KEY'),
+      model: this.str('GOOGLE_AI_MODEL'),
+    },
+    openai: {
+      apiKey: this.str('OPENAI_API_KEY'),
+      model: this.str('OPENAI_MODEL'),
+      baseUrl: this.str('OPENAI_BASE_URL'),
+    },
   };
 
   /* ─────────────────────────────────────────
@@ -174,19 +199,51 @@ export class ConfigService {
   };
 
   /* ─────────────────────────────────────────
-   * IA / OPENAI
+   * CLOUDINARY
    * ───────────────────────────────────────── */
-  readonly ai = {
-    temperature: this.num('AI_TEMPERATURE'),
-    timeoutMs: this.num('AI_TIMEOUT_MS'),
-    google: {
-      apiKey: this.str('GOOGLE_AI_API_KEY'),
-      model: this.str('GOOGLE_AI_MODEL'),
+  readonly cloudinary = {
+    cloudName: this.str('CLOUDINARY_CLOUD_NAME'),
+    apiKey: this.str('CLOUDINARY_API_KEY'),
+    apiSecret: this.str('CLOUDINARY_API_SECRET'),
+    url: this.str('CLOUDINARY_URL'),
+    secure: this.bool('CLOUDINARY_SECURE', true),
+    optimize: this.bool('CLOUDINARY_OPTIMIZE'),
+    transformations: this.bool('CLOUDINARY_TRANSFORMATIONS'),
+    validate: this.bool('CLOUDINARY_VALIDATE'),
+  };
+
+  /* ─────────────────────────────────────────
+   * STOCKAGE / UPLOAD
+   * ───────────────────────────────────────── */
+  readonly storage = {
+    uploadDir: this.str('UPLOAD_DIR', 'storage'),
+    maxFileSizeMb: this.num('MAX_FILE_SIZE_MB', 20),
+  };
+
+  /* ─────────────────────────────────────────
+   * S3
+   * ───────────────────────────────────────── */
+  readonly s3 = {
+    accessKeyId: this.strOptional('S3_ACCESS_KEY_ID'),
+    secretAccessKey: this.strOptional('S3_SECRET_ACCESS_KEY'),
+    bucket: this.strOptional('S3_BUCKET'),
+    region: this.strOptional('S3_REGION'),
+    publicBaseUrl: this.strOptional('S3_PUBLIC_BASE_URL'),
+    get configured(): boolean {
+      return !!(this.accessKeyId && this.secretAccessKey && this.bucket && this.region);
     },
-    openai: {
-      apiKey: this.str('OPENAI_API_KEY'),
-      model: this.str('OPENAI_MODEL'),
-      baseUrl: this.str('OPENAI_BASE_URL'),
+  };
+
+  /* ─────────────────────────────────────────
+   * SWAGGER
+   * ───────────────────────────────────────── */
+  readonly swagger = {
+    path: this.str('SWAGGER_PATH', 'api/v1/docs'),
+    serverUrls: this.str('SWAGGER_SERVER_URLS'),
+    contact: {
+      name: this.str('SWAGGER_CONTACT_NAME'),
+      email: this.str('SWAGGER_CONTACT_EMAIL'),
+      url: this.str('SWAGGER_CONTACT_URL'),
     },
   };
 
@@ -204,6 +261,12 @@ export class ConfigService {
       this.logger.warn(`ENV ${key} missing, defaulting to "${def}"`);
     }
     return value;
+  }
+
+  /** Variante non-bloquante pour les clés optionnelles (ex: S3) */
+  private strOptional(key: string): string | undefined {
+    const value = process.env[key];
+    return value && value.trim() !== '' ? value.trim() : undefined;
   }
 
   private num(key: string, def?: number): number {

@@ -21,7 +21,7 @@ const universities = [
     email: 'contact@cifec.bj',
     website: 'https://www.cifecbenin.com',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/CIFEC.jpg`,
+    coverUrl: `${config.app.front}/CIFEC.jpg`,
     formationUrls: [
       'https://www.cifecbenin.com/formations/licence-comptabilite-controle-et-audit-lcca',
       'https://www.cifecbenin.com/formations/diplome-de-comptabilite-et-de-gestion-dcg',
@@ -39,7 +39,7 @@ const universities = [
     email: 'contact@eiggroupe.com',
     website: 'https://eiggroupe.com',
     address: 'Cotonou, Aïbatin, Bénin',
-    coverUrl: `${config.app.frontendUrl}/EIG.jpg`,
+    coverUrl: `${config.app.front}/EIG.jpg`,
     formationUrls: [
       'https://eiggroupe.com/stream/communication-visuelle-graphique-et-numerique/',
       'https://eiggroupe.com/stream/developpement-web-mobile-et-logiciel/',
@@ -63,7 +63,7 @@ const universities = [
     email: 'enambenin@yahoo.fr',
     website: 'https://www.enam.uac.bj',
     address: 'Abomey-Calavi, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ENA.jpg`,
+    coverUrl: `${config.app.front}/ENA.jpg`,
     formationUrls: [],
   },
   {
@@ -75,7 +75,7 @@ const universities = [
     email: 'eneam.uac@eneam.uac.bj',
     website: 'https://eneam.uac.bj',
     address: 'Gbégamey, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ENEAM.webp`,
+    coverUrl: `${config.app.front}/ENEAM.webp`,
     formationUrls: ['https://eneam.uac.bj'],
   },
   {
@@ -87,7 +87,7 @@ const universities = [
     email: 'info@epitech.bj',
     website: 'https://epitech.africa',
     address: 'Boulevard Saint Michel, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/EPITECH (2).jpg`,
+    coverUrl: `${config.app.front}/EPITECH (2).jpg`,
     formationUrls: ['https://epitech.africa'],
   },
   {
@@ -99,7 +99,7 @@ const universities = [
     email: 'esgis.benin@esgis.org',
     website: 'https://www.esgis.bj',
     address: "Boulevard de l'Ouémé, Jéricho, Cotonou, Bénin",
-    coverUrl: `${config.app.frontendUrl}/ESGIS.jpeg`,
+    coverUrl: `${config.app.front}/ESGIS.jpeg`,
     formationUrls: ['https://www.esgis.bj'],
   },
   {
@@ -111,7 +111,7 @@ const universities = [
     email: 'contact@esmathbenin.org',
     website: 'https://www.esmathbenin.org',
     address: 'Gbèdjromèdé, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/esmath.jpg`,
+    coverUrl: `${config.app.front}/esmath.jpg`,
     formationUrls: ['https://www.esmathbenin.org'],
   },
   {
@@ -123,7 +123,7 @@ const universities = [
     email: 'infos@esmer-benin.org',
     website: 'https://esmer-benin.org',
     address: 'Zogbo, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ESMER-Benin.jpg`,
+    coverUrl: `${config.app.front}/ESMER-Benin.jpg`,
     formationUrls: ['https://esmer-benin.org'],
   },
   {
@@ -135,7 +135,7 @@ const universities = [
     email: 'contact@esm-benin.com',
     website: 'https://esm-benin.com',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ESM-BENIN.jpg`,
+    coverUrl: `${config.app.front}/ESM-BENIN.jpg`,
     formationUrls: ['https://esm-benin.com'],
   },
   {
@@ -147,7 +147,7 @@ const universities = [
     email: 'contact@estg-benin.com',
     website: 'https://estg-benin.com',
     address: 'Fidjrossè Kpota, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ESTG.jpg`,
+    coverUrl: `${config.app.front}/ESTG.jpg`,
     formationUrls: ['https://estg-benin.com'],
   },
   {
@@ -159,7 +159,7 @@ const universities = [
     email: 'contact@fadesp.net',
     website: 'https://www.fadesp.net',
     address: "Campus d'Abomey-Calavi, Bénin",
-    coverUrl: `${config.app.frontendUrl}/FADESP.jpg`,
+    coverUrl: `${config.app.front}/FADESP.jpg`,
     formationUrls: ['https://www.fadesp.net'],
   },
   {
@@ -171,7 +171,7 @@ const universities = [
     email: 'faseg.uac@faseg.uac.bj',
     website: 'https://faseg-uac.bj',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/FASEG.jpg`,
+    coverUrl: `${config.app.front}/FASEG.jpg`,
     formationUrls: [],
   },
   {
@@ -183,7 +183,7 @@ const universities = [
     email: 'contact@fasegup.com',
     website: 'https://www.fasegup.com',
     address: 'Université de Parakou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/faseg-up.png`,
+    coverUrl: `${config.app.front}/faseg-up.png`,
     formationUrls: [],
   },
   {
@@ -196,7 +196,7 @@ const universities = [
     website:
       'https://fr.wikipedia.org/wiki/Facult%C3%A9_des_sciences_humaines_et_sociales_(B%C3%A9nin)',
     address: "Campus d'Abomey-Calavi, Bénin",
-    coverUrl: `${config.app.frontendUrl}/FASHS.png`,
+    coverUrl: `${config.app.front}/FASHS.png`,
     formationUrls: [],
   },
   {
@@ -209,7 +209,7 @@ const universities = [
     website:
       'https://www.oreilleducampus.org/universite-abomey-calavi/129-faculte-des-sciences-et-techniques-fast-uac-benin-etudes-mathematique-physique-chimie-sciences-naturelles-geologie-biochimie-biotechnologie-alimentaire-physiologie-formation-etude-en-filiere-offres-formations-diplome-licence-professionnelle-master-recherche-professionnel-doctorat-debouche.html',
     address: "Campus d'Abomey-Calavi, Bénin",
-    coverUrl: `${config.app.frontendUrl}/FAST.jpg`,
+    coverUrl: `${config.app.front}/FAST.jpg`,
     formationUrls: [],
   },
   {
@@ -221,7 +221,7 @@ const universities = [
     email: 'fss_cotonou@yahoo.fr',
     website: 'https://www.fss-cotonou.com',
     address: 'Champ de foire, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/FSS.jpg`,
+    coverUrl: `${config.app.front}/FSS.jpg`,
     formationUrls: ['https://www.fss-cotonou.com'],
   },
   {
@@ -233,7 +233,7 @@ const universities = [
     email: 'contact@hecm-afrique.net',
     website: 'https://www.hecm-afrique.net',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/HECM.jpg`,
+    coverUrl: `${config.app.front}/HECM.jpg`,
     formationUrls: ['https://www.hecm-afrique.net'],
   },
   {
@@ -245,7 +245,7 @@ const universities = [
     email: 'contactimabenin@gmail.com',
     website: 'https://imalearning.com',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/IMA.jpg`,
+    coverUrl: `${config.app.front}/IMA.jpg`,
     formationUrls: ['https://imalearning.com'],
   },
   {
@@ -257,7 +257,7 @@ const universities = [
     email: 'inmes.uac@uac.bj',
     website: 'https://inmes.uac.bj',
     address: 'Cadjèhoun, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/INMES.jpg`,
+    coverUrl: `${config.app.front}/INMES.jpg`,
     formationUrls: ['https://inmes.uac.bj'],
   },
   {
@@ -269,7 +269,7 @@ const universities = [
     email: 'contact@irgibafrica.university',
     website: 'https://irgibafrica.university',
     address: 'Akpakpa, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/IRGIB-Africa.jpg`,
+    coverUrl: `${config.app.front}/IRGIB-Africa.jpg`,
     formationUrls: ['https://irgibafrica.university'],
   },
   {
@@ -281,7 +281,7 @@ const universities = [
     email: 'info@isma-benin.org',
     website: 'https://isma-benin.org',
     address: 'Fidjrossè, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ISMA.jpg`,
+    coverUrl: `${config.app.front}/ISMA.jpg`,
     formationUrls: ['https://isma-benin.org'],
   },
   {
@@ -293,7 +293,7 @@ const universities = [
     email: 'contactus@ismtstsalomon.com',
     website: 'https://ismtstsalomon.com',
     address: 'Midombo, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ISMT-2.jpeg`,
+    coverUrl: `${config.app.front}/ISMT-2.jpeg`,
     formationUrls: ['https://ismtstsalomon.com'],
   },
   {
@@ -305,7 +305,7 @@ const universities = [
     email: 'info@issicuniversity.edu.bj',
     website: 'https://issicuniversity.edu.bj',
     address: 'PK11, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ISSIC.png`,
+    coverUrl: `${config.app.front}/ISSIC.png`,
     formationUrls: ['https://issicuniversity.edu.bj'],
   },
   {
@@ -317,7 +317,7 @@ const universities = [
     email: 'contact@lescoursonou-universite.org',
     website: 'https://lescoursonou-universite.org',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/LCS.jpg`,
+    coverUrl: `${config.app.front}/LCS.jpg`,
     formationUrls: [],
   },
   {
@@ -329,7 +329,7 @@ const universities = [
     email: null,
     website: 'https://pigier-benin.com',
     address: 'Carré 1270, Rue 320 Agontinkon-Ayidote, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/PIGIER.jpg`,
+    coverUrl: `${config.app.front}/PIGIER.jpg`,
     formationUrls: ['https://pigier-benin.com'],
   },
   {
@@ -341,7 +341,7 @@ const universities = [
     email: 'jpacademie@yahoo.fr',
     website: 'https://institutjeanpaul2.org',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/saint-jean-paul-2-2.jpeg`,
+    coverUrl: `${config.app.front}/saint-jean-paul-2-2.jpeg`,
     formationUrls: [],
   },
   {
@@ -353,7 +353,7 @@ const universities = [
     email: 'contact@semecity.com',
     website: 'https://semecity.bj',
     address: 'Rue 364, Immeuble Sèmè One, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/Sèmè One.jpg`,
+    coverUrl: `${config.app.front}/Sèmè One.jpg`,
     formationUrls: ['https://semecity.bj'],
   },
   {
@@ -365,7 +365,7 @@ const universities = [
     email: 'info@uatm-gasa.com',
     website: 'https://uatm-gasa.com',
     address: 'Gbégamey, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/UATM(Gasa).avif`,
+    coverUrl: `${config.app.front}/UATM(Gasa).avif`,
     formationUrls: ['https://uatm-gasa.com'],
   },
   {
@@ -377,7 +377,7 @@ const universities = [
     email: 'contact@ucaobenin.org',
     website: 'https://www.ucaobenin.org',
     address: "Lot 246, rue de l'hôpital St Jean, Cotonou, Bénin",
-    coverUrl: `${config.app.frontendUrl}/UCAO-UCC.jpg`,
+    coverUrl: `${config.app.front}/UCAO-UCC.jpg`,
     formationUrls: [],
   },
   {
@@ -389,7 +389,7 @@ const universities = [
     email: null,
     website: 'https://una.bj',
     address: 'Porto-Novo, Bénin',
-    coverUrl: `${config.app.frontendUrl}/una.png`,
+    coverUrl: `${config.app.front}/una.png`,
     formationUrls: ['https://una.bj'],
   },
   {
@@ -401,7 +401,7 @@ const universities = [
     email: 'unstim@unstim.bj',
     website: 'https://unstim.bj',
     address: 'Abomey, Bénin',
-    coverUrl: `${config.app.frontendUrl}/unstim.png`,
+    coverUrl: `${config.app.front}/unstim.png`,
     formationUrls: ['https://unstim.bj'],
   },
   {
@@ -413,7 +413,7 @@ const universities = [
     email: 'info@upaopnbenin-edu.org',
     website: 'https://www.upaopnbenin-edu.org',
     address: 'Porto-Novo, Bénin',
-    coverUrl: `${config.app.frontendUrl}/UPAO (2).jpg`,
+    coverUrl: `${config.app.front}/UPAO (2).jpg`,
     formationUrls: [],
   },
   {
@@ -425,7 +425,7 @@ const universities = [
     email: 'contact@esgcvak.com',
     website: 'https://esgcvak.com',
     address: 'Gbégamey, Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/VAK (2).jpg`,
+    coverUrl: `${config.app.front}/VAK (2).jpg`,
     formationUrls: ['https://esgcvak.com'],
   },
   {
@@ -437,7 +437,7 @@ const universities = [
     email: 'scolarite@esmt.sn',
     website: 'https://www.esmt.sn',
     address: 'Dakar, Sénégal (représentation au Bénin : Akpakpa, Cotonou)',
-    coverUrl: `${config.app.frontendUrl}/ESMT.webp`,
+    coverUrl: `${config.app.front}/ESMT.webp`,
     formationUrls: [],
   },
   {
@@ -449,7 +449,7 @@ const universities = [
     email: 'esgtbenin@gmail.com',
     website: 'https://esgt-benin.com',
     address: 'Cotonou, Bénin',
-    coverUrl: `${config.app.frontendUrl}/ESGT.jpg`,
+    coverUrl: `${config.app.front}/ESGT.jpg`,
     formationUrls: [],
   },
 ];

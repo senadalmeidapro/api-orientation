@@ -18,20 +18,11 @@ async function bootstrap() {
   app.enableCors({
     origin: config.cors.origin,
     credentials: config.cors.credentials,
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Authorization',
-      'Content-Type',
-      'Accept',
-      'Origin',
-      'X-Requested-With',
-      'X-Device-Id',
-      'X-Metrics-Token',
-      'X-Session-Token',
-    ],
-    exposedHeaders: ['Content-Disposition'],
-    maxAge: 600,
-    optionsSuccessStatus: 204,
+    methods: config.cors.methods,
+    allowedHeaders: config.cors.allowedHeaders,
+    exposedHeaders: config.cors.exposedHeaders,
+    maxAge: config.cors.maxAge,
+    optionsSuccessStatus: config.cors.optionsSuccessStatus,
   });
 
   const isProduction = config.engine.nodeEnv === 'production';
@@ -59,8 +50,7 @@ async function bootstrap() {
   );
   // app.useGlobalInterceptors(new ApiSuccessResponseInterceptor());
   // app.useGlobalFilters(new ApiExceptionFilter());
-  const port = config.app.port || 3000;
-  await app.listen(port, '0.0.0.0');
+  await app.listen(config.app.port, config.app.host);
 }
 
 bootstrap().catch((error: unknown) => {

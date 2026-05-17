@@ -7,7 +7,6 @@ export function setupSecureSwagger(app: INestApplication) {
   const title = config.app.name;
   const description = "Documentation technique de l'API d'orientation";
   const version = '';
-  const swaggerPath = 'api/v1/docs';
 
   const builder = new DocumentBuilder()
     .setTitle(title)
@@ -23,17 +22,17 @@ export function setupSecureSwagger(app: INestApplication) {
       'access-token',
     );
 
-  const contactName = '';
-  const contactUrl = '';
-  const contactEmail = '';
-  if (contactName || contactUrl || contactEmail) {
-    builder.setContact(contactName, contactUrl, contactEmail);
-  }
+  builder.setContact(
+    config.swagger.contact.name,
+    config.swagger.contact.url,
+    config.swagger.contact.email,
+  );
   builder.addServer('/', 'Current host');
+  builder.addServer(config.swagger.serverUrls, 'Production server');
 
   const swaggerDocument = SwaggerModule.createDocument(app, builder.build());
 
-  SwaggerModule.setup(swaggerPath, app, swaggerDocument, {
+  SwaggerModule.setup(config.swagger.path, app, swaggerDocument, {
     swaggerOptions: {
       persistAuthorization: false,
       docExpansion: 'none',
