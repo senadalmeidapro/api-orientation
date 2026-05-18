@@ -601,11 +601,13 @@ export class AiService {
       return existing.map((rec) => this.toRecommendationContextItem(rec));
     }
 
-    const generated = await this.recommendationsService.getRecommendations({
+    const generated = await this.recommendationsService.getCareerRecommendations(
+      {
+        assessmentId,
+        limit,
+      },
       sessionToken,
-      assessmentId,
-      limit,
-    });
+    );
     return generated.map((rec) => this.toRecommendationContextItem(rec));
   }
 

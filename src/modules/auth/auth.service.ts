@@ -87,7 +87,7 @@ export class AuthService {
           lastName: user.lastName ?? '',
           fullName: user.firstName + ' ' + user.lastName,
         },
-        `${this.config.app.frontendUrl}/auth/check-email?token=${verificationToken}`,
+        `${this.config.app.front}/auth/check-email?token=${verificationToken}`,
       );
     }
 
@@ -248,7 +248,7 @@ export class AuthService {
           lastName: user.lastName ?? '',
           fullName: user.firstName + ' ' + user.lastName,
         },
-        `${this.config.app.frontendUrl}/auth/reset-password?token=${token}`,
+        `${this.config.app.front}/auth/reset-password?token=${token}`,
       );
     }
 

@@ -5,31 +5,28 @@ import { UnauthorizedException } from '@nestjs/common';
 describe('RecommendationsController', () => {
   it('delegates to service', async () => {
     const service = {
-      getRecommendations: jest.fn(async () => []),
+      getCareerRecommendations: jest.fn(async () => []),
       getFormationRecommendations: jest.fn(async () => []),
     } as unknown as RecommendationsService;
     const controller = new RecommendationsController(service);
 
-    await controller.getRecommendations('s', { limit: 2 });
-    expect(service.getRecommendations).toHaveBeenCalledWith({ limit: 2, sessionToken: 's' });
+    await controller.getCareerRecommendations('s', { limit: 2 });
+    expect(service.getCareerRecommendations).toHaveBeenCalledWith({ limit: 2 }, 's');
 
     await controller.getFormationRecommendations('s', { limit: 2 });
-    expect(service.getFormationRecommendations).toHaveBeenCalledWith({
-      limit: 2,
-      sessionToken: 's',
-    });
+    expect(service.getFormationRecommendations).toHaveBeenCalledWith({ limit: 2 }, 's');
   });
 
   it('rejects requests without x-session-token header', async () => {
     const service = {
-      getRecommendations: jest.fn(async () => []),
+      getCareerRecommendations: jest.fn(async () => []),
       getFormationRecommendations: jest.fn(async () => []),
     } as unknown as RecommendationsService;
     const controller = new RecommendationsController(service);
 
-    await expect(controller.getRecommendations(undefined, { limit: 1 })).rejects.toBeInstanceOf(
-      UnauthorizedException,
-    );
+    await expect(
+      controller.getCareerRecommendations(undefined, { limit: 1 }),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     await expect(
       controller.getFormationRecommendations(undefined, { limit: 1 }),
     ).rejects.toBeInstanceOf(UnauthorizedException);

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
@@ -64,6 +64,11 @@ type CareerRecommendationOutput = {
   savedForLater: boolean;
   createdAt: Date;
   career: Career | null;
+};
+
+type RankedCareer = {
+  career: Career | CareerWithInstitutions;
+  score: number;
 };
 
 @Injectable()
@@ -178,14 +183,13 @@ export class RecommendationsService {
     return [0, 0, 0, 0, 0, 0];
   }
 
-  async getRecommendations(dto: GetRecommendationsDto): Promise<CareerRecommendationOutput[]> {
-    if (!dto.sessionToken) {
-      throw new BadRequestException('Session token requis');
-    }
-
+  private async buildCareerRecommendations(
+    dto: GetRecommendationsDto,
+    sessionToken: string,
+  ): Promise<CareerRecommendationOutput[]> {
     const session = await this.prisma.session.findFirst({
       where: {
-        sessionToken: dto.sessionToken,
+        sessionToken,
         isActive: true,
         expiresAt: { gt: new Date() },
       },
@@ -214,7 +218,7 @@ export class RecommendationsService {
 
     if (!result) {
       result = await this.resultsService.compute({
-        sessionToken: dto.sessionToken,
+        sessionToken,
         assessmentId: assessment.id,
       });
     }
@@ -321,7 +325,7 @@ export class RecommendationsService {
         return a.career.name.localeCompare(b.career.name);
       });
 
-    let blended = scored;
+    let blended: RankedCareer[] = scored;
     if (dto.advanced) {
       const currentVector = this.extractNormalizedScores(result);
       const contextLookback = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
@@ -450,10 +454,25 @@ export class RecommendationsService {
     }));
   }
 
+  async getCareerRecommendations(
+    dto: GetRecommendationsDto,
+    sessionToken: string,
+  ): Promise<CareerRecommendationOutput[]> {
+    return this.buildCareerRecommendations(dto, sessionToken);
+  }
+
+  async getRecommendations(
+    dto: GetRecommendationsDto,
+    sessionToken: string,
+  ): Promise<CareerRecommendationOutput[]> {
+    return this.getCareerRecommendations(dto, sessionToken);
+  }
+
   async getFormationRecommendations(
     dto: GetRecommendationsDto,
+    sessionToken: string,
   ): Promise<FormationRecommendation[]> {
-    const careerRecommendations = await this.getRecommendations(dto);
+    const careerRecommendations = await this.getCareerRecommendations(dto, sessionToken);
     const careerScoreMap = new Map<number, number>();
     for (const rec of careerRecommendations) {
       careerScoreMap.set(

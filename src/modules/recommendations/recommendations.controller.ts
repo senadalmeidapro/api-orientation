@@ -13,8 +13,8 @@ export class RecommendationsController {
   constructor(private readonly service: RecommendationsService) {}
 
   @ApiOperation({
-    summary: 'Recuperer - Get Recommendations',
-    description: 'Endpoint pour get recommendations.',
+    summary: 'Recuperer - Career Recommendations',
+    description: 'Endpoint pour recuperer les recommandations de metiers.',
   })
   @ApiHeader({
     name: 'X-Session-Token',
@@ -40,23 +40,21 @@ export class RecommendationsController {
   // })
   @Throttle({ default: { limit: 60, ttl: 60 } })
   @publicDecorator()
+  @Get('career-recommendations')
   @Get('recommendations')
-  getRecommendations(
+  getCareerRecommendations(
     @Headers('X-Session-Token') sessionToken: string | undefined,
     @Query() dto: GetRecommendationsDto,
   ) {
     if (!sessionToken?.trim()) {
       throw new UnauthorizedException('Session invalide ou expirée');
     }
-    return this.service.getRecommendations({
-      ...dto,
-      sessionToken: sessionToken.trim(),
-    });
+    return this.service.getCareerRecommendations(dto, sessionToken.trim());
   }
 
   @ApiOperation({
-    summary: 'Recuperer - Get Formation Recommendations',
-    description: 'Endpoint pour recommendations de formations avec universites.',
+    summary: 'Recuperer - Formation Recommendations',
+    description: 'Endpoint pour recuperer les recommandations de formations avec universites.',
   })
   @ApiHeader({
     name: 'X-Session-Token',
@@ -66,6 +64,7 @@ export class RecommendationsController {
   })
   @Throttle({ default: { limit: 60, ttl: 60 } })
   @publicDecorator()
+  @Get('formation-recommendations')
   @Get('recommendations/formations')
   getFormationRecommendations(
     @Headers('X-Session-Token') sessionToken: string | undefined,
@@ -74,9 +73,6 @@ export class RecommendationsController {
     if (!sessionToken?.trim()) {
       throw new UnauthorizedException('Session invalide ou expirée');
     }
-    return this.service.getFormationRecommendations({
-      ...dto,
-      sessionToken: sessionToken.trim(),
-    });
+    return this.service.getFormationRecommendations(dto, sessionToken.trim());
   }
 }

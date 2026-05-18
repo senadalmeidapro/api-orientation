@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { CareerCategory } from '@prisma/client';
-import { ApiHideProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { toBoolean } from '../../auth/dto/transforms';
 
 type GeoCoordinates = {
@@ -21,11 +21,6 @@ type GeoCoordinates = {
 };
 
 export class GetRecommendationsDto {
-  @ApiHideProperty()
-  @IsOptional()
-  @IsString()
-  sessionToken?: string;
-
   @ApiPropertyOptional({ description: 'Assessment id', type: String, example: 'clx123abc0001' })
   @IsOptional()
   @IsString()

@@ -63,7 +63,7 @@ describe('RecommendationsService', () => {
     const cache = { get: jest.fn(async () => null), set: jest.fn() } as any;
     const service = new RecommendationsService(prisma, resultsService, cache);
 
-    const res = await service.getRecommendations({ sessionToken: 'token', limit: 1 });
+    const res = await service.getCareerRecommendations({ limit: 1 }, 'token');
 
     expect(res.length).toBe(1);
     expect(res[0]!.career!.name).toBe('Tech');
@@ -84,7 +84,7 @@ describe('RecommendationsService', () => {
     const cache = { get: jest.fn(async () => null), set: jest.fn() } as any;
     const service = new RecommendationsService(prisma, resultsService, cache);
 
-    const res = await service.getRecommendations({ sessionToken: 'token', limit: 1 });
+    const res = await service.getCareerRecommendations({ limit: 1 }, 'token');
 
     expect(res[0]!.career!.name).toBe('Cached');
     expect(prisma.career.findMany).not.toHaveBeenCalled();
@@ -104,10 +104,7 @@ describe('RecommendationsService', () => {
     const cache = { get: jest.fn(async () => null), set: jest.fn() } as any;
     const service = new RecommendationsService(prisma, resultsService, cache);
 
-    const res = await service.getRecommendations({
-      sessionToken: 'token',
-      category: 'NUMERIQUE',
-    });
+    const res = await service.getCareerRecommendations({ category: 'NUMERIQUE' }, 'token');
 
     expect(res[0]!.career!.name).toBe('Tech');
     expect(prisma.career.findMany).toHaveBeenCalled();
@@ -144,13 +141,15 @@ describe('RecommendationsService', () => {
     const cache = { get: jest.fn(async () => null), set: jest.fn() } as any;
     const service = new RecommendationsService(prisma, resultsService, cache);
 
-    const res = await service.getRecommendations({
-      sessionToken: 'token',
-      latitude: 6.5,
-      longitude: 2.6,
-      radiusKm: 5,
-      limit: 2,
-    });
+    const res = await service.getCareerRecommendations(
+      {
+        latitude: 6.5,
+        longitude: 2.6,
+        radiusKm: 5,
+        limit: 2,
+      },
+      'token',
+    );
 
     const typed = res as any[];
     expect(typed[0]!.career!.name).toBe('Near');
@@ -178,11 +177,7 @@ describe('RecommendationsService', () => {
     const cache = { get: jest.fn(async () => null), set: jest.fn() } as any;
     const service = new RecommendationsService(prisma, resultsService, cache);
 
-    const res = await service.getRecommendations({
-      sessionToken: 'token',
-      advanced: true,
-      limit: 2,
-    });
+    const res = await service.getCareerRecommendations({ advanced: true, limit: 2 }, 'token');
 
     expect(res[0]!.career!.id).toBe(2);
     expect(prisma.assessmentResult.findMany).toHaveBeenCalledWith(
@@ -268,11 +263,7 @@ describe('RecommendationsService', () => {
     const cache = { get: jest.fn(async () => null), set: jest.fn() } as any;
     const service = new RecommendationsService(prisma, resultsService, cache);
 
-    const res = await service.getFormationRecommendations({
-      sessionToken: 'token',
-      force: true,
-      limit: 5,
-    });
+    const res = await service.getFormationRecommendations({ force: true, limit: 5 }, 'token');
 
     expect(res).toHaveLength(1);
     expect(res[0]!.formation.id).toBe(10);
@@ -332,14 +323,16 @@ describe('RecommendationsService', () => {
     const cache = { get: jest.fn(async () => null), set: jest.fn() } as any;
     const service = new RecommendationsService(prisma, resultsService, cache);
 
-    const res = await service.getFormationRecommendations({
-      sessionToken: 'token',
-      force: true,
-      latitude: 6.5,
-      longitude: 2.6,
-      radiusKm: 50,
-      limit: 5,
-    });
+    const res = await service.getFormationRecommendations(
+      {
+        force: true,
+        latitude: 6.5,
+        longitude: 2.6,
+        radiusKm: 50,
+        limit: 5,
+      },
+      'token',
+    );
 
     expect(res).toHaveLength(1);
     expect(res[0]!.formation.id).toBe(20);

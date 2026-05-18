@@ -7,6 +7,7 @@ import { seedQuestionProfiles } from './assessment/QuestionProfileSeeder';
 import { seedEnhancedCareers } from './careers/CareerSeeder';
 import { seedEnhancedBadges } from './gamification/BadgeSeeder';
 import { seedSampleAssessmentData } from './sample_data/SampleAssessmentSeeder';
+import { seedCareerFormations } from './careers/CareerFormationSeeder';
 
 const config = new ConfigService();
 const prisma = new PrismaService(config);
@@ -16,6 +17,7 @@ async function main() {
   await seedEnhancedCareers(prisma);
   await seedEnhancedBadges(prisma);
   await seedSampleAssessmentData(prisma);
+  await seedCareerFormations(prisma);
   await seedQuestionProfiles(prisma);
 }
 
