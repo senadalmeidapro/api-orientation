@@ -47,7 +47,7 @@ export class ConfigService {
     methods: this.str('CORS_METHODS', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS'),
     allowedHeaders: this.str(
       'CORS_ALLOWED_HEADERS',
-      'Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Device-Id,X-Metrics-Token',
+      'Authorization,Content-Type,Accept,Origin,X-Requested-With,X-Device-Id,X-Metrics-Token,X-Session-Token',
     ),
     exposedHeaders: this.str('CORS_EXPOSED_HEADERS', 'Content-Disposition'),
     rateLimit: {
