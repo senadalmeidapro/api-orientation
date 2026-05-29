@@ -52,6 +52,18 @@ type FormationRecommendation = {
     website: string;
   };
   score: number;
+  scholarships: Array<{
+    id: number;
+    code: string | null;
+    title: string;
+    provider: string;
+    amountLabel: string | null;
+    applicationUrl: string | null;
+    applicationCloseAt: Date | null;
+    fundingType: string | null;
+    status: string;
+    matchReason: string[];
+  }>;
 };
 
 type CareerRecommendationOutput = {
@@ -181,6 +193,120 @@ export class RecommendationsService {
     if (phase1) return this.normalizeVector(phase1);
 
     return [0, 0, 0, 0, 0, 0];
+  }
+
+  private normalizeText(value: string | null | undefined): string {
+    return (value ?? '').trim().toLowerCase();
+  }
+
+  private levelMatches(formationDegree: string, scholarshipLevel: string | null): boolean {
+    const degree = this.normalizeText(formationDegree);
+    const level = this.normalizeText(scholarshipLevel);
+    if (!level) return false;
+
+    const has = (text: string, tokens: string[]) => tokens.some((token) => text.includes(token));
+    const degreeToTokens: Record<string, string[]> = {
+      licence: ['licence', 'license', 'bachelor', 'undergraduate'],
+      master: ['master', 'msc', 'ma', 'ingénieur'],
+      doctorat: ['doctorat', 'phd', 'doctorate'],
+      bts: ['bts', 'technicien', 'bt'],
+      dut: ['dut', 'technicien'],
+    };
+
+    for (const [key, tokens] of Object.entries(degreeToTokens)) {
+      if (degree.includes(key) && has(level, tokens)) return true;
+    }
+    return has(level, [degree]);
+  }
+
+  private fieldMatches(formationField: string | null, scholarshipField: string | null): boolean {
+    const formation = this.normalizeText(formationField);
+    const scholarship = this.normalizeText(scholarshipField);
+    if (!formation || !scholarship) return false;
+    return formation.includes(scholarship) || scholarship.includes(formation);
+  }
+
+  private async loadScholarshipsForFormations(
+    formations: Array<{
+      id: number;
+      degree: string;
+      field: string | null;
+      universityId: number;
+    }>,
+  ) {
+    if (formations.length === 0) return new Map<number, FormationRecommendation['scholarships']>();
+
+    const now = new Date();
+    const universityIds = Array.from(new Set(formations.map((f) => f.universityId)));
+    const scholarships = await this.prisma.scholarshipRecord.findMany({
+      where: {
+        isActive: true,
+        status: 'PUBLISHED',
+        AND: [
+          {
+            OR: [{ universityId: { in: universityIds } }, { universityId: null }],
+          },
+          {
+            OR: [{ applicationCloseAt: null }, { applicationCloseAt: { gte: now } }],
+          },
+        ],
+      },
+      orderBy: [{ applicationCloseAt: 'asc' }, { createdAt: 'desc' }],
+      take: 300,
+    });
+
+    const byFormation = new Map<number, FormationRecommendation['scholarships']>();
+    for (const formation of formations) {
+      const candidates = scholarships
+        .filter(
+          (s) =>
+            s.universityId === null || s.universityId === formation.universityId,
+        )
+        .map((scholarship) => {
+          const reasons: string[] = [];
+          if (scholarship.universityId === formation.universityId) {
+            reasons.push('Liée à la même université');
+          } else {
+            reasons.push('Bourse ouverte (non liée à une université spécifique)');
+          }
+          if (this.levelMatches(formation.degree, scholarship.level)) {
+            reasons.push('Niveau compatible');
+          }
+          if (this.fieldMatches(formation.field, scholarship.field)) {
+            reasons.push('Domaine compatible');
+          }
+
+          const levelBoost = this.levelMatches(formation.degree, scholarship.level) ? 15 : 0;
+          const fieldBoost = this.fieldMatches(formation.field, scholarship.field) ? 15 : 0;
+          const universityBoost = scholarship.universityId === formation.universityId ? 20 : 0;
+          const closeBoost =
+            scholarship.applicationCloseAt && scholarship.applicationCloseAt > now ? 5 : 0;
+          const rank = universityBoost + levelBoost + fieldBoost + closeBoost;
+
+          return {
+            rank,
+            item: {
+              id: scholarship.id,
+              code: scholarship.code,
+              title: scholarship.title,
+              provider: scholarship.provider,
+              amountLabel: scholarship.amountLabel,
+              applicationUrl: scholarship.applicationUrl,
+              applicationCloseAt: scholarship.applicationCloseAt,
+              fundingType: scholarship.fundingType,
+              status: scholarship.status,
+              matchReason: reasons,
+            },
+          };
+        })
+        .sort((a, b) => b.rank - a.rank)
+        .slice(0, 5)
+        .map((entry) => entry.item);
+
+      byFormation.set(formation.id, candidates);
+    }
+
+    return byFormation;
   }
 
   private async buildCareerRecommendations(
@@ -556,16 +682,32 @@ export class RecommendationsService {
             website: university.website,
           },
           score,
+          scholarships: [],
         });
       }
     }
 
-    const limit = Math.min(dto.limit ?? 6, 20);
-    return Array.from(formationMap.values())
+    const ranked = Array.from(formationMap.values())
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return a.formation.name.localeCompare(b.formation.name);
-      })
+      });
+
+    const scholarshipsByFormation = await this.loadScholarshipsForFormations(
+      ranked.map((entry) => ({
+        id: entry.formation.id,
+        degree: entry.formation.degree,
+        field: entry.formation.field,
+        universityId: entry.formation.universityId,
+      })),
+    );
+
+    const limit = Math.min(dto.limit ?? 6, 20);
+    return ranked
+      .map((entry) => ({
+        ...entry,
+        scholarships: scholarshipsByFormation.get(entry.formation.id) ?? [],
+      }))
       .slice(0, limit);
   }
 }

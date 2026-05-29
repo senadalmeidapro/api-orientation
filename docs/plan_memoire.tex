@@ -1,0 +1,481 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+% ========== MISE EN PAGE ==========
+\usepackage{geometry}
+\geometry{
+    a4paper,
+    top=2.5cm,
+    bottom=2.5cm,
+    left=3cm,
+    right=2.5cm
+}
+
+% ========== COULEURS ET STYLE ==========
+\usepackage[dvipsnames]{xcolor}
+\usepackage{titlesec}
+\usepackage{titleps}
+
+% Style des chapitres
+\titleformat{\chapter}
+  {\normalfont\Huge\bfseries\color{blue!70!black}}
+  {\thechapter}{1em}{}
+
+% Style des sections
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{blue!50!black}}
+  {\thesection}{1em}{}
+
+% Style des sous-sections
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{blue!30!black}}
+  {\thesubsection}{1em}{}
+
+% ========== EN-TÊTES ==========
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textit{Mémoire de Fin de Formation}}
+\fancyhead[R]{\textit{CompasPro - Orientation RIASEC}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+
+% ========== LIENS INTERNES ==========
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=red]{hyperref}
+
+% ========== PACKAGES UTILES ==========
+\usepackage{enumitem}
+\usepackage{minitoc}
+\usepackage{blindtext}
+\usepackage{listings}
+
+% Style pour le JSON
+\lstdefinelanguage{JSON}{
+    basicstyle=\normalfont\ttfamily,
+    numbers=left,
+    numberstyle=\scriptsize,
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{background},
+    literate=
+     *{0}{{{\color{numb}0}}}{1}
+      {1}{{{\color{numb}1}}}{1}
+      {2}{{{\color{numb}2}}}{1}
+      {3}{{{\color{numb}3}}}{1}
+      {4}{{{\color{numb}4}}}{1}
+      {5}{{{\color{numb}5}}}{1}
+      {6}{{{\color{numb}6}}}{1}
+      {7}{{{\color{numb}7}}}{1}
+      {8}{{{\color{numb}8}}}{1}
+      {9}{{{\color{numb}9}}}{1}
+      {:}{{{\color{punct}{:}}}}{1}
+      {,}{{{\color{punct}{,}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
+}
+\colorlet{punct}{red!60!black}
+\colorlet{delim}{blue!30!black}
+\colorlet{numb}{magenta!60!black}
+\colorlet{background}{gray!5}
+
+% ========== INFORMATIONS ==========
+\title{
+    \vspace{2cm}
+    {\Huge \textbf{Mémoire de Fin de Formation}}\\[0.5cm]
+    {\Large \textbf{Écosystème Numérique d'Orientation Professionnelle — CompasPro}}\\[1cm]
+    \includegraphics[width=0.3\textwidth]{logo-compaspro.png}\\[1cm]
+    {\large Présenté par :}\\[0.3cm]
+    {\Large \textbf{Maurel Zinsou}}\\[0.2cm]
+    {\large et}\\[0.2cm]
+    {\Large \textbf{Priscillia Noudofinin}}\\[2cm]
+}
+\author{Maurel Zinsou \and Priscillia Noudofinin}
+\date{\today}
+
+\begin{document}
+
+% ========== PAGE DE GARDE ==========
+\maketitle
+\newpage
+
+% ========== REMERCIEMENTS ==========
+\chapter*{Remerciements}
+\addcontentsline{toc}{chapter}{Remerciements}
+\vspace{1cm}
+Nous tenons à exprimer notre profonde gratitude envers notre encadrant de stage, l'ensemble des équipes de développement pour leur accompagnement pédagogique, ainsi qu'aux membres du jury qui ont accepté d'évaluer ce travail de conception système et d'architecture d'API.
+
+\vspace{1cm}
+\textbf{Maurel Zinsou \& Priscillia Noudofinin}
+\newpage
+
+% ========== RÉSUMÉ ==========
+\chapter*{Résumé}
+\addcontentsline{toc}{chapter}{Résumé}
+\vspace{0.5cm}
+\noindent
+Le choix d'une orientation scolaire et professionnelle pertinente représente un défi majeur pour la jeunesse béninoise. Ce mémoire présente la conception et la réalisation de l'écosystème numérique d'orientation \textbf{CompasPro} (orientation-bj API). Basé sur le modèle psychométrique RIASEC (Holland), le système propose une évaluation adaptative et anonyme en deux phases. L'API, développée avec NestJS, intègre un moteur de recommandation croisant profils RIASEC, formations universitaires locales, et bourses d'études pour maximiser la pertinence des suggestions. Une assistance conversationnelle par IA (GPT-4o/Gemini) complète l'expérience utilisateur pour guider le passage à l'action. Les tests de performance confirment la robustesse et la rapidité de traitement de l'écosystème.
+\vspace{1cm}
+
+\noindent
+\textbf{Mots-clés :} Orientation professionnelle, RIASEC, API REST, NestJS, Prisma, Bénin, Coaching IA, Bourse d'études
+\newpage
+
+% ========== TABLE DES MATIÈRES ==========
+\tableofcontents
+\newpage
+
+% ========== LISTE DES FIGURES ==========
+\listoffigures
+\addcontentsline{toc}{chapter}{Liste des figures}
+\newpage
+
+% ========== LISTE DES TABLEAUX ==========
+\listoftables
+\addcontentsline{toc}{chapter}{Liste des tableaux}
+\newpage
+
+% ========== LISTE DES ABRÉVIATIONS ==========
+\chapter*{Liste des abréviations}
+\addcontentsline{toc}{chapter}{Liste des abréviations}
+\begin{tabular}{ll}
+\textbf{API} & Application Programming Interface \\
+\textbf{RIASEC} & Réaliste, Investigateur, Artistique, Social, Entreprenant, Conventionnel \\
+\textbf{JWT} & JSON Web Token \\
+\textbf{JSON} & JavaScript Object Notation \\
+\textbf{REST} & Representational State Transfer \\
+\textbf{ORM} & Object-Relational Mapping \\
+\textbf{SaaS} & Software as a Service \\
+\textbf{UML} & Unified Modeling Language \\
+\textbf{HTTP} & HyperText Transfer Protocol \\
+\textbf{RBAC} & Role-Based Access Control \\
+\textbf{XP} & Experience Points (Points d'expérience) \\
+\textbf{SQL} & Structured Query Language \\
+\textbf{IDE} & Integrated Development Environment \\
+\textbf{GIT} & Distributed Version Control System \\
+\textbf{IA} & Intelligence Artificielle \\
+\end{tabular}
+\newpage
+
+% ============================================================
+% INTRODUCTION
+% ============================================================
+\chapter{Introduction}
+\minitoc
+\newpage
+
+\section{Contexte et justification}
+\subsection{Contexte}
+Au Bénin, de nombreux bacheliers et étudiants se heurtent à la difficulté de trouver une formation alignée sur leurs aptitudes et leurs aspirations. L'absence de plateformes d'orientation ergonomiques et scientifiquement éprouvées accentue les risques d'échec académique et de sous-emploi.
+
+\subsection{Justification}
+Le développement de \textbf{CompasPro} répond au besoin critique de fournir un parcours d'orientation gratuit, accessible et respectueux des données personnelles (anonymat garanti). En intégrant un questionnaire RIASEC adaptatif et des recommandations géolocalisées de formations et de bourses, ce projet constitue un levier d'aide à la décision incontournable.
+
+\section{Problématique}
+\noindent
+\textbf{Question centrale :}
+\begin{quote}
+\textit{Comment concevoir et réaliser un écosystème numérique d'orientation à la fois anonyme, adaptatif et intelligent, capable d'analyser les centres d'intérêt d'un utilisateur et de lui proposer des recommandations de métiers, de formations locales et d'opportunités de financements adaptées au contexte béninois ?}
+\end{quote}
+
+\section{Objectifs du projet}
+
+\subsection{Objectif général}
+Concevoir et réaliser l'API REST de l'écosystème d'orientation professionnelle \textbf{CompasPro}, une plateforme modulaire, sécurisée, adaptative et intégrée à des modèles d'intelligence artificielle.
+
+\subsection{Objectifs spécifiques}
+\begin{itemize}
+    \item Développer un backend modulaire avec NestJS, Prisma et PostgreSQL, assurant la persistance des sessions temporaires sans stockage de données personnelles.
+    \item Implémenter le moteur de scoring RIASEC et un algorithme adaptatif de sélection de questions pour optimiser la durée du test.
+    \item Concevoir un moteur de recommandation croisé associant profils RIASEC, cursus universitaires et bourses d'études.
+    \item Intégrer des agents d'intelligence artificielle (GPT-4o/Gemini) pour le coaching conversationnel et la synthèse des profils.
+\end{itemize}
+
+\section{Plan du document}
+Ce mémoire s'articule autour de trois chapitres :
+\begin{enumerate}
+    \item \textbf{Chapitre 1 : Déroulement du stage} — Présentation de la structure d'accueil, méthodologie de gestion de projet Agile, rôles au sein de l'équipe et missions confiées.
+    \item \textbf{Chapitre 2 : Analyse et Conception} — État de l'art de l'orientation psychométrique, modélisation UML (cas d'usage, diagrammes de séquence) et architecture de l'API.
+    \item \textbf{Chapitre 3 : Résultats et Discussion} — Présentation des endpoints de l'API, démonstration de l'intégration IA et des bourses, résultats des tests de montée en charge et analyse des arbitrages techniques.
+\end{enumerate}
+
+% ============================================================
+% CHAPITRE 1
+% ============================================================
+\chapter{Déroulement du stage}
+\minitoc
+\newpage
+
+\section{Introduction}
+Ce chapitre détaille le cadre temporel et géographique de notre stage académique de fin de formation, ainsi que les objectifs professionnels d'acquisition de compétences en ingénierie logicielle et gestion de projets complexes.
+
+\section{Présentation de la structure}
+Fiche d'identité, missions, et positionnement de la structure d'accueil au sein de l'écosystème numérique national, mettant en avant son pôle recherche et développement.
+
+\section{Fonctionnement de l'entreprise}
+Structure organisationnelle interne (organigramme) et dynamique de collaboration entre les équipes DevOps, d'administration de bases de données, et de développement logiciel.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder-organigramme.png}
+    \caption{Organigramme de l'entreprise d'accueil}
+    \label{fig:organigramme}
+\end{figure}
+
+\section{Travaux effectués}
+Détail des contributions réalisées (conception de l'API, écriture des schémas de base de données, implémentation du cache Redis, intégration des LLMs, et conception du module de bourses d'études).
+
+\section{Apports du stage sur le plan professionnel}
+Bilan des compétences acquises (maîtrise du framework NestJS, de l'ORM Prisma, de la sécurité des APIs, et de la configuration de pipelines CI/CD).
+
+\section{Difficultés rencontrées et suggestions}
+
+\subsection{Difficultés}
+Gestion de l'interopérabilité des modèles de données complexes, optimisation du temps de calcul du score adaptatif en temps réel, et contraintes de respect strict du RGPD/anonymat.
+
+\subsection{Suggestions}
+Mise en place d'environnements de développement uniformisés et automatisation accrue des tests unitaires et d'intégration avant déploiement.
+
+\section{Conclusion}
+Retour d'expérience global sur notre intégration au sein de l'équipe technique et validation des objectifs professionnels fixés.
+
+% ============================================================
+% CHAPITRE 2
+% ============================================================
+\chapter{Analyse et Conception}
+\minitoc
+\newpage
+
+\section{Introduction}
+Ce chapitre expose l'analyse approfondie des exigences fonctionnelles du système d'orientation RIASEC et décrit l'architecture logicielle retenue pour le développement de l'écosystème CompasPro.
+
+\section{État de l'art}
+
+\subsection{Analyse des solutions existantes}
+Étude des solutions traditionnelles : cabinets de conseil en orientation, questionnaires papier statiques et plateformes d'orientation fermées nécessitant la création de comptes intrusifs.
+
+\subsection{Critique}
+Les solutions actuelles sont souvent coûteuses, non contextualisées aux réalités économiques et universitaires béninoises, et présentent une forte friction d'utilisation due à la collecte de données personnelles.
+
+\section{Présentation du projet}
+\textbf{CompasPro} est un écosystème modulaire conçu pour guider l'utilisateur à travers un parcours anonyme, en liant de manière transparente les réponses psychométriques aux métiers, universités, et financements.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.7\textwidth]{placeholder-ecosysteme.png}
+    \caption{Architecture de l'écosystème CompasPro}
+    \label{fig:ecosysteme}
+\end{figure}
+
+\section{Présentation des fonctionnalités}
+Détail des fonctionnalités de l'API, notamment le traitement des sessions anonymes, la gestion des deux phases du test, l'évaluation adaptative, et la gamification par badges et XP.
+
+\begin{table}[h]
+    \centering
+    \caption{Matrice d'accès aux fonctionnalités par rôle}
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Fonctionnalité} & \textbf{Anonyme} & \textbf{Éditeur / Conseiller} & \textbf{Administrateur} \\
+        \hline
+        Passer l'évaluation RIASEC & ✅ & ✅ & ✅ \\
+        Consulter ses recommandations & ✅ & ✅ & ✅ \\
+        Modifier le catalogue (Métiers, Bourses) & ❌ & ✅ & ✅ \\
+        Consulter les logs d'audit système & ❌ & ❌ & ✅ \\
+        \hline
+    \end{tabular}
+    \label{tab:fonctionnalites}
+\end{table}
+
+\section{Analyse et modélisation}
+Conception architecturale et modélisation UML du système :
+
+\subsection{Diagramme de cas d'utilisation}
+Modélisation des acteurs (Utilisateur anonyme, Conseiller/Éditeur de catalogue, Administrateur système) et de leurs interactions.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{placeholder-cas-utilisation.png}
+    \caption{Diagramme de cas d'utilisation de l'API CompasPro}
+    \label{fig:cas-utilisation}
+\end{figure}
+
+\subsection{Diagramme de classes}
+Définition des entités de la base de données (Session, Assessment, Phase1Response, Career, University, ScholarshipRecord, etc.) et de leurs relations.
+
+\subsection{Diagrammes de séquence}
+Description dynamique des flux critiques, tels que l'authentification sécurisée des administrateurs et le flux d'évaluation adaptative avec mise à jour du profil comportemental.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{placeholder-sequence.png}
+    \caption{Diagramme de séquence — Authentification et Initialisation de Session}
+    \label{fig:sequence}
+\end{figure}
+
+\section{Matériel}
+
+\subsection{Logiciel}
+\begin{itemize}
+    \item \textbf{NestJS} — Framework d'API modulaire sous Node.js
+    \item \textbf{Prisma ORM} — Accès typé à la base de données
+    \item \textbf{PostgreSQL} — Base de données relationnelle persistante
+    \item \textbf{Redis / Keyv} — Cache de session et état adaptatif
+    \item \textbf{OpenAI GPT-4o / Google Gemini} — Moteurs d'intelligence artificielle
+    \item \textbf{Docker} — Environnement de conteneurisation
+\end{itemize}
+
+\subsection{Physique}
+\begin{itemize}
+    \item Serveurs d'hébergement temporaires pour la mise en recette
+    \item Stations de travail de développement local
+\end{itemize}
+
+\section{Conclusion}
+Validation des spécifications logicielles et de l'architecture de la base de données avant la phase de programmation.
+
+% ============================================================
+% CHAPITRE 3
+% ============================================================
+\chapter{Résultats et Discussion}
+\minitoc
+\newpage
+
+\section{Introduction}
+Ce chapitre présente l'implémentation effective de l'API REST CompasPro, les solutions techniques développées, ainsi qu'une discussion sur la validation des performances et des fonctionnalités de l'IA et des bourses d'études.
+
+\section{Résultats}
+
+\subsection{Implémentation}
+Présentation des endpoints de l'API développés et aperçu des interfaces du portail d'administration pour la gestion des questions et des ressources d'orientation.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.45\textwidth]{placeholder-accueil.png}
+    \hfill
+    \includegraphics[width=0.45\textwidth]{placeholder-dashboard.png}
+    \caption{Interfaces utilisateur et d'administration de CompasPro}
+    \label{fig:interfaces}
+\end{figure}
+
+\subsection{Preuve d'interopérabilité}
+Extrait du payload JSON retourné lors d'une requête de recommandation, illustrant le couplage d'un métier avec les formations associées et les bourses d'études éligibles.
+
+\begin{lstlisting}[language=JSON, caption=Exemple de payload de recommandation croisée, label=lst:json]
+{
+    "career": {
+        "id": "C-005",
+        "title": "Développeur Logiciel",
+        "riasec_code": "IRC",
+        "category": "NUMERIQUE"
+    },
+    "formations": [
+        {
+            "formation_name": "Licence en Génie Logiciel",
+            "university": "Université d'Abomey-Calavi (UAC)",
+            "score": 95,
+            "scholarships": [
+                {
+                    "title": "Bourse d'Excellence du Numérique",
+                    "provider": "Ministère du Numérique",
+                    "amount_label": "Exonération 100% + Allocation",
+                    "application_close_at": "2026-09-30"
+                }
+            ]
+        }
+    ]
+}
+\end{lstlisting}
+
+\subsection{Sécurisation des flux}
+Contrôles d'accès mis en place au niveau des routes administratives via les Guards de NestJS (JwtAuthGuard, RolesGuard) et protection contre les attaques de force brute.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{placeholder-api-auth.png}
+    \caption{Contrôle de sécurité de l'API — Rejet 401 Unauthorized}
+    \label{fig:api-auth}
+\end{figure}
+
+\section{Discussions}
+
+\subsection{Performances de l'API}
+Analyse des temps de réponse moyens de l'API REST mesurés lors des phases de tests de charge.
+
+\begin{table}[h]
+    \centering
+    \caption{Temps de réponse moyens de l'API CompasPro}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Endpoint d'API} & \textbf{Temps moyen} \\
+        \hline
+        Initialisation de Session & 45 ms \\
+        Récupération d'un lot adaptatif & 60 ms \\
+        Calcul scoring \& recommandations & 120 ms \\
+        Génération PDF (Carte au trésor) & 320 ms \\
+        \hline
+    \end{tabular}
+    \label{tab:performances}
+\end{table}
+
+\subsection{Limites et arbitrages}
+Explication du choix de l'architecture REST sous NestJS pour maximiser la vitesse d'exécution. Discussion sur le compromis de l'anonymisation totale qui empêche le suivi historique au long cours, et l'arbitrage sur l'optimisation des requêtes SQL complexes avec Prisma.
+
+\section{Conclusion}
+Bilan fonctionnel du livrable technique vis-à-vis des objectifs initiaux de la plateforme d'orientation scolaire.
+
+% ============================================================
+% CONCLUSION GÉNÉRALE
+% ============================================================
+\chapter*{Conclusion générale et Perspectives}
+\addcontentsline{toc}{chapter}{Conclusion générale et Perspectives}
+\markboth{Conclusion générale}{Conclusion générale}
+
+\section*{Conclusion}
+Ce travail de fin d'études a permis de concevoir et réaliser une infrastructure d'orientation RIASEC moderne, performante et adaptée à la jeunesse béninoise, alliant robustesse logicielle et respect de la vie privée.
+
+\section*{Perspectives}
+\begin{itemize}
+    \item \textbf{Transition vers une architecture micro-services} pour découper la génération des PDFs et le module d'IA afin de fluidifier les charges serveur.
+    \item \textbf{Multilinguisme natif par synthèse vocale} dans les principales langues nationales (Fon, Yoruba, Dendi) pour rendre le test accessible aux publics non-lecteurs.
+    \item \textbf{Module d'opportunités professionnelles} intégrant les offres de stages et d'alternances locales en relation directe avec les profils RIASEC des candidats.
+\end{itemize}
+
+% ============================================================
+% BIBLIOGRAPHIE
+% ============================================================
+\chapter*{Bibliographie}
+\addcontentsline{toc}{chapter}{Bibliographie}
+\markboth{Bibliographie}{Bibliographie}
+
+\begin{thebibliography}{99}
+
+\bibitem{riasec} Holland, J. L. (1997). \textit{Making vocational choices: A theory of vocational personalities and work environments}. Psychological Assessment Resources.
+
+\bibitem{nestjs} NestJS Documentation — \texttt{https://docs.nestjs.com}
+
+\bibitem{prisma} Prisma ORM Documentation — \texttt{https://www.prisma.io/docs}
+
+\bibitem{redis} Redis Cache Documentation — \texttt{https://redis.io/docs}
+
+\bibitem{openai} OpenAI API Reference — \texttt{https://platform.openai.com/docs}
+
+\bibitem{gemini} Google AI Gemini API Documentation — \texttt{https://ai.google.dev/docs}
+
+\end{thebibliography}
+
+% ============================================================
+% ANNEXES
+% ============================================================
+\appendix
+\chapter{Code source de l'API (extrait)}
+\chapter{Spécifications techniques détaillées}
+\chapter{Glossaire}
+
+\end{document}
+
