@@ -298,7 +298,6 @@ model Language {
   resourceTranslations       ResourceTranslation[]
   universityTranslations     UniversityTranslation[]
   formationTranslations      FormationTranslation[]
-  scholarshipTranslations    ScholarshipTranslation[]
 
   @@index([isActive])
   @@map("languages")
@@ -1073,7 +1072,6 @@ model University {
 
   formations   Formation[]
   scholarships UniversityScholarship[]
-  scholarshipRecords ScholarshipRecord[]
   media        UniversityMedia[]
   translations UniversityTranslation[]
 
@@ -1160,74 +1158,20 @@ model FormationTranslation {
   @@map("formation_translations")
 }
 
-model Scholarship {
-  id          Int    @id @default(autoincrement())
-  title       String
-  description String @db.Text
-  provider    String
-
-  amount         String?
-  benefits       String[]
-  conditions     String[]
-  level          String
-  field          String?
-  country        String?
-  applicationUrl String?  @map("application_url")
-
-  startDate DateTime? @map("start_date")
-  endDate   DateTime? @map("end_date")
-
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  universities UniversityScholarship[]
-  translations ScholarshipTranslation[]
-
-  @@index([level])
-  @@index([field])
-  @@index([country])
-  @@index([isActive])
-  @@map("scholarships")
-}
-
 model UniversityScholarship {
-  id            Int         @id @default(autoincrement())
-  universityId  Int         @map("university_id")
-  university    University  @relation(fields: [universityId], references: [id], onDelete: Cascade)
-  scholarshipId Int         @map("scholarship_id")
+  universityId        Int               @map("university_id")
+  university          University        @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  scholarshipId Int               @map("scholarship_id")
   scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@unique([universityId, scholarshipId])
+  @@id([universityId, scholarshipId])
   @@index([scholarshipId])
   @@map("university_scholarships")
 }
 
-model ScholarshipTranslation {
-  id            Int         @id @default(autoincrement())
-  scholarshipId Int         @map("scholarship_id")
-  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
-  languageId    Int         @map("language_id")
-  language      Language    @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String @db.Text
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([scholarshipId, languageId])
-  @@index([languageId])
-  @@map("scholarship_translations")
-}
-
-// =====================================================
-// SCHOLARSHIP RECORDS (modèle séparé de gestion des bourses)
-// Une bourse peut être liée à une université OU rester indépendante.
-// =====================================================
-model ScholarshipRecord {
+model Scholarship {
   id          Int    @id @default(autoincrement())
   title       String
   description String @db.Text
@@ -1259,12 +1203,11 @@ model ScholarshipRecord {
   benefits   String[] @default([])
   conditions String[] @default([])
 
-  // Champs flexibles pour couvrir tous les cas de figure
   eligibilityCriteria Json? @map("eligibility_criteria")
-  requiredDocuments  Json? @map("required_documents")
-  modalities         Json?
-  selectionProcess   Json? @map("selection_process")
-  contactInfo        Json? @map("contact_info")
+  requiredDocuments   Json? @map("required_documents")
+  modalities          Json?
+  selectionProcess    Json? @map("selection_process")
+  contactInfo         Json? @map("contact_info")
 
   applicationUrl          String?   @map("application_url")
   applicationEmail        String?   @map("application_email")
@@ -1276,9 +1219,7 @@ model ScholarshipRecord {
   applicationCloseAt      DateTime? @map("application_close_at")
   resultDate              DateTime? @map("result_date")
 
-  // Lien optionnel : la bourse peut être liée à une université OU non.
-  universityId Int?        @map("university_id")
-  university   University? @relation(fields: [universityId], references: [id], onDelete: SetNull)
+  universities UniversityScholarship[]
 
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
@@ -1289,6 +1230,5 @@ model ScholarshipRecord {
   @@index([country])
   @@index([field])
   @@index([applicationCloseAt])
-  @@index([universityId])
   @@map("scholarship_records")
 }

@@ -354,6 +354,10 @@ export class AuthTokenService {
           return amount * 60 * 60 * 1000;
         case 'd':
           return amount * 24 * 60 * 60 * 1000;
+        case 'w':
+          return amount * 7 * 24 * 60 * 60 * 1000;
+        case 'y':
+          return amount * 52 * 7 * 24 * 60 * 60 * 1000;
         default:
           return fallbackMs;
       }

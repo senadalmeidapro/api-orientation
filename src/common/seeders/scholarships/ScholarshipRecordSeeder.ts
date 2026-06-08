@@ -1218,7 +1218,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
   },
 ];
 
-export async function seedScholarshipRecords(prisma: PrismaService) {
+export async function seedScholarships(prisma: PrismaService) {
   for (const item of scholarshipRecords) {
     const data = {
       ...item,
@@ -1230,7 +1230,7 @@ export async function seedScholarshipRecords(prisma: PrismaService) {
       contactInfo: item.contactInfo === null ? Prisma.JsonNull : item.contactInfo,
     };
 
-    await prisma.scholarshipRecord.upsert({
+    await prisma.scholarship.upsert({
       where: { code: item.code },
       update: {
         ...data,

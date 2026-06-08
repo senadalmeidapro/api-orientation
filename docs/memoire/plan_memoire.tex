@@ -1,0 +1,201 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{palatino}
+\usepackage{geometry}
+\geometry{
+    a4paper,
+    top=2.5cm,
+    bottom=2.5cm,
+    left=3cm,
+    right=2.5cm
+}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, linkcolor=black, citecolor=red]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+
+% En-têtes et pieds de page
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\nouppercase{\leftmark}}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Pour la table des matières
+\usepackage{tocloft}
+\setlength{\cftchapnumwidth}{2em}
+\setlength{\cftsecnumwidth}{2.5em}
+
+\begin{document}
+
+% ========== PAGE DE TITRE ==========
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\LARGE \textbf{Plan du Mémoire de Fin de Formation}} \\[0.8cm]
+{\Large \textbf{Plateforme d’orientation professionnelle — orientation-bj}} \\[2cm]
+{\large \textbf{Présenté par :}} \\[0.3cm]
+{\large D'ALMEIDA Gédéon} \\
+{\large METINHOUE Paola} \\[2cm]
+{\large \today}
+\end{titlepage}
+
+% ========== TABLE DES MATIÈRES ==========
+\tableofcontents
+\newpage
+
+% ========== INTRODUCTION (sans numéro mais dans la TOC) ==========
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+
+\section*{1. Contexte et justification}
+\addcontentsline{toc}{section}{1. Contexte et justification}
+\subsection*{Contexte}
+L’orientation scolaire et professionnelle est souvent freinée par un manque d’outils accessibles, d’informations fiables et d’accompagnement continu. Les apprenants et jeunes actifs peinent à relier leurs intérêts aux possibilités réelles de formation et de métiers.
+
+\subsection*{Justification}
+Il devient nécessaire de proposer un écosystème unifié qui aide à l’auto‑connaissance, centralise les contenus métiers/formations et facilite une décision d’orientation éclairée.
+
+\section*{2. Problématique}
+\addcontentsline{toc}{section}{2. Problématique}
+Comment concevoir une plateforme d’orientation professionnelle unifiée, inclusive et fiable, capable d’aider les apprenants et jeunes actifs à mieux se connaître, à explorer les métiers et à prendre des décisions d’orientation éclairées ?
+
+\section*{3. Objectifs du projet de fin de formation}
+\addcontentsline{toc}{section}{3. Objectifs du projet de fin de formation}
+\subsection*{Objectif général}
+Concevoir et présenter l’écosystème d’orientation professionnelle « orientation-bj », fondé sur le modèle RIASEC, afin d’en démontrer la pertinence et l’utilité pour la prise de décision d’orientation.
+
+\subsection*{Objectifs spécifiques}
+\begin{itemize}
+    \item Concevoir un parcours d’auto‑évaluation basé sur RIASEC et interprétation pédagogique des résultats.
+    \item Proposer un système de recommandations métiers et formations adapté au profil.
+    \item Mettre à disposition des contenus fiables et contextualisés pour l’orientation.
+\end{itemize}
+
+\section*{4. Plan du document}
+\addcontentsline{toc}{section}{4. Plan du document}
+Annonce textuelle et fluide de l’articulation des chapitres.
+
+\newpage
+
+% ============================================================
+% CHAPITRE 1
+% ============================================================
+\chapter{Déroulement du stage}
+
+\section{Introduction}
+Cadre du stage, durée et objectifs personnels en tant que futur concepteur de solutions numériques.
+
+\section{Présentation de la structure}
+Fiche d’identité, historique et positionnement de la structure d’accueil.
+
+\section{Fonctionnement de la structure}
+Organisation interne et interactions entre les équipes impliquées.
+
+\section{Travaux effectués}
+Missions réalisées autour du projet d’orientation RIASEC, organisation du travail et méthodologies adoptées.
+
+\section{Apports du stage sur le plan professionnel}
+Compétences acquises, apprentissages et apports méthodologiques.
+
+\section{Difficultés rencontrées et suggestions}
+\subsection*{Difficultés}
+Contraintes et défis rencontrés durant le stage.
+\subsection*{Suggestions}
+Améliorations techniques ou organisationnelles proposées.
+
+\section{Conclusion}
+Bilan synthétique de l’immersion professionnelle.
+
+% ============================================================
+% CHAPITRE 2
+% ============================================================
+\chapter{Analyse et Conception}
+
+\section{Introduction}
+Présentation de la démarche d’ingénierie pour traduire les besoins d’orientation en spécifications.
+
+\section{État de l’art}
+\subsection*{Analyse}
+Panorama des dispositifs d’orientation, tests psychométriques et plateformes numériques existantes.
+\subsection*{Critique}
+Limites observées : faible contextualisation, accessibilité inégale, accompagnement insuffisant.
+
+\section{Présentation du projet}
+Présentation globale d’« orientation-bj » : un écosystème d’orientation fondé sur RIASEC, destiné aux apprenants et jeunes actifs.
+
+\section{Présentation des fonctionnalités}
+Parcours d’évaluation, restitution des résultats, recommandations métiers/formations, et contenus d’accompagnement.
+
+\section{Analyse et modélisation}
+Modélisation UML ciblée :
+\begin{itemize}
+    \item Diagramme de cas d’utilisation pour clarifier les rôles.
+    \item Diagramme de classes pour structurer les données principales.
+    \item Diagrammes de séquence pour illustrer les interactions clés du parcours.
+\end{itemize}
+
+\section{Matériel}
+\subsection*{Logiciel}
+Environnement applicatif (front, back, base de données), outils d’analyse et de suivi.
+\subsection*{Physique}
+Postes de test, équipements mobiles et infrastructure réseau de démonstration.
+
+\section{Conclusion}
+Validation des besoins comme base de la conception.
+
+% ============================================================
+% CHAPITRE 3
+% ============================================================
+\chapter{Résultats et Discussion}
+
+\section{Introduction}
+Présentation de la double démarche : exposer la réalisation et discuter la réponse aux objectifs.
+
+\section{Résultats}
+\begin{itemize}
+    \item \textbf{Implémentation (captures d’écran légendées)} : parcours d’évaluation, résultats RIASEC et recommandations.
+    \item \textbf{Preuve de cohérence} : exemples de correspondances profil--métier/formation.
+    \item \textbf{Fiabilité du parcours} : clarté des résultats et logique d’accompagnement.
+\end{itemize}
+
+\section{Discussions}
+\begin{itemize}
+    \item \textbf{Apports du projet} : meilleure lisibilité des choix d’orientation.
+    \item \textbf{Limites et arbitrages} : contraintes de données, disponibilité des contenus, accompagnement humain.
+\end{itemize}
+
+\section{Conclusion}
+Constat de la conformité du produit final par rapport aux objectifs fixés.
+
+\section{Gouvernance des contenus}
+Sources, validation, mise à jour et traçabilité des informations.
+
+\section{Sécurité et confidentialité}
+Consentement, droits d’accès et protection des données personnelles.
+
+\section{Conclusion}
+Cohérence de la conception au regard des exigences.
+
+% ============================================================
+% CHAPITRE 4
+% ============================================================
+% ============================================================
+% CONCLUSION GÉNÉRALE ET PERSPECTIVES
+% ============================================================
+\chapter*{Conclusion générale et Perspectives}
+\addcontentsline{toc}{chapter}{Conclusion générale et Perspectives}
+
+\section*{1. Conclusion}
+Synthèse des contributions du travail et bilan du projet d’orientation RIASEC.
+
+\section*{2. Perspectives}
+\begin{itemize}
+    \item Extension du contenu métiers et formations avec des partenaires éducatifs.
+    \item Amélioration des parcours d’accompagnement et de suivi.
+    \item Ouverture à des usages institutionnels (établissements, conseillers, employeurs).
+\end{itemize}
+
+\end{document}
