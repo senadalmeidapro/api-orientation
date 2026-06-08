@@ -45,7 +45,6 @@ type ScholarshipSeedItem = {
   applicationOpenAt: Date | null;
   applicationCloseAt: Date | null;
   resultDate: Date | null;
-  universityId: number | null;
   isActive: boolean;
 };
 
@@ -115,7 +114,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: new Date('2026-01-16T12:00:00.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -177,7 +176,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: new Date('2026-01-07T12:30:00.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -231,7 +230,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: new Date('2026-03-06T23:59:59.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -285,7 +284,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: new Date('2026-02-02T00:00:00.000Z'),
     applicationCloseAt: new Date('2026-03-31T23:59:59.000Z'),
     resultDate: new Date('2026-06-19T00:00:00.000Z'),
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -339,7 +338,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -395,7 +394,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -449,7 +448,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: new Date('2026-04-30T23:59:59.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -506,7 +505,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: new Date('2026-03-31T23:59:59.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -557,7 +556,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: new Date('2025-04-28T23:59:59.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -602,7 +601,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -648,7 +647,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -692,7 +691,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -738,7 +737,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -784,7 +783,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -830,7 +829,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -875,7 +874,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
   {
@@ -924,7 +923,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -1018,7 +1017,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: new Date('2025-10-20T00:00:00.000Z'),
     applicationCloseAt: new Date('2026-02-08T23:59:59.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -1086,7 +1085,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: new Date('2024-10-21T00:00:00.000Z'),
     applicationCloseAt: new Date('2025-02-09T23:59:59.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -1147,7 +1146,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: new Date('2023-10-05T00:00:00.000Z'),
     applicationCloseAt: new Date('2024-02-04T23:59:59.000Z'),
     resultDate: null,
-    universityId: null,
+
     isActive: false,
   },
   {
@@ -1213,7 +1212,7 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationOpenAt: null,
     applicationCloseAt: null,
     resultDate: null,
-    universityId: null,
+
     isActive: true,
   },
 ];
@@ -1239,5 +1238,6 @@ export async function seedScholarships(prisma: PrismaService) {
         ...data,
       },
     });
+    console.log(item.code);
   }
 }

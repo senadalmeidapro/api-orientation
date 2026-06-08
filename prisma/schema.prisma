@@ -1159,9 +1159,9 @@ model FormationTranslation {
 }
 
 model UniversityScholarship {
-  universityId        Int               @map("university_id")
-  university          University        @relation(fields: [universityId], references: [id], onDelete: Cascade)
-  scholarshipId Int               @map("scholarship_id")
+  universityId  Int         @map("university_id")
+  university    University  @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  scholarshipId Int         @map("scholarship_id")
   scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
