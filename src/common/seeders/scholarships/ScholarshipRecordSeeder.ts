@@ -21,8 +21,8 @@ type ScholarshipSeedItem = {
   applicationMode: ScholarshipRecordApplicationMode;
   currency: string | null;
   amountLabel: string | null;
-  amountMin: number | null;
-  amountMax: number | null;
+  amountMin: string | null;
+  amountMax: string | null;
   coveragePercent: number | null;
   applicationFee: number | null;
   seats: number | null;
@@ -302,8 +302,8 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationMode: ScholarshipRecordApplicationMode.MIXED,
     currency: 'XOF',
     amountLabel: 'Complément mensuel requis côté famille',
-    amountMin: 50000,
-    amountMax: 50000,
+    amountMin: '50000',
+    amountMax: '50000',
     coveragePercent: null,
     applicationFee: null,
     seats: 80,
@@ -619,8 +619,8 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationMode: ScholarshipRecordApplicationMode.EMAIL,
     currency: 'XOF',
     amountLabel: 'Complément mensuel requis',
-    amountMin: 50000,
-    amountMax: 50000,
+    amountMin: '50000',
+    amountMax: '50000',
     coveragePercent: null,
     applicationFee: null,
     seats: null,
@@ -665,8 +665,8 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationMode: ScholarshipRecordApplicationMode.MIXED,
     currency: 'XOF',
     amountLabel: 'Complément mensuel requis',
-    amountMin: 50000,
-    amountMax: 50000,
+    amountMin: '50000',
+    amountMax: '50000',
     coveragePercent: null,
     applicationFee: null,
     seats: null,
@@ -709,8 +709,8 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationMode: ScholarshipRecordApplicationMode.MIXED,
     currency: 'XOF',
     amountLabel: 'Complément mensuel obligatoire',
-    amountMin: 50000,
-    amountMax: 50000,
+    amountMin: '50000',
+    amountMax: '50000',
     coveragePercent: null,
     applicationFee: null,
     seats: 20,
@@ -755,8 +755,8 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationMode: ScholarshipRecordApplicationMode.MIXED,
     currency: 'XOF',
     amountLabel: 'Complément mensuel obligatoire',
-    amountMin: 50000,
-    amountMax: 50000,
+    amountMin: '50000',
+    amountMax: '50000',
     coveragePercent: null,
     applicationFee: null,
     seats: 1,
@@ -801,8 +801,8 @@ const scholarshipRecords: ScholarshipSeedItem[] = [
     applicationMode: ScholarshipRecordApplicationMode.MIXED,
     currency: 'XOF',
     amountLabel: 'Complément mensuel obligatoire',
-    amountMin: 50000,
-    amountMax: 50000,
+    amountMin: '50000',
+    amountMax: '50000',
     coveragePercent: null,
     applicationFee: null,
     seats: 1,

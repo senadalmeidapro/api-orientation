@@ -12,7 +12,11 @@ export class CreateScholarshipDto {
 
   @IsOptional()
   @IsString()
-  amount?: string;
+  amountMin?: string;
+
+  @IsOptional()
+  @IsString()
+  amountMax?: string;
 
   @IsArray()
   @IsString({ each: true })

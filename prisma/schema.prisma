@@ -1190,8 +1190,8 @@ model Scholarship {
 
   currency        String? @db.VarChar(10)
   amountLabel     String? @map("amount_label")
-  amountMin       Int?    @map("amount_min")
-  amountMax       Int?    @map("amount_max")
+  amountMin       String? @map("amount_min")
+  amountMax       String? @map("amount_max")
   coveragePercent Float?  @map("coverage_percent")
   applicationFee  Int?    @map("application_fee")
   seats           Int?
