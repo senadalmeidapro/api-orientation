@@ -234,53 +234,89 @@ export class RecommendationsService {
       universityId: number;
     }>,
   ) {
-    if (formations.length === 0) return new Map<number, FormationRecommendation['scholarships']>();
+    if (formations.length === 0) {
+      return new Map<number, FormationRecommendation['scholarships']>();
+    }
 
     const now = new Date();
     const universityIds = Array.from(new Set(formations.map((f) => f.universityId)));
-    const scholarships = await this.prisma.scholarshipRecord.findMany({
+
+    const scholarships = await this.prisma.scholarship.findMany({
       where: {
         isActive: true,
         status: 'PUBLISHED',
         AND: [
           {
-            OR: [{ universityId: { in: universityIds } }, { universityId: null }],
+            OR: [
+              {
+                universities: {
+                  some: {
+                    universityId: {
+                      in: universityIds,
+                    },
+                  },
+                },
+              },
+              {
+                universities: {
+                  none: {},
+                },
+              },
+            ],
           },
           {
             OR: [{ applicationCloseAt: null }, { applicationCloseAt: { gte: now } }],
           },
         ],
       },
+      include: {
+        universities: true,
+      },
       orderBy: [{ applicationCloseAt: 'asc' }, { createdAt: 'desc' }],
       take: 300,
     });
 
     const byFormation = new Map<number, FormationRecommendation['scholarships']>();
+
     for (const formation of formations) {
       const candidates = scholarships
-        .filter(
-          (s) =>
-            s.universityId === null || s.universityId === formation.universityId,
-        )
+        .filter((s) => {
+          const linkedUniversityIds = s.universities.map((u) => u.universityId);
+
+          return (
+            linkedUniversityIds.length === 0 || linkedUniversityIds.includes(formation.universityId)
+          );
+        })
         .map((scholarship) => {
           const reasons: string[] = [];
-          if (scholarship.universityId === formation.universityId) {
+
+          const sameUniversity = scholarship.universities.some(
+            (u) => u.universityId === formation.universityId,
+          );
+
+          if (sameUniversity) {
             reasons.push('Liée à la même université');
           } else {
             reasons.push('Bourse ouverte (non liée à une université spécifique)');
           }
+
           if (this.levelMatches(formation.degree, scholarship.level)) {
             reasons.push('Niveau compatible');
           }
+
           if (this.fieldMatches(formation.field, scholarship.field)) {
             reasons.push('Domaine compatible');
           }
 
           const levelBoost = this.levelMatches(formation.degree, scholarship.level) ? 15 : 0;
+
           const fieldBoost = this.fieldMatches(formation.field, scholarship.field) ? 15 : 0;
-          const universityBoost = scholarship.universityId === formation.universityId ? 20 : 0;
+
+          const universityBoost = sameUniversity ? 20 : 0;
+
           const closeBoost =
             scholarship.applicationCloseAt && scholarship.applicationCloseAt > now ? 5 : 0;
+
           const rank = universityBoost + levelBoost + fieldBoost + closeBoost;
 
           return {
@@ -687,11 +723,10 @@ export class RecommendationsService {
       }
     }
 
-    const ranked = Array.from(formationMap.values())
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.formation.name.localeCompare(b.formation.name);
-      });
+    const ranked = Array.from(formationMap.values()).sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.formation.name.localeCompare(b.formation.name);
+    });
 
     const scholarshipsByFormation = await this.loadScholarshipsForFormations(
       ranked.map((entry) => ({
