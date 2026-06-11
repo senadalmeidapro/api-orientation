@@ -326,14 +326,14 @@ export class UserHistoryService {
         summary: rec.career.summary,
         description: rec.career.description,
         category: rec.career.category,
-        riasecCodes: rec.career.riasecCodes as string[],
+        riasecCodes: rec.career.riasecCodes,
         localDemand: rec.career.localDemand,
         formationLevel: rec.career.formationLevel,
         salaryRangeMin: rec.career.salaryRangeMin,
         salaryRangeMax: rec.career.salaryRangeMax,
         imageUrl: rec.career.imageUrl,
         videoUrl: rec.career.videoUrl,
-        tags: rec.career.tags as string[],
+        tags: rec.career.tags,
       },
     }));
 
