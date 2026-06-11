@@ -1,16 +1,33 @@
-import { Body, Controller, Get, Param, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Query,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
 import { roles } from '@common/decorators/roles.decorator';
 import { UpdateUserDto, UpdateUserRolesDto, UserResponseDto } from './dto';
 import { UsersService } from './users.service';
+import { UserHistoryService } from './user-history.service';
+import {
+  AssessmentDetailDto,
+  AssessmentRecommendationsDto,
+  UserHistoryDto,
+} from './dto/user-history.dto';
 import { currentUser } from '@common/decorators';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '@common/dto/api-response.dto';
@@ -21,7 +38,10 @@ import { ApiErrorResponseDto } from '@common/dto/api-response.dto';
 // @ApiStandardErrorResponses({ includeUnauthorized: true })
 @Controller('api/v1/users')
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly userHistory: UserHistoryService,
+  ) {}
 
   @ApiOperation({
     summary: 'Récupérer le profil utilisateur courant',
@@ -51,6 +71,79 @@ export class UsersController {
   @Get('me')
   async me(@currentUser('id') id: string): Promise<UserResponseDto> {
     return this.users.findById(id);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HISTORIQUE UTILISATEUR
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  @ApiOperation({
+    summary: "Historique complet de l'utilisateur",
+    description:
+      "Retourne le profil de l'utilisateur connecté avec la totalité de ses sessions," +
+      ' ses tests (résumés), son avancement dans la gamification (XP, niveau)' +
+      " et ses badges déverrouillés. Données légères – idéal pour la page d'accueil du tableau de bord.",
+  })
+  @ApiNotFoundResponse({ description: 'Utilisateur introuvable.' })
+  @Throttle({ default: { limit: 20, ttl: 60 } })
+  @Get('me/history')
+  async getHistory(@currentUser('id') id: string): Promise<UserHistoryDto> {
+    return this.userHistory.getHistory(id);
+  }
+
+  @ApiOperation({
+    summary: "Détail complet d'un test",
+    description:
+      "Retourne toutes les données d'un assessment spécifique : statut, pourcentage" +
+      ' de complétion, résultats RIASEC détaillés (codes, scores, cohérence, différenciation,' +
+      ' forces), métriques comportementales (temps de réponse, profil dominant) et' +
+      " la carte au trésor si elle a été générée. Le test doit appartenir à l'utilisateur connecté.",
+  })
+  @ApiParam({
+    name: 'assessmentId',
+    description: 'Identifiant unique du test (CUID)',
+    example: 'clx123abc0001',
+  })
+  @ApiNotFoundResponse({ description: "Test introuvable ou n'appartient pas à l'utilisateur." })
+  @Throttle({ default: { limit: 30, ttl: 60 } })
+  @Get('me/assessments/:assessmentId')
+  async getAssessmentDetail(
+    @currentUser('id') id: string,
+    @Param('assessmentId') assessmentId: string,
+  ): Promise<AssessmentDetailDto> {
+    return this.userHistory.getAssessmentDetail(id, assessmentId);
+  }
+
+  @ApiOperation({
+    summary: "Recommandations d'un test (métiers + formations + bourses)",
+    description:
+      'Retourne les recommandations de métiers générées pour un test terminé,' +
+      " accompagnées des formations universitaires correspondantes et des bourses d'études" +
+      ' disponibles pour chaque formation. Le test doit être COMPLETED et appartenir' +
+      " à l'utilisateur connecté.",
+  })
+  @ApiParam({
+    name: 'assessmentId',
+    description: 'Identifiant unique du test',
+    example: 'clx123abc0001',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Nombre de métiers à retourner (1–20, défaut : 6)',
+    example: 6,
+    type: Number,
+  })
+  @ApiNotFoundResponse({ description: "Test introuvable ou n'appartient pas à l'utilisateur." })
+  @ApiForbiddenResponse({ description: "Le test n'est pas encore terminé." })
+  @Throttle({ default: { limit: 20, ttl: 60 } })
+  @Get('me/assessments/:assessmentId/recommendations')
+  async getAssessmentRecommendations(
+    @currentUser('id') id: string,
+    @Param('assessmentId') assessmentId: string,
+    @Query('limit', new DefaultValuePipe(6), ParseIntPipe) limit: number,
+  ): Promise<AssessmentRecommendationsDto> {
+    return this.userHistory.getAssessmentRecommendations(id, assessmentId, limit);
   }
 
   @ApiOperation({
