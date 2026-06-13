@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
   Patch,
+  Post,
   Query,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
@@ -18,7 +20,7 @@ import {
   AssessmentDetailDto,
   AssessmentRecommendationsDto,
   UserHistoryDto,
-} from './dto/user-history.dto';
+} from '@modules/users/dto';
 import { currentUser } from '@common/decorators';
 import {
   ApiBearerAuth,
@@ -144,6 +146,58 @@ export class UsersController {
     @Query('limit', new DefaultValuePipe(6), ParseIntPipe) limit: number,
   ): Promise<AssessmentRecommendationsDto> {
     return this.userHistory.getAssessmentRecommendations(id, assessmentId, limit);
+  }
+
+  @ApiOperation({
+    summary: 'Sauvegarder une bourse',
+  })
+  @ApiParam({
+    name: 'scholarshipId',
+    description: 'sauvegarder une bourse',
+    example: 'clx123abc0001',
+  })
+  @ApiNotFoundResponse({})
+  @ApiForbiddenResponse({})
+  @Throttle({ default: { limit: 20, ttl: 60 } })
+  @Post('me/scholarship')
+  async addScholarshipToUser(
+    @currentUser('id') id: string,
+    @Param('scholarshipId') scholarshipId: number,
+  ) {
+    return this.userHistory.addScholarshipToUser(id, scholarshipId);
+  }
+
+  @ApiOperation({ summary: 'Récupérer la liste des bourses sauvegarder ' })
+  @ApiQuery({
+    name: 'scholarshipId',
+    description: 'récupérer une bourse particulière',
+    example: 'clx123abc0001',
+  })
+  @ApiNotFoundResponse({})
+  @ApiForbiddenResponse({})
+  @Throttle({ default: { limit: 20, ttl: 60 } })
+  @Get('me/scholarship')
+  async getScholarshipFromUser(
+    @currentUser('id') id: string,
+    @Query('scholarshipId') scholarshipId: number,
+  ) {
+    return this.userHistory.getScholarshipFromUser(id, scholarshipId);
+  }
+  @ApiOperation({ summary: 'Supprimer une bourse de la liste des bourse sauvegarder ' })
+  @ApiParam({
+    name: 'scholarshipId',
+    description: 'supprimer une bourse particulière',
+    example: 'clx123abc0001',
+  })
+  @ApiNotFoundResponse({})
+  @ApiForbiddenResponse({})
+  @Throttle({ default: { limit: 20, ttl: 60 } })
+  @Delete('me/scholarship')
+  async removeScholarshipFromUser(
+    @currentUser('id') id: string,
+    @Param('scholarshipId') scholarshipId: number,
+  ) {
+    return this.userHistory.removeScholarshipFromUser(id, scholarshipId);
   }
 
   @ApiOperation({

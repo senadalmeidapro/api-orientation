@@ -1,13 +1,13 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AssessmentStatus, PhaseType } from '@prisma/client';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '@/prisma/prisma.service';
 import type {
   AssessmentDetailDto,
   AssessmentRecommendationsDto,
   AssessmentSummaryDto,
   BehaviorMetricsDto,
   UserHistoryDto,
-} from './dto/user-history.dto';
+} from '@modules/users/dto';
 
 @Injectable()
 export class UserHistoryService {
@@ -22,7 +22,7 @@ export class UserHistoryService {
 
   async getHistory(userId: string): Promise<UserHistoryDto> {
     // 1. Récupérer le profil utilisateur avec toutes les sessions et leurs tests
-    // NB: la relation User -> Session s'appelle "authSessions" dans le schéma Prisma
+    // NB: la relation User → Session s'appelle "authSessions" dans le schéma Prisma
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -464,6 +464,33 @@ export class UserHistoryService {
       totalCareers: careerRecs.length,
       totalFormations: formations.length,
     };
+  }
+
+  async addScholarshipToUser(userId: string, scholarshipId: number) {
+    return this.prisma.scholarshipUser.create({
+      data: { userId, scholarshipId },
+      include: { user: true, scholarship: true },
+    });
+  }
+
+  async getScholarshipFromUser(userId: string, scholarshipId?: number) {
+    return this.prisma.scholarshipUser.findMany({
+      where: {
+        userId,
+        ...(scholarshipId ? { scholarshipId } : {}),
+      },
+    });
+  }
+
+  async removeScholarshipFromUser(userId: string, scholarshipId: number) {
+    return this.prisma.scholarshipUser.delete({
+      where: {
+        userId_scholarshipId: {
+          userId,
+          scholarshipId,
+        },
+      },
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────

@@ -182,6 +182,7 @@ model User {
   authSessions Session[]
   authToken    AuthToken?
   tokens       Token[]
+  sholarships  ScholarshipUser[]
 
   @@index([email])
   @@index([status])
@@ -1171,6 +1172,19 @@ model UniversityScholarship {
   @@map("university_scholarships")
 }
 
+model ScholarshipUser {
+  userId        String      @map("user_id")
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarshipId Int         @map("scholarship_id")
+  scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([userId, scholarshipId])
+  @@index([scholarshipId])
+  @@map("scholarship_user")
+}
+
 model Scholarship {
   id          Int    @id @default(autoincrement())
   title       String
@@ -1219,6 +1233,7 @@ model Scholarship {
   applicationCloseAt      DateTime? @map("application_close_at")
   resultDate              DateTime? @map("result_date")
 
+  user         ScholarshipUser[]
   universities UniversityScholarship[]
 
   isActive  Boolean  @default(true) @map("is_active")
