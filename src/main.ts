@@ -6,7 +6,7 @@ import { setupSecureSwagger } from './fastify-swagger';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 // import { ApiSuccessResponseInterceptor } from './common/interceptors/api-success-response.interceptor';
 // import { ApiExceptionFilter } from './common/filters/api-exception.filter';
-import { ConfigService } from './common/config/config.service';
+import { ConfigService } from '@common/config/config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
