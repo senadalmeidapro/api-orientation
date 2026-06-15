@@ -1,9 +1,9 @@
-import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { setupSecureSwagger } from './fastify-swagger';
-import type { NestExpressApplication } from '@nestjs/platform-express';
 // import { ApiSuccessResponseInterceptor } from './common/interceptors/api-success-response.interceptor';
 // import { ApiExceptionFilter } from './common/filters/api-exception.filter';
 import { ConfigService } from '@common/config/config.service';
