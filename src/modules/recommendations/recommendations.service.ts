@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
-import { AssessmentStatus, Career, RiasecType } from '@prisma/client';
+import { Assessment, AssessmentResult, AssessmentStatus, Career, RiasecType } from '@prisma/client';
 import { CacheService } from '@common/cache/cache.service';
 
 type CareerWithInstitutions = Career & {
@@ -78,6 +78,26 @@ type CareerRecommendationOutput = {
   career: Career | null;
 };
 
+type UniversityRecommendationOutput = {
+  id: string;
+  resultId: string;
+  universityId: number;
+  matchScore: number;
+  rankPosition: number;
+  viewedAt: Date | null;
+  savedForLater: boolean;
+  createdAt: Date;
+  university: {
+    id: number;
+    name: string;
+    latitude: number | null;
+    longitude: number | null;
+    city: string | null;
+    address: string | null;
+    website: string;
+  } | null;
+};
+
 type RankedCareer = {
   career: Career | CareerWithInstitutions;
   score: number;
@@ -92,6 +112,10 @@ export class RecommendationsService {
     private readonly resultsService: ResultsService,
     private readonly cache: CacheService,
   ) {}
+
+  // =====================================================
+  // HELPERS GÉNÉRIQUES
+  // =====================================================
 
   private buildWeights(phase2Code: string) {
     const letters = phase2Code.split('') as RiasecType[];
@@ -226,6 +250,57 @@ export class RecommendationsService {
     return formation.includes(scholarship) || scholarship.includes(formation);
   }
 
+  // =====================================================
+  // RÉSOLUTION SESSION / ASSESSMENT / RESULT (partagée)
+  // =====================================================
+
+  private async resolveAssessmentResult(
+    dto: GetRecommendationsDto,
+    sessionToken: string,
+  ): Promise<{ assessment: Assessment; result: AssessmentResult }> {
+    const session = await this.prisma.session.findFirst({
+      where: {
+        sessionToken,
+        isActive: true,
+        expiresAt: { gt: new Date() },
+      },
+      select: { id: true },
+    });
+    if (!session) {
+      throw new NotFoundException('Aucune recommandation disponible pour cette session');
+    }
+
+    const assessment = dto.assessmentId
+      ? await this.prisma.assessment.findFirst({
+          where: { id: dto.assessmentId, sessionId: session.id },
+        })
+      : await this.prisma.assessment.findFirst({
+          where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+          orderBy: { completedAt: 'desc' },
+        });
+
+    if (!assessment) {
+      throw new NotFoundException('Aucune recommandation disponible pour cette session');
+    }
+
+    let result = await this.prisma.assessmentResult.findUnique({
+      where: { assessmentId: assessment.id },
+    });
+
+    if (!result) {
+      result = await this.resultsService.compute({
+        sessionToken,
+        assessmentId: assessment.id,
+      });
+    }
+
+    return { assessment, result };
+  }
+
+  // =====================================================
+  // BOURSES (chargement à la demande, jamais persisté)
+  // =====================================================
+
   private async loadScholarshipsForFormations(
     formations: Array<{
       id: number;
@@ -345,50 +420,20 @@ export class RecommendationsService {
     return byFormation;
   }
 
+  // =====================================================
+  // CARRIÈRES
+  // =====================================================
+
   private async buildCareerRecommendations(
     dto: GetRecommendationsDto,
     sessionToken: string,
   ): Promise<CareerRecommendationOutput[]> {
-    const session = await this.prisma.session.findFirst({
-      where: {
-        sessionToken,
-        isActive: true,
-        expiresAt: { gt: new Date() },
-      },
-      select: { id: true },
-    });
-    if (!session) {
-      throw new NotFoundException('Aucune recommandation disponible pour cette session');
-    }
-
-    const assessment = dto.assessmentId
-      ? await this.prisma.assessment.findFirst({
-          where: { id: dto.assessmentId, sessionId: session.id },
-        })
-      : await this.prisma.assessment.findFirst({
-          where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
-          orderBy: { completedAt: 'desc' },
-        });
-
-    if (!assessment) {
-      throw new NotFoundException('Aucune recommandation disponible pour cette session');
-    }
-
-    let result = await this.prisma.assessmentResult.findUnique({
-      where: { assessmentId: assessment.id },
-    });
-
-    if (!result) {
-      result = await this.resultsService.compute({
-        sessionToken,
-        assessmentId: assessment.id,
-      });
-    }
+    const { assessment, result } = await this.resolveAssessmentResult(dto, sessionToken);
 
     const hasGeo = dto.latitude !== undefined && dto.longitude !== undefined;
     const isCanonicalMode = !hasGeo && !dto.category && !dto.advanced;
 
-    if (!dto.force && !dto.advanced && !hasGeo && !dto.category) {
+    if (!dto.force && isCanonicalMode) {
       const cached = await this.prisma.assessmentCareerRecommendation.findMany({
         where: { resultId: result.id },
         include: { career: true },
@@ -630,10 +675,71 @@ export class RecommendationsService {
     return this.getCareerRecommendations(dto, sessionToken);
   }
 
+  // =====================================================
+  // FORMATIONS + UNIVERSITÉS (persistance combinée)
+  // =====================================================
+
   async getFormationRecommendations(
     dto: GetRecommendationsDto,
     sessionToken: string,
   ): Promise<FormationRecommendation[]> {
+    const { result } = await this.resolveAssessmentResult(dto, sessionToken);
+
+    const hasGeo = dto.latitude !== undefined && dto.longitude !== undefined;
+    const isCanonicalMode = !hasGeo && !dto.category && !dto.advanced;
+    const limit = Math.min(dto.limit ?? 6, 20);
+
+    // --- Lecture depuis le cache DB si mode canonique ---
+    if (!dto.force && isCanonicalMode) {
+      const cached = await this.prisma.assessmentFormationRecommendation.findMany({
+        where: { resultId: result.id },
+        include: { formation: { include: { university: true } } },
+        orderBy: { rankPosition: 'asc' },
+        take: limit,
+      });
+
+      if (cached.length > 0) {
+        const valid = cached.filter(
+          (entry) => entry.formation.universityId !== null && entry.formation.university !== null,
+        );
+
+        const scholarshipsByFormation = await this.loadScholarshipsForFormations(
+          valid.map((entry) => ({
+            id: entry.formation.id,
+            degree: entry.formation.degree,
+            field: entry.formation.field,
+            universityId: entry.formation.universityId as number,
+          })),
+        );
+
+        return valid.map((entry) => ({
+          formation: {
+            id: entry.formation.id,
+            name: entry.formation.title,
+            title: entry.formation.title,
+            degree: entry.formation.degree,
+            duration: entry.formation.duration,
+            field: entry.formation.field,
+            costMin: entry.formation.costMin,
+            costMax: entry.formation.costMax,
+            universityId: entry.formation.universityId as number,
+          },
+          university: {
+            id: entry.formation.university!.id,
+            name: entry.formation.university!.name,
+            latitude: entry.formation.university!.latitude,
+            longitude: entry.formation.university!.longitude,
+            city: entry.formation.university!.city,
+            address: entry.formation.university!.address,
+            website: entry.formation.university!.website,
+          },
+          score: entry.matchScore,
+          scholarships: scholarshipsByFormation.get(entry.formation.id) ?? [],
+        }));
+      }
+    }
+
+    // --- Calcul complet à partir des recommandations de carrières ---
     const careerRecommendations = await this.getCareerRecommendations(dto, sessionToken);
     const careerScoreMap = new Map<number, number>();
     for (const rec of careerRecommendations) {
@@ -671,7 +777,6 @@ export class RecommendationsService {
       },
     });
 
-    const hasGeo = dto.latitude !== undefined && dto.longitude !== undefined;
     const radiusKm = dto.radiusKm ?? 50;
     const formationMap = new Map<number, FormationRecommendation>();
 
@@ -737,12 +842,158 @@ export class RecommendationsService {
       })),
     );
 
-    const limit = Math.min(dto.limit ?? 6, 20);
-    return ranked
-      .map((entry) => ({
-        ...entry,
-        scholarships: scholarshipsByFormation.get(entry.formation.id) ?? [],
-      }))
-      .slice(0, limit);
+    const withScholarships = ranked.map((entry) => ({
+      ...entry,
+      scholarships: scholarshipsByFormation.get(entry.formation.id) ?? [],
+    }));
+
+    const top = withScholarships.slice(0, limit);
+
+    // --- Persistance formations + universités, uniquement en mode canonique ---
+    if (isCanonicalMode) {
+      await this.persistFormationAndUniversityRecommendations(result.id, withScholarships);
+    }
+
+    return top;
+  }
+
+  private async persistFormationAndUniversityRecommendations(
+    resultId: string,
+    ranked: FormationRecommendation[],
+  ) {
+    const canonicalPersistLimit = 20;
+    const canonicalTop = ranked.slice(0, canonicalPersistLimit);
+    const formationIds = canonicalTop.map((entry) => entry.formation.id);
+
+    // Agrégation université : on garde le meilleur score de formation par université
+    const universityScoreMap = new Map<number, number>();
+    for (const entry of canonicalTop) {
+      const uniId = entry.university.id;
+      universityScoreMap.set(uniId, Math.max(universityScoreMap.get(uniId) ?? 0, entry.score));
+    }
+    const rankedUniversities = Array.from(universityScoreMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, canonicalPersistLimit);
+    const universityIds = rankedUniversities.map(([id]) => id);
+
+    await this.prisma.$transaction(async (tx) => {
+      // Formations
+      await tx.assessmentFormationRecommendation.deleteMany({
+        where: {
+          resultId,
+          ...(formationIds.length > 0 ? { formationId: { notIn: formationIds } } : {}),
+        },
+      });
+      await Promise.all(
+        canonicalTop.map((entry, index) =>
+          tx.assessmentFormationRecommendation.upsert({
+            where: {
+              resultId_formationId: { resultId, formationId: entry.formation.id },
+            },
+            update: { matchScore: entry.score, rankPosition: index + 1 },
+            create: {
+              resultId,
+              formationId: entry.formation.id,
+              matchScore: entry.score,
+              rankPosition: index + 1,
+            },
+          }),
+        ),
+      );
+
+      // Universités
+      await tx.assessmentUniversityRecommendation.deleteMany({
+        where: {
+          resultId,
+          ...(universityIds.length > 0 ? { universityId: { notIn: universityIds } } : {}),
+        },
+      });
+      await Promise.all(
+        rankedUniversities.map(([universityId, score], index) =>
+          tx.assessmentUniversityRecommendation.upsert({
+            where: { resultId_universityId: { resultId, universityId } },
+            update: { matchScore: score, rankPosition: index + 1 },
+            create: { resultId, universityId, matchScore: score, rankPosition: index + 1 },
+          }),
+        ),
+      );
+    });
+  }
+
+  // =====================================================
+  // UNIVERSITÉS — lecture des données sauvegardées
+  // =====================================================
+
+  async getSavedUniversityRecommendations(
+    sessionToken: string,
+    assessmentId?: string,
+  ): Promise<UniversityRecommendationOutput[]> {
+    const { result } = await this.resolveAssessmentResult(
+      { assessmentId } as GetRecommendationsDto,
+      sessionToken,
+    );
+
+    const recommendations = await this.prisma.assessmentUniversityRecommendation.findMany({
+      where: { resultId: result.id },
+      include: { university: true },
+      orderBy: { rankPosition: 'asc' },
+    });
+
+    return recommendations.map((rec) => ({
+      id: rec.id,
+      resultId: rec.resultId,
+      universityId: rec.universityId,
+      matchScore: rec.matchScore,
+      rankPosition: rec.rankPosition,
+      viewedAt: rec.viewedAt,
+      savedForLater: rec.savedForLater,
+      createdAt: rec.createdAt,
+      university: rec.university
+        ? {
+            id: rec.university.id,
+            name: rec.university.name,
+            latitude: rec.university.latitude,
+            longitude: rec.university.longitude,
+            city: rec.university.city,
+            address: rec.university.address,
+            website: rec.university.website,
+          }
+        : null,
+    }));
+  }
+
+  // =====================================================
+  // ORCHESTRATION — appelée une fois à l'issue du test
+  // =====================================================
+
+  /**
+   * Calcule et persiste les recommandations de carrières, formations et
+   * universités pour un résultat de test. Idéalement appelée une seule fois,
+   * juste après le calcul du résultat (ResultsService.compute()), ou via un
+   * endpoint de finalisation dédié.
+   */
+  async finalizeTestRecommendations(
+    sessionToken: string,
+    assessmentId?: string,
+  ): Promise<{
+    careers: CareerRecommendationOutput[];
+    formations: FormationRecommendation[];
+    universities: UniversityRecommendationOutput[];
+  }> {
+    const canonicalDto: GetRecommendationsDto = {
+        ...(assessmentId !== undefined ? { assessmentId } : {}),
+      force: true, // force le recalcul + la persistance, ignore le cache
+      limit: 6,
+    };
+
+    const careers = await this.getCareerRecommendations(canonicalDto, sessionToken);
+    const formations = await this.getFormationRecommendations(canonicalDto, sessionToken);
+    const universities = await this.getSavedUniversityRecommendations(sessionToken, assessmentId);
+
+    this.logger.log(
+      `Recommandations finalisées: ${careers.length} carrières, ${formations.length} formations, ${universities.length} universités`,
+    );
+
+    return { careers, formations, universities };
   }
 }

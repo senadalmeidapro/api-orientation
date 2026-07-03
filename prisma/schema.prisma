@@ -707,7 +707,9 @@ model AssessmentResult {
   viewSount    Int       @default(0) @map("view_sount")
 
   // Relations
-  careerRecommendations AssessmentCareerRecommendation[]
+  careerRecommendations               AssessmentCareerRecommendation[]
+  assessmentFormationRecommendations  AssessmentFormationRecommendation[]
+  assessmentUniversityRecommendations AssessmentUniversityRecommendation[]
 
   @@index([assessmentId])
   @@index([phase2Code])
@@ -1071,10 +1073,11 @@ model University {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  formations   Formation[]
-  scholarships UniversityScholarship[]
-  media        UniversityMedia[]
-  translations UniversityTranslation[]
+  formations                          Formation[]
+  scholarships                        UniversityScholarship[]
+  media                               UniversityMedia[]
+  translations                        UniversityTranslation[]
+  assessmentUniversityRecommendations AssessmentUniversityRecommendation[]
 
   @@index([isActive])
   @@map("universities")
@@ -1133,8 +1136,9 @@ model Formation {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  translations FormationTranslation[]
-  career       CareerFormation[]
+  translations                       FormationTranslation[]
+  career                             CareerFormation[]
+  assessmentFormationRecommendations AssessmentFormationRecommendation[]
 
   @@index([universityId])
   @@index([isActive])
@@ -1246,4 +1250,48 @@ model Scholarship {
   @@index([field])
   @@index([applicationCloseAt])
   @@map("scholarship_records")
+}
+
+model AssessmentFormationRecommendation {
+  id          String           @id @default(uuid())
+  resultId    String           @map("result_id")
+  result      AssessmentResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  formationId Int              @map("formation_id")
+  formation   Formation        @relation(fields: [formationId], references: [id], onDelete: Cascade)
+
+  matchScore   Int @map("match_score")
+  rankPosition Int @map("rank_position")
+
+  viewedAt      DateTime? @map("viewed_at")
+  savedForLater Boolean   @default(false) @map("saved_forLater")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([resultId, formationId])
+  @@index([resultId])
+  @@index([formationId])
+  @@index([matchScore])
+  @@map("assessment_formation_recommendations")
+}
+
+model AssessmentUniversityRecommendation {
+  id           String           @id @default(uuid())
+  resultId     String           @map("result_id")
+  result       AssessmentResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  universityId Int              @map("university_id")
+  university   University       @relation(fields: [universityId], references: [id], onDelete: Cascade)
+
+  matchScore   Int @map("match_score")
+  rankPosition Int @map("rank_position")
+
+  viewedAt      DateTime? @map("viewed_at")
+  savedForLater Boolean   @default(false) @map("saved_forLater")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([resultId, universityId])
+  @@index([resultId])
+  @@index([universityId])
+  @@index([matchScore])
+  @@map("assessment_university_recommendations")
 }
