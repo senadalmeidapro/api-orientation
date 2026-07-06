@@ -665,10 +665,9 @@ export class TreasureMapService {
                   .map((item) => item.scholarship)
                   .filter((scholarship) => {
                     if (!scholarship.isActive) return false;
-                    if (scholarship.applicationCloseAt && scholarship.applicationCloseAt < now) {
-                      return false;
-                    }
-                    return true;
+                    return !(
+                      scholarship.applicationCloseAt && scholarship.applicationCloseAt < now
+                    );
                   })
                   .slice(0, 3)
                   .map((scholarship) => ({
