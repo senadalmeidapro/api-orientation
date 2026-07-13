@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import { PrismaClient, TestType, UserRole, UserStatus } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 
@@ -21,7 +21,7 @@ describe('E2E', () => {
   let app: INestApplication;
   let accessToken = '';
   let testVersionId = 0;
-  let phase2QuestionId = 0;
+  let specificQuestionId = 0;
   const createdSessionIds: string[] = [];
 
   beforeAll(async () => {
@@ -53,27 +53,28 @@ describe('E2E', () => {
       create: { id: 'I', name: 'Investigateur' },
     });
 
-    await prisma.phase1Question.create({
+    await prisma.question.create({
       data: {
         testVersionId: version.id,
         riasecTypeId: 'R',
+        category: TestType.GENERALE,
         questionText: 'Test question',
         displayOrder: 1,
         isActive: true,
       },
     });
 
-    const phase2Question = await prisma.phase2Question.create({
+    const specificQuestion = await prisma.question.create({
       data: {
         testVersionId: version.id,
         riasecTypeId: 'R',
-        phase2Type: 'OCCUPATIONS',
+        category: TestType.OCCUPATIONS,
         questionText: 'Occ Q1',
         displayOrder: 1,
         isActive: true,
       },
     });
-    phase2QuestionId = phase2Question.id;
+    specificQuestionId = specificQuestion.id;
 
     const passwordHash = await bcrypt.hash(adminPassword, 10);
     await prisma.user.create({
@@ -100,10 +101,7 @@ describe('E2E', () => {
       await prisma.assessment.deleteMany({
         where: { testVersionId },
       });
-      await prisma.phase1Question.deleteMany({
-        where: { testVersionId },
-      });
-      await prisma.phase2Question.deleteMany({
+      await prisma.question.deleteMany({
         where: { testVersionId },
       });
       await prisma.testVersion.deleteMany({
@@ -136,7 +134,7 @@ describe('E2E', () => {
     await request(app.getHttpServer()).post('/sessions').send({}).expect(401);
   });
 
-  it('GET /questions/phase1 should return questions for authenticated user session', async () => {
+  it('GET /questions/general should return questions for authenticated user session', async () => {
     const sessionRes = await request(app.getHttpServer())
       .post('/sessions')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -146,7 +144,7 @@ describe('E2E', () => {
     createdSessionIds.push(sessionRes.body.sessionId);
 
     const res = await request(app.getHttpServer())
-      .get('/questions/phase1')
+      .get('/questions/general')
       .set('Authorization', `Bearer ${accessToken}`)
       .query({ sessionToken })
       .expect(200);
@@ -156,7 +154,7 @@ describe('E2E', () => {
     expect(res.body[0].riasecType).toBe('R');
   });
 
-  it('Phase guard should block phase2 responses before phase1 completion', async () => {
+  it('Category guard should block specific responses before general completion', async () => {
     const sessionRes = await request(app.getHttpServer())
       .post('/sessions')
       .set('Authorization', `Bearer ${accessToken}`)
@@ -166,11 +164,11 @@ describe('E2E', () => {
     createdSessionIds.push(sessionRes.body.sessionId);
 
     const res = await request(app.getHttpServer())
-      .post('/responses/phase2')
+      .post('/responses/specific')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         sessionToken,
-        responses: [{ questionId: phase2QuestionId, responseValue: 1 }],
+        responses: [{ questionId: specificQuestionId, responseValue: 1 }],
       });
 
     expect(res.status).toBe(404);

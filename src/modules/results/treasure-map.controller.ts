@@ -75,7 +75,7 @@ export class TreasureMapController {
   //     dataExample: {
   //         id: 'clx-map-id',
   //         share_token: '57ecfcd8-f5d6-4a2f-9ab8-d2a684be9777',
-  //         map_data: { phase1_code: 'RIA', phase2_code: 'RIS' },
+  //         map_data: { general_code: 'RIA', specific_code: 'RIS' },
   //     },
   // })
   @Throttle({ default: { limit: 60, ttl: 60 } })

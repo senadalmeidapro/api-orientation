@@ -15,7 +15,7 @@ export class BatchResponseItemDto {
   @IsInt()
   questionId!: number;
 
-  @ApiProperty({ description: 'Response value (0/1 for phase1, 1-3 for phase2)', example: 1 })
+  @ApiProperty({ description: 'Response value (0/1 for general, 1-3 for specific)', example: 1 })
   @IsInt()
   responseValue!: number;
 

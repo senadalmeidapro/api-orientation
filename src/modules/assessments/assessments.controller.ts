@@ -34,7 +34,7 @@ export class AssessmentsController {
   //         id: 'clx-assessment-id',
   //         session_id: 'clx-session-id',
   //         status: 'IN_PROGRESS',
-  //         type: 'PHASE1',
+  //         type: 'GENERAL',
   //         completion_percentage: 25,
   //     },
   // })
@@ -47,7 +47,7 @@ export class AssessmentsController {
   @ApiOperation({
     summary: 'Récupérer la progression d’un assessment',
     description:
-      'Retourne l’état courant de progression (phase, section, step, pourcentage) pour l’assessment ciblé.',
+      'Retourne l’état courant de progression (catégorie, step, pourcentage) pour l’assessment ciblé.',
   })
   @ApiParam({
     name: 'assessmentId',
@@ -60,18 +60,6 @@ export class AssessmentsController {
     description: 'Token de session lié à l’assessment.',
     example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
   })
-  // @ApiStandardOkResponse({
-  //     description: 'Progression de l’assessment récupérée.',
-  //     dataExample: {
-  //         id: 'clx-assessment-id',
-  //         status: 'IN_PROGRESS',
-  //         type: 'PHASE2_OCCUPATIONS',
-  //         currentPhase: 'PHASE2',
-  //         currentSection: 'OCCUPATIONS',
-  //         currentStepIndex: 12,
-  //         completionPercentage: 60,
-  //     },
-  // })
   @Throttle({ default: { limit: 60, ttl: 60 } })
   @Get(':assessmentId/progress')
   getProgress(@Param('assessmentId') assessmentId: string, @Query() query: GetAssessmentDto) {

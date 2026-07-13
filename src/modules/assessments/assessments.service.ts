@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { AssessmentStatus } from '@prisma/client';
+import { TestStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -29,8 +29,6 @@ export class AssessmentsService {
       id: assessment.id,
       status: assessment.status,
       type: assessment.type,
-      currentPhase: assessment.currentPhase,
-      currentSection: assessment.currentSection,
       currentStepIndex: assessment.currentStepIndex,
       completionPercentage: assessment.completionPercentage,
       startedAt: assessment.startedAt,
@@ -41,14 +39,14 @@ export class AssessmentsService {
 
   async abandon(sessionToken: string, assessmentId: string) {
     const assessment = await this.getById(sessionToken, assessmentId);
-    if (assessment.status !== AssessmentStatus.IN_PROGRESS) {
+    if (assessment.status !== TestStatus.IN_PROGRESS) {
       throw new BadRequestException('Assessment non actif');
     }
 
     return this.prisma.assessment.update({
       where: { id: assessment.id },
       data: {
-        status: AssessmentStatus.ABANDONED,
+        status: TestStatus.ABANDONED,
         completedAt: new Date(),
       },
     });

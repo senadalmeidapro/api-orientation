@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AssessmentStatus, AssessmentType, BadgeRarity } from '@prisma/client';
+import { BadgeRarity, TestStatus, TestType } from '@prisma/client';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sous-DTOs réutilisables
@@ -43,20 +43,20 @@ export class AssessmentSummaryDto {
   @ApiProperty({ description: 'Identifiant du test', example: 'clx-assessment-id' })
   id!: string;
 
-  @ApiProperty({ enum: AssessmentType, description: 'Type du test (PHASE1, PHASE2, FULL…)' })
-  type!: AssessmentType;
+  @ApiProperty({ enum: TestType, description: 'Type du test' })
+  type!: TestType;
 
-  @ApiProperty({ enum: AssessmentStatus, description: 'Statut du test' })
-  status!: AssessmentStatus;
+  @ApiProperty({ enum: TestStatus, description: 'Statut du test' })
+  status!: TestStatus;
 
   @ApiProperty({ description: 'Pourcentage de complétion (0–100)', example: 100 })
   completionPercentage!: number;
 
-  @ApiPropertyOptional({ description: 'Code RIASEC issu de la phase 1', example: 'RIA' })
-  phase1Code?: string | null;
+  @ApiPropertyOptional({ description: 'Code RIASEC issu de la générales', example: 'RIA' })
+  generalCode?: string | null;
 
-  @ApiPropertyOptional({ description: 'Code RIASEC issu de la phase 2', example: 'RIS' })
-  phase2Code?: string | null;
+  @ApiPropertyOptional({ description: 'Code RIASEC issu de la catégorie', example: 'RIS' })
+  specificCode?: string | null;
 
   @ApiPropertyOptional({ description: 'Niveau de cohérence du profil', example: 'HIGH' })
   consistencyLevel?: string | null;
@@ -181,11 +181,11 @@ export class AssessmentResultDetailDto {
   @ApiProperty({ description: 'Identifiant du résultat' })
   id!: string;
 
-  @ApiPropertyOptional({ description: 'Code RIASEC Phase 1 (3 lettres)', example: 'RIA' })
-  phase1Code?: string | null;
+  @ApiPropertyOptional({ description: 'Code RIASEC générales (3 lettres)', example: 'RIA' })
+  generalCode?: string | null;
 
-  @ApiPropertyOptional({ description: 'Code RIASEC Phase 2 (3 lettres)', example: 'RIS' })
-  phase2Code?: string | null;
+  @ApiPropertyOptional({ description: 'Code RIASEC catégorie (3 lettres)', example: 'RIS' })
+  specificCode?: string | null;
 
   @ApiPropertyOptional({
     description: 'Points forts identifiés',
@@ -209,11 +209,11 @@ export class AssessmentResultDetailDto {
   })
   differentiationScore?: number | null;
 
-  @ApiPropertyOptional({ description: 'Scores bruts RIASEC Phase 1' })
-  phase1Scores?: Record<string, number> | null;
+  @ApiPropertyOptional({ description: 'Scores bruts RIASEC générales' })
+  generalScores?: Record<string, number> | null;
 
-  @ApiPropertyOptional({ description: 'Scores bruts RIASEC Phase 2' })
-  phase2Scores?: Record<string, number> | null;
+  @ApiPropertyOptional({ description: 'Scores bruts RIASEC catégorie' })
+  specificScores?: Record<string, number> | null;
 
   @ApiPropertyOptional({
     description: 'Scores détaillés par section (Occupations / Aptitudes / Personality)',
@@ -254,11 +254,11 @@ export class AssessmentDetailDto {
   @ApiProperty({ description: 'Identifiant du test' })
   id!: string;
 
-  @ApiProperty({ enum: AssessmentType })
-  type!: AssessmentType;
+  @ApiProperty({ enum: TestType })
+  type!: TestType;
 
-  @ApiProperty({ enum: AssessmentStatus })
-  status!: AssessmentStatus;
+  @ApiProperty({ enum: TestStatus })
+  status!: TestStatus;
 
   @ApiProperty({ description: 'Pourcentage de complétion', example: 100 })
   completionPercentage!: number;

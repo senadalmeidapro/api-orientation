@@ -2,8 +2,7 @@
 import {
   BadgeRarity,
   CareerCategory,
-  Label,
-  Phase2Type,
+  TestType,
   type Prisma,
   type RiasecType,
 } from '@prisma/client';
@@ -23,9 +22,9 @@ const riasecTypes: { id: RiasecType; name: string; slogan: string; colorHex: str
 ];
 
 // ============================================================
-// 2. PHASE 1 – QUESTIONS D’AMORCE (version courte, style Tinder)
+// 2. GENERALE – QUESTIONS D’AMORCE (version courte, style Tinder)
 // ============================================================
-const phase1Questions: Record<RiasecType, string[]> = {
+const generalQuestions: Record<RiasecType, string[]> = {
   R: [
     'Travailler dans un champ, cultiver du maïs, du niébé ou du coton',
     'Réparer un vélo, une moto « zemidjan » ou un poste téléviseur',
@@ -101,9 +100,9 @@ const phase1Questions: Record<RiasecType, string[]> = {
 };
 
 // ============================================================
-// 3. PHASE 2 – OCCUPATIONS (métiers)
+// 3. SPECIFIQUE – OCCUPATIONS (métiers)
 // ============================================================
-const phase2Occupations: Record<RiasecType, string[]> = {
+const specificOccupations: Record<RiasecType, string[]> = {
   R: [
     'Mécanicien/enne auto/moto (garagiste)',
     'Électricien/ne (bâtiment, installation, panneaux solaires)',
@@ -179,9 +178,9 @@ const phase2Occupations: Record<RiasecType, string[]> = {
 };
 
 // ============================================================
-// 4. PHASE 2 – APTITUDES (échelle 1-3)
+// 4. SPECIFIQUE – APTITUDES (échelle 1-3)
 // ============================================================
-const phase2Aptitudes: Record<RiasecType, string[]> = {
+const specificAptitudes: Record<RiasecType, string[]> = {
   R: [
     'Dextérité manuelle',
     'Utiliser des outils',
@@ -257,9 +256,9 @@ const phase2Aptitudes: Record<RiasecType, string[]> = {
 };
 
 // ============================================================
-// 5. PHASE 2 – PERSONNALITÉ (booléen)
+// 5. SPECIFIQUE – PERSONNALITÉ (booléen)
 // ============================================================
-const phase2Personality: Record<RiasecType, string[]> = {
+const specificPersonality: Record<RiasecType, string[]> = {
   R: [
     'J’aime les choses concrètes et pratiques',
     'Je suis plutôt réservé(e)',
@@ -863,25 +862,25 @@ const badges: BadgeSeed[] = [
     emoji: '🧭',
     rarity: BadgeRarity.COMMON,
     pointsValue: 10,
-    unlockCondition: { type: 'phase_started', phase: 1 },
+    unlockCondition: { type: 'category_started', category: "GENERALE" },
   },
   {
     code: 'AVENTURIER',
     name: 'Aventurier',
-    description: 'Tu as terminé la Phase 1 avec brio !',
+    description: 'Tu as terminé la générales avec brio !',
     emoji: '🗺️',
     rarity: BadgeRarity.COMMON,
     pointsValue: 25,
-    unlockCondition: { type: 'phase_completion', phase: 1 },
+    unlockCondition: { type: 'category_completion', category: "GENERALE" },
   },
   {
     code: 'CHERCHEUR',
     name: 'Chercheur',
-    description: 'Phase 2 accomplie ! Tu es allé au fond des choses.',
+    description: 'catégorie accomplie ! Tu es allé au fond des choses.',
     emoji: '🔍',
     rarity: BadgeRarity.RARE,
     pointsValue: 50,
-    unlockCondition: { type: 'phase_completion', phase: 2 },
+    unlockCondition: { type: 'category_completion', category: "SPECIFIC" },
   },
   {
     code: 'MAITRE_DE_SOI',
@@ -998,7 +997,7 @@ const badges: BadgeSeed[] = [
     emoji: '🏍️',
     rarity: BadgeRarity.RARE,
     pointsValue: 30,
-    unlockCondition: { type: 'phase1_speed', maxMinutes: 5 },
+    unlockCondition: { type: 'general_speed', maxMinutes: 5 },
   },
   {
     code: 'TANEKE',
@@ -1039,13 +1038,6 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
     },
   });
 
-  // --- Langue française ---
-  await prisma.language.upsert({
-    where: { code: 'fr' },
-    update: { isActive: true },
-    create: { code: 'fr', name: 'Français', nativeName: 'Français', isActive: true },
-  });
-
   // --- Types RIASEC ---
   for (const r of riasecTypes) {
     await prisma.riasecTypeModel.upsert({
@@ -1055,36 +1047,21 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
     });
   }
 
-  // --- Options pour les aptitudes (échelle 1-3) ---
-  await prisma.aptitudeResponseOption.upsert({
-    where: { value: 1 },
-    update: { label: Label.Faible, emoji: '😕', colorCode: '#FF4444' },
-    create: { value: 1, label: Label.Faible, emoji: '😕', colorCode: '#FF4444' },
-  });
-  await prisma.aptitudeResponseOption.upsert({
-    where: { value: 2 },
-    update: { label: Label.Moyen, emoji: '😐', colorCode: '#FFA500' },
-    create: { value: 2, label: Label.Moyen, emoji: '😐', colorCode: '#FFA500' },
-  });
-  await prisma.aptitudeResponseOption.upsert({
-    where: { value: 3 },
-    update: { label: Label.Fort, emoji: '😊', colorCode: '#4CAF50' },
-    create: { value: 3, label: Label.Fort, emoji: '😊', colorCode: '#4CAF50' },
-  });
-
-  // --- PHASE 1 : Questions d’amorce ---
+  // --- GENERALE : Questions d’amorce ---
   let order = 1;
-  for (const code of Object.keys(phase1Questions) as RiasecType[]) {
-    for (const text of phase1Questions[code]) {
-      await prisma.phase1Question.upsert({
+  for (const code of Object.keys(generalQuestions) as RiasecType[]) {
+    for (const text of generalQuestions[code]) {
+      await prisma.question.upsert({
         where: {
-          testVersionId_displayOrder: {
+          testVersionId_category_displayOrder: {
             testVersionId: version.id,
+            category: TestType.GENERALE,
             displayOrder: order,
           },
         },
         update: {
           riasecTypeId: code,
+          category: TestType.GENERALE,
           questionText: text,
           displayOrder: order,
           isActive: true,
@@ -1092,6 +1069,7 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
         create: {
           testVersionId: version.id,
           riasecTypeId: code,
+          category: TestType.GENERALE,
           questionText: text,
           displayOrder: order,
           isActive: true,
@@ -1101,22 +1079,22 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
     }
   }
 
-  // --- PHASE 2 : Occupations ---
+  // --- SPECIFIQUE : Occupations ---
   let occOrder = 1;
-  for (const code of Object.keys(phase2Occupations) as RiasecType[]) {
-    for (const text of phase2Occupations[code]) {
-      await prisma.phase2Question.upsert({
+  for (const code of Object.keys(specificOccupations) as RiasecType[]) {
+    for (const text of specificOccupations[code]) {
+      await prisma.question.upsert({
         where: {
-          testVersionId_phase2Type_displayOrder: {
+          testVersionId_category_displayOrder: {
             testVersionId: version.id,
-            phase2Type: Phase2Type.OCCUPATIONS,
+            category: TestType.OCCUPATIONS,
             displayOrder: occOrder,
           },
         },
         update: {
           riasecTypeId: code,
           questionText: text,
-          phase2Type: Phase2Type.OCCUPATIONS,
+          category: TestType.OCCUPATIONS,
           displayOrder: occOrder,
           isActive: true,
         },
@@ -1124,7 +1102,7 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
           testVersionId: version.id,
           riasecTypeId: code,
           questionText: text,
-          phase2Type: Phase2Type.OCCUPATIONS,
+          category: TestType.OCCUPATIONS,
           displayOrder: occOrder,
           isActive: true,
         },
@@ -1133,22 +1111,22 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
     }
   }
 
-  // --- PHASE 2 : Aptitudes (avec échelle 1-3) ---
+  // --- SPECIFIQUE : Aptitudes (avec échelle 1-3) ---
   let aptOrder = 1;
-  for (const code of Object.keys(phase2Aptitudes) as RiasecType[]) {
-    for (const text of phase2Aptitudes[code]) {
-      await prisma.phase2Question.upsert({
+  for (const code of Object.keys(specificAptitudes) as RiasecType[]) {
+    for (const text of specificAptitudes[code]) {
+      await prisma.question.upsert({
         where: {
-          testVersionId_phase2Type_displayOrder: {
+          testVersionId_category_displayOrder: {
             testVersionId: version.id,
-            phase2Type: Phase2Type.APTITUDES,
+            category: TestType.APTITUDES,
             displayOrder: aptOrder,
           },
         },
         update: {
           riasecTypeId: code,
           questionText: text,
-          phase2Type: Phase2Type.APTITUDES,
+          category: TestType.APTITUDES,
           displayOrder: aptOrder,
           minValue: 1,
           maxValue: 3,
@@ -1159,7 +1137,7 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
           testVersionId: version.id,
           riasecTypeId: code,
           questionText: text,
-          phase2Type: Phase2Type.APTITUDES,
+          category: TestType.APTITUDES,
           displayOrder: aptOrder,
           minValue: 1,
           maxValue: 3,
@@ -1171,22 +1149,22 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
     }
   }
 
-  // --- PHASE 2 : Personnalité (booléen) ---
+  // --- SPECIFIQUE : Personnalité (booléen) ---
   let perOrder = 1;
-  for (const code of Object.keys(phase2Personality) as RiasecType[]) {
-    for (const text of phase2Personality[code]) {
-      await prisma.phase2Question.upsert({
+  for (const code of Object.keys(specificPersonality) as RiasecType[]) {
+    for (const text of specificPersonality[code]) {
+      await prisma.question.upsert({
         where: {
-          testVersionId_phase2Type_displayOrder: {
+          testVersionId_category_displayOrder: {
             testVersionId: version.id,
-            phase2Type: Phase2Type.PERSONALITY,
+            category: TestType.PERSONALITY,
             displayOrder: perOrder,
           },
         },
         update: {
           riasecTypeId: code,
           questionText: text,
-          phase2Type: Phase2Type.PERSONALITY,
+          category: TestType.PERSONALITY,
           displayOrder: perOrder,
           isActive: true,
         },
@@ -1194,7 +1172,7 @@ export async function seedAssessmentQuestionData(prisma: PrismaService) {
           testVersionId: version.id,
           riasecTypeId: code,
           questionText: text,
-          phase2Type: Phase2Type.PERSONALITY,
+          category: TestType.PERSONALITY,
           displayOrder: perOrder,
           isActive: true,
         },

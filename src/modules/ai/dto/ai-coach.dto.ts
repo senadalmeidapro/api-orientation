@@ -1,5 +1,5 @@
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { Phase2Type } from '@prisma/client';
+import { TestType } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class AiCoachDto {
@@ -26,10 +26,10 @@ export class AiCoachDto {
 
   @ApiPropertyOptional({
     description: 'Section',
-    enum: Phase2Type,
-    example: Object.values(Phase2Type)[0],
+    enum: TestType,
+    example: TestType.OCCUPATIONS,
   })
   @IsOptional()
-  @IsEnum(Phase2Type)
-  section?: Phase2Type;
+  @IsEnum(TestType)
+  section?: TestType;
 }

@@ -1,16 +1,16 @@
 import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AssessmentType } from '@prisma/client';
+import { TestType } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateAssessmentDto {
   @ApiProperty({
     description: 'Type',
-    enum: AssessmentType,
-    example: Object.values(AssessmentType)[0],
+    enum: TestType,
+    example: Object.values(TestType)[0],
   })
-  @IsEnum(AssessmentType)
-  type!: AssessmentType;
+  @IsEnum(TestType)
+  type!: TestType;
 
   @ApiPropertyOptional({ description: 'Test version id', type: Number, example: 1 })
   @IsOptional()

@@ -1,31 +1,28 @@
 import { IsBoolean, IsEnum, IsInt, IsObject, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { RiasecType, Phase2Type } from '@prisma/client';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { RiasecType, TestType } from '@prisma/client';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class UpdatePhase2QuestionDto {
-  @ApiPropertyOptional({
+export class CreateCategoryQuestionDto {
+  @ApiProperty({
     description: 'Riasec type id',
     enum: RiasecType,
     example: Object.values(RiasecType)[0],
   })
-  @IsOptional()
   @IsEnum(RiasecType)
-  riasecTypeId?: RiasecType;
+  riasecTypeId!: RiasecType;
 
-  @ApiPropertyOptional({
-    description: 'Phase2 type',
-    enum: Phase2Type,
-    example: Object.values(Phase2Type)[0],
+  @ApiProperty({
+    description: 'Question category',
+    enum: TestType,
+    example: TestType.OCCUPATIONS,
   })
-  @IsOptional()
-  @IsEnum(Phase2Type)
-  phase2Type?: Phase2Type;
+  @IsEnum(TestType)
+  category!: TestType;
 
-  @ApiPropertyOptional({ description: 'Question text', type: String, example: 'value' })
-  @IsOptional()
+  @ApiProperty({ description: 'Question text', type: String, example: 'value' })
   @IsString()
-  questionText?: string;
+  questionText!: string;
 
   @ApiPropertyOptional({ description: 'Question subtext', type: String, example: 'value' })
   @IsOptional()
@@ -37,11 +34,15 @@ export class UpdatePhase2QuestionDto {
   @IsString()
   mediaUrl?: string;
 
-  @ApiPropertyOptional({ description: 'Display order', type: Number, example: 1 })
-  @IsOptional()
+  @ApiProperty({ description: 'Display order', type: Number, example: 1 })
   @Type(() => Number)
   @IsInt()
-  displayOrder?: number;
+  displayOrder!: number;
+
+  @ApiProperty({ description: 'Test version id', type: Number, example: 1 })
+  @Type(() => Number)
+  @IsInt()
+  testVersionId!: number;
 
   @ApiPropertyOptional({ description: 'Min value', type: Number, example: 1 })
   @IsOptional()

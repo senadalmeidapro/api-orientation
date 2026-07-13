@@ -1,12 +1,12 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { BatchHistory, PhaseType } from '@prisma/client';
+import { BatchHistory, TestType } from '@prisma/client';
 
 export interface BatchInfo {
   id: string;
   assessmentId: string;
   batchIndex: number;
-  phaseType: PhaseType;
+  testType: TestType;
   questionIds: number[];
   presentedAt: Date;
   completedAt: Date | null;
@@ -29,14 +29,10 @@ export class BatchManagementService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async startNewBatch(
-    assessmentId: string,
-    questionIds: number[],
-    phaseType: PhaseType,
-  ): Promise<BatchInfo> {
+  async startNewBatch(assessmentId: string, questionIds: number[]): Promise<BatchInfo> {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: assessmentId },
-      select: { currentBatch: true },
+      select: { currentBatch: true, type: true },
     });
 
     if (!assessment) {
@@ -49,13 +45,12 @@ export class BatchManagementService {
       data: {
         assessmentId,
         batchIndex,
-        phaseType,
         questionIds,
         presentedAt: new Date(),
       },
     });
 
-    return this.mapBatchToInfo(batch);
+    return this.mapBatchToInfo(batch, assessment.type);
   }
 
   async completeBatch(assessmentId: string, batchIndex: number): Promise<BatchInfo> {
@@ -65,6 +60,9 @@ export class BatchManagementService {
           assessmentId,
           batchIndex,
         },
+      },
+      include: {
+        assessment: true,
       },
     });
 
@@ -89,13 +87,13 @@ export class BatchManagementService {
       data: { currentBatch: batchIndex + 1 },
     });
 
-    return this.mapBatchToInfo(updatedBatch);
+    return this.mapBatchToInfo(updatedBatch, batch.assessment.type);
   }
 
   async getCurrentBatch(assessmentId: string): Promise<BatchInfo | null> {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: assessmentId },
-      select: { currentBatch: true },
+      select: { currentBatch: true, type: true },
     });
 
     if (!assessment) {
@@ -111,16 +109,17 @@ export class BatchManagementService {
       },
     });
 
-    return batch ? this.mapBatchToInfo(batch) : null;
+    return batch ? this.mapBatchToInfo(batch, assessment.type) : null;
   }
 
   async getBatchHistory(assessmentId: string): Promise<BatchInfo[]> {
     const batches = await this.prisma.batchHistory.findMany({
       where: { assessmentId },
+      include: { assessment: true },
       orderBy: { batchIndex: 'asc' },
     });
 
-    return batches.map((b) => this.mapBatchToInfo(b));
+    return batches.map((b) => this.mapBatchToInfo(b, b.assessment.type));
   }
 
   async getBatchProgress(assessmentId: string): Promise<BatchProgress> {
@@ -129,9 +128,7 @@ export class BatchManagementService {
       select: {
         currentBatch: true,
         depth: true,
-        currentPhase: true,
-        phase1Responses: { select: { id: true } },
-        phase2Responses: { select: { id: true } },
+        responses: { select: { id: true } },
         batches: {
           select: { questionIds: true, completedAt: true },
           orderBy: { batchIndex: 'asc' },
@@ -144,7 +141,7 @@ export class BatchManagementService {
     }
 
     const totalExpectedQuestions = assessment.depth * 6;
-    const questionsAnswered = assessment.phase1Responses.length + assessment.phase2Responses.length;
+    const questionsAnswered = assessment.responses.length;
 
     const currentBatchData = assessment.batches.find((b) => !b.completedAt);
     const questionsInCurrentBatch = currentBatchData?.questionIds.length || 0;
@@ -183,12 +180,12 @@ export class BatchManagementService {
     return askedQuestions.includes(questionId);
   }
 
-  private mapBatchToInfo(batch: BatchHistory): BatchInfo {
+  private mapBatchToInfo(batch: BatchHistory, type: TestType): BatchInfo {
     return {
       id: batch.id,
       assessmentId: batch.assessmentId,
       batchIndex: batch.batchIndex,
-      phaseType: batch.phaseType,
+      testType: type,
       questionIds: batch.questionIds,
       presentedAt: batch.presentedAt,
       completedAt: batch.completedAt,

@@ -2,7 +2,7 @@ import { ThrottlerBehindProxyGuard } from './throttler-behind-proxy.guard';
 
 describe('ThrottlerBehindProxyGuard', () => {
   it('uses x-forwarded-for when present', async () => {
-    const guard = new ThrottlerBehindProxyGuard();
+    const guard = new ThrottlerBehindProxyGuard([] as any, {} as any, {} as any);
     const tracker = await (
       guard as unknown as {
         getTracker: (req: unknown) => Promise<string>;

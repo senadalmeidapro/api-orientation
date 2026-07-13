@@ -2,7 +2,7 @@ import { TreasureMapService } from './treasure-map.service';
 import type { ResultsService } from './results.service';
 import type { StorageService } from '../media/storage.service';
 import type { BadgesService } from '../badges/badges.service';
-import { AssessmentStatus } from '@prisma/client';
+import { TestStatus, TestType } from '@prisma/client';
 
 const prisma = {
   session: { findUnique: jest.fn() },
@@ -25,16 +25,21 @@ describe('TreasureMapService', () => {
     prisma.assessment.findFirst.mockResolvedValue({
       id: 'a1',
       sessionId: 1,
-      status: AssessmentStatus.COMPLETED,
+      type: TestType.FULL,
+      status: TestStatus.COMPLETED,
+      startedAt: new Date(),
+      completedAt: new Date(),
+      completionPercentage: 100,
     });
     prisma.assessmentResult.findUnique.mockResolvedValue({
       id: 'r1',
       assessmentId: 'a1',
-      phase1Code: 'R',
-      phase2Code: 'RIA',
-      phase1Scores: {},
-      phase2Scores: {},
-      sectionScores: {},
+      riasecCode: 'RIA',
+      scoresByCategory: {
+        GENERALE: {},
+        totalRaw: {},
+        normalized: {},
+      },
       consistencyLevel: 'FORTE',
       profileStrength: 'FORT',
       strengths: ['R', 'I'],

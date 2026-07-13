@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { AssessmentStatus, PhaseType } from '@prisma/client';
+import { TestStatus, TestType } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import type {
   AssessmentDetailDto,
@@ -70,8 +70,7 @@ export class UserHistoryService {
                 completedAt: true,
                 result: {
                   select: {
-                    phase1Code: true,
-                    phase2Code: true,
+                    riasecCode: true,
                     consistencyLevel: true,
                   },
                 },
@@ -93,7 +92,7 @@ export class UserHistoryService {
     const allAssessments = user.authSessions.flatMap((s) => s.assessments);
     const totalAssessments = allAssessments.length;
     const completedAssessments = allAssessments.filter(
-      (a) => a.status === AssessmentStatus.COMPLETED,
+      (a) => a.status === TestStatus.COMPLETED,
     ).length;
 
     // 3. Consolider les badges de toutes les sessions (dédupliqués par code)
@@ -135,8 +134,8 @@ export class UserHistoryService {
           type: a.type,
           status: a.status,
           completionPercentage: a.completionPercentage,
-          phase1Code: a.result?.phase1Code ?? null,
-          phase2Code: a.result?.phase2Code ?? null,
+          generalCode: a.result?.riasecCode ?? null,
+          specificCode: a.result?.riasecCode ?? null,
           consistencyLevel: a.result?.consistencyLevel ?? null,
           hasResult: a.result !== null,
           hasTreasureMap: a.treasureMap !== null,
@@ -187,23 +186,23 @@ export class UserHistoryService {
     // Métriques comportementales : calculer depuis les réponses
     const behaviorMetrics = await this.computeBehaviorMetrics(
       assessmentId,
-      assessment.currentPhase,
+      assessment.currentCategory,
     );
 
     // Mapper le résultat si présent
     const result = assessment.result
       ? {
           id: assessment.result.id,
-          phase1Code: assessment.result.phase1Code,
-          phase2Code: assessment.result.phase2Code,
+          generalCode: assessment.result.riasecCode,
+          specificCode: assessment.result.riasecCode,
           strengths: assessment.result.strengths,
           consistencyLevel: assessment.result.consistencyLevel,
           consistencyScore: assessment.result.consistencyScore,
           profileStrength: assessment.result.profileStrength,
           differentiationScore: assessment.result.differentiationScore,
-          phase1Scores: assessment.result.phase1Scores as Record<string, number> | null,
-          phase2Scores: assessment.result.phase2Scores as Record<string, number> | null,
-          sectionScores: assessment.result.sectionScores as Record<string, unknown> | null,
+          generalScores: this.getScoreSection(assessment.result.scoresByCategory, 'GENERALE'),
+          specificScores: this.getScoreSection(assessment.result.scoresByCategory, 'totalRaw'),
+          sectionScores: this.asRecord(assessment.result.scoresByCategory),
           subjectiveRanking: assessment.result.subjectiveRanking,
           createdAt: assessment.result.createdAt,
         }
@@ -292,7 +291,7 @@ export class UserHistoryService {
       throw new NotFoundException('Test introuvable ou accès non autorisé');
     }
 
-    if (assessment.status !== AssessmentStatus.COMPLETED) {
+    if (assessment.status !== TestStatus.COMPLETED) {
       throw new ForbiddenException(
         "Les recommandations ne sont disponibles qu'après la complétion du test",
       );
@@ -310,7 +309,7 @@ export class UserHistoryService {
     }
 
     const result = assessment.result;
-    const riasecCode = result.phase2Code ?? result.phase1Code ?? null;
+    const riasecCode = result.riasecCode ?? null;
 
     // Construire la liste des recommandations de métiers
     const careerRecs = result.careerRecommendations.map((rec) => ({
@@ -499,21 +498,16 @@ export class UserHistoryService {
 
   private async computeBehaviorMetrics(
     assessmentId: string,
-    phase: PhaseType,
+    category: TestType | null,
   ): Promise<BehaviorMetricsDto> {
-    let responses: Array<{ responseTimeMs: number | null }> = [];
-
-    if (phase === PhaseType.PHASE1) {
-      responses = await this.prisma.phase1Response.findMany({
-        where: { assessmentId, responseTimeMs: { not: null } },
-        select: { responseTimeMs: true },
-      });
-    } else {
-      responses = await this.prisma.phase2Response.findMany({
-        where: { assessmentId, responseTimeMs: { not: null } },
-        select: { responseTimeMs: true },
-      });
-    }
+    const responses = await this.prisma.response.findMany({
+      where: {
+        assessmentId,
+        responseTimeMs: { not: null },
+        ...(category ? { question: { category } } : {}),
+      },
+      select: { responseTimeMs: true },
+    });
 
     const times = responses
       .map((r) => r.responseTimeMs ?? 0)
@@ -554,5 +548,25 @@ export class UserHistoryService {
       responseVarianceMs: Math.round(variance),
       dominantPattern,
     };
+  }
+
+  private asRecord(value: unknown): Record<string, unknown> | null {
+    return typeof value === 'object' && value !== null && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : null;
+  }
+
+  private getScoreSection(value: unknown, key: string): Record<string, number> | null {
+    const record = this.asRecord(value);
+    const section = record ? this.asRecord(record[key]) : null;
+    if (!section) return null;
+
+    const scores: Record<string, number> = {};
+    for (const [scoreKey, scoreValue] of Object.entries(section)) {
+      if (typeof scoreValue === 'number') {
+        scores[scoreKey] = scoreValue;
+      }
+    }
+    return scores;
   }
 }

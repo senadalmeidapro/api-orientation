@@ -17,9 +17,10 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 
 export const authTokenTypes = {
-  emailVerification: 'email_verification',
-  resetPassword: 'reset_password',
-  refresh: 'refresh',
+  emailVerification: 'EMAIL_VERIFY',
+  resetPassword: 'PASSWORD_RESET',
+  refresh: 'REFRESH',
+  mfa: 'MFA',
 } as const;
 
 export type UserTokenType = (typeof authTokenTypes)[keyof typeof authTokenTypes];
@@ -35,7 +36,7 @@ export type JwtUser = Pick<User, 'id' | 'email' | 'role'>;
 const defaultEmailVerificationTtl = '24h';
 const defaultPasswordResetTtl = '1h';
 
-export type RefreshTokenRecord = Prisma.AuthTokenGetPayload<{
+export type RefreshTokenRecord = Prisma.TokenGetPayload<{
   select: {
     id: true;
     tokenHash: true;
@@ -126,7 +127,7 @@ export class AuthTokenService {
     }
 
     const tokenHash = this.hashToken(refreshToken);
-    const tokenRecord = await this.prisma.authToken.findFirst({
+    const tokenRecord = await this.prisma.token.findFirst({
       where: {
         tokenHash: tokenHash,
         tokenType: authTokenTypes.refresh,
@@ -196,11 +197,16 @@ export class AuthTokenService {
     expiresAt: Date,
     usedAt: Date | null,
     req?: Request,
-  ): Prisma.AuthTokenUpsertArgs {
+  ): Prisma.TokenUpsertArgs {
     const tokenPayload = this.buildRefreshTokenPayload(refreshToken, expiresAt, usedAt, req);
 
     return {
-      where: { userId },
+      where: {
+        userId_tokenType: {
+          userId,
+          tokenType: 'REFRESH',
+        },
+      },
       update: tokenPayload,
       create: {
         ...tokenPayload,

@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GetRecommendationsDto } from './dto/get-recommendations.dto';
 import { ResultsService } from '../results/results.service';
-import { Assessment, AssessmentResult, AssessmentStatus, Career, RiasecType } from '@prisma/client';
+import { Assessment, AssessmentResult, Career, RiasecType, TestStatus } from '@prisma/client';
 import { CacheService } from '@common/cache/cache.service';
 
 type CareerWithInstitutions = Career & {
@@ -117,8 +117,8 @@ export class RecommendationsService {
   // HELPERS GÉNÉRIQUES
   // =====================================================
 
-  private buildWeights(phase2Code: string) {
-    const letters = phase2Code.split('') as RiasecType[];
+  private buildWeights(specificCode: string) {
+    const letters = specificCode.split('') as RiasecType[];
     const weights: Record<string, number> = {};
     if (letters[0]) weights[letters[0]] = 50;
     if (letters[1]) weights[letters[1]] = 30;
@@ -198,23 +198,19 @@ export class RecommendationsService {
     return out;
   }
 
-  private extractNormalizedScores(result: {
-    sectionScores?: unknown;
-    phase2Scores?: unknown;
-    phase1Scores?: unknown;
-  }) {
-    const sectionScores = result.sectionScores;
-    if (this.isRecord(sectionScores)) {
-      const totalNormalized = sectionScores.totalNormalized;
+  private extractNormalizedScores(result: { scoresByCategory?: unknown }) {
+    const scoresByCategory = result.scoresByCategory;
+    if (this.isRecord(scoresByCategory)) {
+      const totalNormalized = scoresByCategory.totalNormalized;
       const asNumbers = this.toNumberRecord(totalNormalized);
       if (asNumbers) return this.normalizeVector(asNumbers);
+
+      const totalRaw = this.toNumberRecord(scoresByCategory.totalRaw);
+      if (totalRaw) return this.normalizeVector(totalRaw);
+
+      const generale = this.toNumberRecord(scoresByCategory.GENERALE);
+      if (generale) return this.normalizeVector(generale);
     }
-
-    const phase2 = this.toNumberRecord(result.phase2Scores);
-    if (phase2) return this.normalizeVector(phase2);
-
-    const phase1 = this.toNumberRecord(result.phase1Scores);
-    if (phase1) return this.normalizeVector(phase1);
 
     return [0, 0, 0, 0, 0, 0];
   }
@@ -275,7 +271,7 @@ export class RecommendationsService {
           where: { id: dto.assessmentId, sessionId: session.id },
         })
       : await this.prisma.assessment.findFirst({
-          where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+          where: { sessionId: session.id, status: TestStatus.COMPLETED },
           orderBy: { completedAt: 'desc' },
         });
 
@@ -481,7 +477,7 @@ export class RecommendationsService {
       });
     }
 
-    const baseCode = result.phase2Code ?? result.phase1Code;
+    const baseCode = result.riasecCode;
     if (!baseCode) return [];
 
     const weights = this.buildWeights(baseCode);
@@ -541,14 +537,13 @@ export class RecommendationsService {
           assessmentId: { not: assessment.id },
           createdAt: { gte: contextLookback },
           assessment: {
-            status: AssessmentStatus.COMPLETED,
+            status: TestStatus.COMPLETED,
             type: assessment.type,
             testVersionId: assessment.testVersionId,
-            currentPhase: assessment.currentPhase,
-            ...(assessment.currentSection ? { currentSection: assessment.currentSection } : {}),
+            ...(assessment.currentCategory ? { currentCategory: assessment.currentCategory } : {}),
           },
         },
-        select: { id: true, sectionScores: true, phase2Scores: true, phase1Scores: true },
+        select: { id: true, scoresByCategory: true },
         orderBy: { createdAt: 'desc' },
         take: 200,
       });
@@ -981,7 +976,7 @@ export class RecommendationsService {
     universities: UniversityRecommendationOutput[];
   }> {
     const canonicalDto: GetRecommendationsDto = {
-        ...(assessmentId !== undefined ? { assessmentId } : {}),
+      ...(assessmentId !== undefined ? { assessmentId } : {}),
       force: true, // force le recalcul + la persistance, ignore le cache
       limit: 6,
     };

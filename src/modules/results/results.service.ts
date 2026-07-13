@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { PrismaService } from '../../prisma/prisma.service';
 import { ScoringService } from '../scoring/scoring.service';
 import { ComputeResultDto } from './dto/compute-result.dto';
-import { AssessmentStatus, AssessmentType, Phase2Type } from '@prisma/client';
+import { TestStatus, TestType } from '@prisma/client';
 import { BadgesService } from '../badges/badges.service';
 import { EnhancedResultsService } from './services/enhanced-results.service';
 
@@ -29,7 +29,7 @@ export class ResultsService {
           where: { id: dto.assessmentId, sessionId: session.id },
         })
       : await this.prisma.assessment.findFirst({
-          where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+          where: { sessionId: session.id, status: TestStatus.COMPLETED },
           orderBy: { completedAt: 'desc' },
         });
 
@@ -37,7 +37,7 @@ export class ResultsService {
       throw new NotFoundException('Aucun test disponible pour cette session');
     }
 
-    if (assessment.status !== AssessmentStatus.COMPLETED) {
+    if (assessment.status !== TestStatus.COMPLETED) {
       throw new BadRequestException('Le test doit être complété avant de calculer le résultat');
     }
 
@@ -56,48 +56,43 @@ export class ResultsService {
       return existing;
     }
 
-    const phase1Source =
-      assessment.type === AssessmentType.PHASE1 || assessment.type === AssessmentType.FULL
+    const generalSource =
+      assessment.type === TestType.GENERALE || assessment.type === TestType.FULL
         ? assessment.id
         : await this.prisma.assessment
             .findFirst({
               where: {
                 sessionId: session.id,
-                type: AssessmentType.PHASE1,
-                status: AssessmentStatus.COMPLETED,
+                type: TestType.GENERALE,
+                status: TestStatus.COMPLETED,
               },
               orderBy: { completedAt: 'desc' },
               select: { id: true },
             })
             .then((item) => item?.id);
 
-    const phase2Types =
-      assessment.type === AssessmentType.PHASE2_OCCUPATIONS
-        ? [Phase2Type.OCCUPATIONS]
-        : assessment.type === AssessmentType.PHASE2_APTITUDES
-          ? [Phase2Type.APTITUDES]
-          : assessment.type === AssessmentType.PHASE2_PERSONALITY
-            ? [Phase2Type.PERSONALITY]
-            : assessment.type === AssessmentType.FULL
-              ? [Phase2Type.OCCUPATIONS, Phase2Type.APTITUDES, Phase2Type.PERSONALITY]
-              : [];
+    const categories =
+      assessment.type === TestType.FULL
+        ? [TestType.OCCUPATIONS, TestType.APTITUDES, TestType.PERSONALITY]
+        : assessment.type === TestType.GENERALE
+          ? []
+          : [assessment.type];
 
     const scores = await this.scoring.computeScores(assessment.id, {
-      phase1AssessmentId: phase1Source ?? null,
-      phase2Types,
+      generalAssessmentId: generalSource ?? null,
+      categories,
     });
+    const riasecCode = scores.specificCode ?? scores.generalCode;
 
     const result = await this.prisma.assessmentResult.upsert({
       where: { assessmentId: assessment.id },
       update: {
-        phase1Code: scores.phase1Code,
-        phase2Code: scores.phase2Code,
-        phase1Scores: scores.phase1Scores,
-        phase2Scores: scores.phase2Scores,
-        sectionScores: {
+        riasecCode,
+        scoresByCategory: {
           ...scores.sectionScores,
-          totalRaw: scores.phase2Scores,
-          totalNormalized: scores.phase2NormalizedScores,
+          GENERALE: scores.generalScores,
+          totalRaw: scores.specificScores,
+          totalNormalized: scores.specificNormalizedScores,
         },
         consistencyScore: scores.consistencyScore,
         consistencyLevel: scores.consistencyLevel,
@@ -110,14 +105,12 @@ export class ResultsService {
       },
       create: {
         assessmentId: assessment.id,
-        phase1Code: scores.phase1Code,
-        phase2Code: scores.phase2Code,
-        phase1Scores: scores.phase1Scores,
-        phase2Scores: scores.phase2Scores,
-        sectionScores: {
+        riasecCode,
+        scoresByCategory: {
           ...scores.sectionScores,
-          totalRaw: scores.phase2Scores,
-          totalNormalized: scores.phase2NormalizedScores,
+          GENERALE: scores.generalScores,
+          totalRaw: scores.specificScores,
+          totalNormalized: scores.specificNormalizedScores,
         },
         consistencyScore: scores.consistencyScore,
         consistencyLevel: scores.consistencyLevel,
@@ -130,7 +123,7 @@ export class ResultsService {
       },
     });
 
-    if (assessment.type !== AssessmentType.PHASE1) {
+    if (assessment.type !== TestType.GENERALE) {
       await this.badges.grantTestCompleted(session);
     }
 
@@ -169,7 +162,7 @@ export class ResultsService {
     return this.prisma.assessmentResult.update({
       where: { assessmentId },
       data: {
-        viewSount: { increment: 1 },
+        viewCount: { increment: 1 },
         lastViewedAt: new Date(),
       },
       include: { careerRecommendations: true },

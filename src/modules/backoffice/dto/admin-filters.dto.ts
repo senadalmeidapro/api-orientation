@@ -1,12 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  AssessmentStatus,
-  AssessmentType,
-  Phase2Type,
-  RiasecType,
-  UserRole,
-  UserStatus,
-} from '@prisma/client';
+import { RiasecType, TestStatus, TestType, UserRole, UserStatus } from '@prisma/client';
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { AdminPaginationDto } from './admin-pagination.dto';
 
@@ -33,12 +26,12 @@ export class AdminSessionsFilterDto extends AdminPaginationDto {
 
 export class AdminAssessmentsFilterDto extends AdminPaginationDto {
   @IsOptional()
-  @IsEnum(AssessmentStatus)
-  status?: AssessmentStatus;
+  @IsEnum(TestStatus)
+  status?: TestStatus;
 
   @IsOptional()
-  @IsEnum(AssessmentType)
-  type?: AssessmentType;
+  @IsEnum(TestType)
+  type?: TestType;
 
   @IsOptional()
   @IsString()
@@ -49,7 +42,7 @@ export class AdminAssessmentsFilterDto extends AdminPaginationDto {
   userId?: string;
 }
 
-export class AdminPhase1QuestionsFilterDto extends AdminPaginationDto {
+export class AdminGeneralQuestionsFilterDto extends AdminPaginationDto {
   @IsOptional()
   @Type(() => Number)
   testVersionId?: number;
@@ -64,8 +57,8 @@ export class AdminPhase1QuestionsFilterDto extends AdminPaginationDto {
   isActive?: boolean;
 }
 
-export class AdminPhase2QuestionsFilterDto extends AdminPhase1QuestionsFilterDto {
+export class AdminSpecificQuestionsFilterDto extends AdminGeneralQuestionsFilterDto {
   @IsOptional()
-  @IsEnum(Phase2Type)
-  phase2Type?: Phase2Type;
+  @IsEnum(TestType)
+  category?: TestType;
 }

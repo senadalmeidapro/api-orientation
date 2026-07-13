@@ -2,7 +2,7 @@ import { IsInt, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class Phase1ResponseItemDto {
+export class ResponseItemDto {
   @ApiProperty({ description: 'Question id', type: Number, example: 1 })
   @Type(() => Number)
   @IsInt()
@@ -12,7 +12,7 @@ export class Phase1ResponseItemDto {
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  @Max(1)
+  @Max(3)
   responseValue!: number;
 
   @ApiPropertyOptional({ description: 'Response time ms', type: Number, example: 1 })

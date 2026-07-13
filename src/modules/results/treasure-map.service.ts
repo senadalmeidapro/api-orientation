@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ResultsService } from './results.service';
-import { AssessmentStatus, AssessmentType, Phase2Type, RiasecType, Prisma } from '@prisma/client';
+import { TestStatus, TestType, RiasecType, Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 import { StorageService } from '../media/storage.service';
 import { BadgesService } from '../badges/badges.service';
@@ -53,14 +53,14 @@ type TreasureMapPayload = {
   generatedAt: string;
   assessment: {
     id: string;
-    type: AssessmentType;
-    status: AssessmentStatus;
+    type: TestType;
+    status: TestStatus;
     startedAt: string;
     completedAt: string | null;
     completionPercentage: number;
   };
-  phase1Code: string | null;
-  phase2Code: string | null;
+  generalCode: string | null;
+  specificCode: string | null;
   dominantCode: string | null;
   riasecSummary: Array<{
     code: RiasecType;
@@ -68,11 +68,11 @@ type TreasureMapPayload = {
     score: number;
     rank: number;
   }>;
-  phase1Scores: Prisma.JsonValue | null;
-  phase2Scores: Prisma.JsonValue | null;
+  generalScores: Prisma.JsonValue | null;
+  specificScores: Prisma.JsonValue | null;
   sectionScores: Prisma.JsonValue | null;
   sectionSummary: Array<{
-    section: Phase2Type;
+    section: TestType;
     label: string;
     topCodes: string;
     scores: Array<{ code: RiasecType; score: number; rank: number }>;
@@ -104,7 +104,7 @@ const riasecDescriptions: Record<RiasecType, string> = {
   C: 'Aime structurer, classer, verifier, gerer des donnees et travailler avec methode et precision.',
 };
 
-const sectionLabels: Record<Phase2Type, string> = {
+const sectionLabels: Partial<Record<TestType, string>> = {
   OCCUPATIONS: 'Interets professionnels',
   APTITUDES: 'Aptitudes percues',
   PERSONALITY: 'Personnalite',
@@ -121,8 +121,8 @@ export class TreasureMapService {
     private readonly badges: BadgesService,
   ) {}
 
-  private buildWeights(phase2Code: string) {
-    const letters = phase2Code.split('') as RiasecType[];
+  private buildWeights(specificCode: string) {
+    const letters = specificCode.split('') as RiasecType[];
     const weights: Record<string, number> = {};
     if (letters[0]) weights[letters[0]] = 50;
     if (letters[1]) weights[letters[1]] = 30;
@@ -151,6 +151,24 @@ export class TreasureMapService {
       empty[code] = this.toNumber(value[code]);
     }
     return empty;
+  }
+
+  private toResultView(result: { riasecCode: string | null; scoresByCategory: unknown }) {
+    const scores = this.isRecord(result.scoresByCategory) ? result.scoresByCategory : {};
+    const generalScores = this.isRecord(scores.GENERALE)
+      ? (scores.GENERALE as Prisma.JsonValue)
+      : null;
+    const specificScores = this.isRecord(scores.totalRaw)
+      ? (scores.totalRaw as Prisma.JsonValue)
+      : null;
+
+    return {
+      dominantCode: result.riasecCode,
+      generalCode: result.riasecCode,
+      specificCode: result.riasecCode,
+      generalScores,
+      specificScores,
+    };
   }
 
   private sortScores(scores: Record<RiasecType, number>) {
@@ -191,14 +209,14 @@ export class TreasureMapService {
     const normalized = sectionScores.normalized;
     if (!this.isRecord(normalized)) return [];
 
-    return (Object.keys(sectionLabels) as Phase2Type[])
+    return (Object.keys(sectionLabels) as TestType[])
       .map((section) => {
         const scores = this.sortScores(this.extractScores(normalized[section])).map(
           ({ code, score, rank }) => ({ code, score, rank }),
         );
         return {
           section,
-          label: sectionLabels[section],
+          label: sectionLabels[section] ?? section,
           topCodes: scores
             .slice(0, 3)
             .map((item) => item.code)
@@ -219,7 +237,7 @@ export class TreasureMapService {
 
     if (mapData.consistencyLevel === 'FAIBLE') {
       steps.unshift(
-        'Reprendre les resultats avec un conseiller: vos reponses montrent une coherence faible entre les phases.',
+        'Reprendre les resultats avec un conseiller: vos reponses montrent une coherence faible entre les categorys.',
       );
     }
 
@@ -384,10 +402,10 @@ export class TreasureMapService {
 
     this.writeSection(doc, '1. Synthese du profil');
     this.writeKeyValue(doc, 'Code dominant', mapData.dominantCode);
-    this.writeKeyValue(doc, 'Code phase 1', mapData.phase1Code);
-    this.writeKeyValue(doc, 'Code phase 2', mapData.phase2Code);
+    this.writeKeyValue(doc, 'Code générales', mapData.generalCode);
+    this.writeKeyValue(doc, 'Code catégorie', mapData.specificCode);
     this.writeKeyValue(doc, 'Force du profil', mapData.profileStrengthLabel);
-    this.writeKeyValue(doc, 'Coherence phase 1 / phase 2', mapData.consistencyLabel);
+    this.writeKeyValue(doc, 'Coherence générales / catégorie', mapData.consistencyLabel);
     this.writeKeyValue(doc, 'Type de test', this.formatEnum(mapData.assessment.type));
     this.writeKeyValue(doc, 'Progression', `${mapData.assessment.completionPercentage}%`);
 
@@ -522,7 +540,7 @@ export class TreasureMapService {
           where: { id: assessmentId, sessionId: session.id },
         })
       : await this.prisma.assessment.findFirst({
-          where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+          where: { sessionId: session.id, status: TestStatus.COMPLETED },
           orderBy: { completedAt: 'desc' },
         });
     if (!assessment) {
@@ -533,7 +551,7 @@ export class TreasureMapService {
       where: { assessmentId: assessment.id },
     });
     if (!result) {
-      if (assessment.status !== AssessmentStatus.COMPLETED) {
+      if (assessment.status !== TestStatus.COMPLETED) {
         throw new NotFoundException('Resultat indisponible, test non termine');
       }
       result = await this.resultsService.compute({
@@ -549,17 +567,14 @@ export class TreasureMapService {
       take: 6,
     });
 
+    const resultView = this.toResultView(result);
     const recs = existingRecs.length
       ? existingRecs.map((r) => ({
           rankPosition: r.rankPosition,
           matchScore: r.matchScore,
           career: r.career,
         }))
-      : await this.computeRecommendations(
-          result.id,
-          result.phase2Code ?? result.phase1Code ?? '',
-          6,
-        );
+      : await this.computeRecommendations(result.id, resultView.dominantCode ?? '', 6);
 
     const recommendedCareerIds = recs.map((rec) => rec.career.id);
     const enrichedCareers = await this.prisma.career.findMany({
@@ -588,14 +603,13 @@ export class TreasureMapService {
     const enrichedCareerMap = new Map(enrichedCareers.map((career) => [career.id, career]));
 
     const baseScores =
-      result.phase2Scores &&
-      this.sortScores(this.extractScores(result.phase2Scores)).some((s) => s.score > 0)
-        ? this.extractScores(result.phase2Scores)
-        : this.extractScores(result.phase1Scores);
+      resultView.specificScores &&
+      this.sortScores(this.extractScores(resultView.specificScores)).some((s) => s.score > 0)
+        ? this.extractScores(resultView.specificScores)
+        : this.extractScores(resultView.generalScores);
     const riasecSummary = this.sortScores(baseScores);
     const dominantCode =
-      result.phase2Code ??
-      result.phase1Code ??
+      resultView.dominantCode ??
       riasecSummary
         .slice(0, 3)
         .map((item) => item.code)
@@ -611,14 +625,14 @@ export class TreasureMapService {
         completedAt: assessment.completedAt?.toISOString() ?? null,
         completionPercentage: assessment.completionPercentage,
       },
-      phase1Code: result.phase1Code,
-      phase2Code: result.phase2Code,
+      generalCode: resultView.generalCode,
+      specificCode: resultView.specificCode,
       dominantCode: dominantCode || null,
       riasecSummary,
-      phase1Scores: result.phase1Scores,
-      phase2Scores: result.phase2Scores,
-      sectionScores: result.sectionScores,
-      sectionSummary: this.buildSectionSummary(result.sectionScores),
+      generalScores: resultView.generalScores,
+      specificScores: resultView.specificScores,
+      sectionScores: result.scoresByCategory,
+      sectionSummary: this.buildSectionSummary(result.scoresByCategory),
       consistencyLevel: result.consistencyLevel,
       consistencyLabel: this.formatEnum(result.consistencyLevel),
       profileStrength: result.profileStrength,

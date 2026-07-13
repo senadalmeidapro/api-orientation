@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import type { PrismaService } from '../../../prisma/prisma.service';
-import { Phase2Type } from '@prisma/client';
+import { TestType } from '@prisma/client';
 import { ConfigService } from '../../config/config.service';
 import { PasswordService } from '../../../modules/auth/services/password.service';
 
@@ -3402,8 +3402,7 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
       type: 'FULL',
       depth: 10,
       status: 'COMPLETED',
-      currentPhase: 'PHASE2',
-      currentSection: null,
+      currentCategory: TestType.OCCUPATIONS,
       currentStepIndex: 0,
       batchSize: 5,
       currentBatch: 2,
@@ -3418,23 +3417,23 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
   });
   console.log(`✓ Assessment ready (${assessment.id})`);
 
-  // Phase 1 responses
-  const phase1Questions = await prisma.phase1Question.findMany({
-    where: { testVersionId: testVersion.id },
+  // générales responses
+  const generalQuestions = await prisma.question.findMany({
+    where: { testVersionId: testVersion.id, category: TestType.GENERALE },
     take: 12,
   });
 
-  for (let i = 0; i < phase1Questions.length; i++) {
-    const question = phase1Questions[i];
+  for (let i = 0; i < generalQuestions.length; i++) {
+    const question = generalQuestions[i];
     if (!question) continue;
 
-    await prisma.phase1Response.upsert({
+    await prisma.response.upsert({
       where: {
         assessmentId_questionId: { assessmentId: assessment.id, questionId: question.id },
       },
       update: { responseValue: i % 2 },
       create: {
-        id: `phase1_resp_sample_${i}`,
+        id: `general_resp_sample_${i}`,
         assessmentId: assessment.id,
         questionId: question.id,
         responseValue: i % 2,
@@ -3445,54 +3444,47 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
       },
     });
   }
-  console.log(`✓ ${phase1Questions.length} Phase 1 responses created`);
+  console.log(`✓ ${generalQuestions.length} générales responses created`);
 
   // Behavioral indicators
-  const phase1Responses = await prisma.phase1Response.findMany({
+  const generalResponses = await prisma.response.findMany({
     where: { assessmentId: assessment.id },
     take: 4,
   });
 
-  for (let i = 0; i < phase1Responses.length; i++) {
-    const response = phase1Responses[i];
+  for (let i = 0; i < generalResponses.length; i++) {
+    const response = generalResponses[i];
     if (!response) continue;
 
-    await prisma.behavioralIndicator.upsert({
-      where: { id: `behavior_sample_${i}` },
-      update: {},
-      create: {
-        id: `behavior_sample_${i}`,
-        assessmentId: assessment.id,
-        responseId: response.id,
-        indicatorType: i % 3 === 0 ? 'hesitation' : i % 3 === 1 ? 'change' : 'consistent',
-        timeTakenMs: 3000 + i * 500,
-        changeCount: i % 2,
-        metadata: { pattern: 'normal' },
+    await prisma.response.update({
+      where: { id: response.id },
+      data: {
+        behavioralFlags: [i % 3 === 0 ? 'hesitation' : i % 3 === 1 ? 'change' : 'consistent'],
       },
     });
   }
-  console.log(`✓ ${phase1Responses.length} behavioral indicators created`);
+  console.log(`✓ ${generalResponses.length} behavioral flags updated`);
 
-  // Phase 2 — Occupations
-  const phase2Occupations = await prisma.phase2Question.findMany({
-    where: { testVersionId: testVersion.id, phase2Type: Phase2Type.OCCUPATIONS },
+  // catégorie — Occupations
+  const specificOccupations = await prisma.question.findMany({
+    where: { testVersionId: testVersion.id, category: TestType.OCCUPATIONS },
     take: 6,
   });
 
-  for (let i = 0; i < phase2Occupations.length; i++) {
-    const question = phase2Occupations[i];
+  for (let i = 0; i < specificOccupations.length; i++) {
+    const question = specificOccupations[i];
     if (!question) continue;
 
-    await prisma.phase2Response.upsert({
+    await prisma.response.upsert({
       where: {
         assessmentId_questionId: { assessmentId: assessment.id, questionId: question.id },
       },
       update: { responseValue: i % 2 },
       create: {
-        id: `phase2_occ_resp_sample_${i}`,
+        id: `specific_occ_resp_sample_${i}`,
         assessmentId: assessment.id,
         questionId: question.id,
-        phase2Type: Phase2Type.OCCUPATIONS,
+
         responseValue: i % 2,
         responseTimeMs: 4000 + i * 600,
         timeTakenMs: 4000 + i * 600,
@@ -3500,28 +3492,28 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
       },
     });
   }
-  console.log(`✓ ${phase2Occupations.length} Phase 2 Occupations responses created`);
+  console.log(`✓ ${specificOccupations.length} catégorie Occupations responses created`);
 
-  // Phase 2 — Aptitudes
-  const phase2Aptitudes = await prisma.phase2Question.findMany({
-    where: { testVersionId: testVersion.id, phase2Type: Phase2Type.APTITUDES },
+  // catégorie — Aptitudes
+  const specificAptitudes = await prisma.question.findMany({
+    where: { testVersionId: testVersion.id, category: TestType.APTITUDES },
     take: 6,
   });
 
-  for (let i = 0; i < phase2Aptitudes.length; i++) {
-    const question = phase2Aptitudes[i];
+  for (let i = 0; i < specificAptitudes.length; i++) {
+    const question = specificAptitudes[i];
     if (!question) continue;
 
-    await prisma.phase2Response.upsert({
+    await prisma.response.upsert({
       where: {
         assessmentId_questionId: { assessmentId: assessment.id, questionId: question.id },
       },
       update: { responseValue: (i % 3) + 1 },
       create: {
-        id: `phase2_apt_resp_sample_${i}`,
+        id: `specific_apt_resp_sample_${i}`,
         assessmentId: assessment.id,
         questionId: question.id,
-        phase2Type: Phase2Type.APTITUDES,
+
         responseValue: (i % 3) + 1,
         responseTimeMs: 3000 + i * 700,
         timeTakenMs: 3000 + i * 700,
@@ -3529,7 +3521,7 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
       },
     });
   }
-  console.log(`✓ ${phase2Aptitudes.length} Phase 2 Aptitudes responses created`);
+  console.log(`✓ ${specificAptitudes.length} catégorie Aptitudes responses created`);
 
   // Assessment result
   const result = await prisma.assessmentResult.upsert({
@@ -3538,10 +3530,12 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
     create: {
       id: 'result_sample_v1',
       assessmentId: assessment.id,
-      phase1Code: 'IAS',
-      phase2Code: 'IAE',
-      phase1Scores: { R: 12, I: 18, A: 15, S: 10, E: 8, C: 10 },
-      phase2Scores: { R: 25, I: 35, A: 30, S: 20, E: 15, C: 20 },
+      riasecCode: 'IAE',
+      scoresByCategory: {
+        GENERALE: { R: 12, I: 18, A: 15, S: 10, E: 8, C: 10 },
+        totalRaw: { R: 25, I: 35, A: 30, S: 20, E: 15, C: 20 },
+        totalNormalized: { R: 42, I: 58, A: 50, S: 33, E: 25, C: 33 },
+      },
       consistencyScore: 0.82,
       consistencyLevel: 'FORTE',
       differentiationScore: 0.72,
@@ -3589,8 +3583,8 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
       shareToken: `share_${Date.now()}`,
       mapData: {
         riasecProfile: 'IAS',
-        phase1Code: 'IAS',
-        phase2Code: 'IAE',
+        generalCode: 'IAS',
+        specificCode: 'IAE',
         scores: { R: 12, I: 18, A: 15, S: 10, E: 8, C: 10 },
         topCareers: topCareers.slice(0, 3).map((c) => c.name),
         strengths: ['Pensée analytique', 'Créativité', 'Curiosité intellectuelle'],
@@ -3614,14 +3608,14 @@ export async function seedSampleAssessmentData(prisma: PrismaService) {
         id: 'xp_sample_1',
         sessionId: session.id,
         amount: 100,
-        reason: 'phase1_completion',
+        reason: 'general_completion',
         assessmentId: assessment.id,
       },
       {
         id: 'xp_sample_2',
         sessionId: session.id,
         amount: 50,
-        reason: 'phase2_completion',
+        reason: 'specific_completion',
         assessmentId: assessment.id,
       },
     ],

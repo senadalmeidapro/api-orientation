@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { CreateAssessmentDto } from './dto/create-assessment.dto';
 import { UpdateSessionProfileDto } from './dto/update-session-profile.dto';
-import { AssessmentType } from '@prisma/client';
+import { TestType } from '@prisma/client';
 import { SessionLifecycleService } from './services/session-lifecycle.service';
 import { AssessmentFlowService } from './services/assessment-flow.service';
 
@@ -20,11 +20,11 @@ export class SessionsService {
 
     const testVersionId = await this.flowService.resolveTestVersionId(dto.testVersionId);
 
-    const assessmentType = dto.initialAssessmentType ?? AssessmentType.PHASE1;
+    const initialTestType = dto.initialTestType ?? TestType.GENERALE;
     const depth = dto.depth ?? 5; // DEFAULT_DEPTH
 
     const assessment = await this.flowService.createAssessment(session.id, testVersionId, {
-      type: assessmentType,
+      type: initialTestType,
       depth,
     });
 

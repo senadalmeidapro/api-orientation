@@ -65,13 +65,13 @@ class ActivationStatsDto {
   @ApiProperty()
   scholarshipsInactive!: number;
   @ApiProperty()
-  phase1QuestionsActive!: number;
+  generalQuestionsActive!: number;
   @ApiProperty()
-  phase1QuestionsInactive!: number;
+  generalQuestionsInactive!: number;
   @ApiProperty()
-  phase2QuestionsActive!: number;
+  specificQuestionsActive!: number;
   @ApiProperty()
-  phase2QuestionsInactive!: number;
+  specificQuestionsInactive!: number;
 }
 
 class RecommendationStatsDto {
@@ -113,13 +113,13 @@ class ExtendedTotalsDto {
   @ApiProperty()
   languages!: number;
   @ApiProperty()
-  phase1Questions!: number;
+  generalQuestions!: number;
   @ApiProperty()
-  phase2Questions!: number;
+  specificQuestions!: number;
   @ApiProperty()
-  phase1Responses!: number;
+  generalResponses!: number;
   @ApiProperty()
-  phase2Responses!: number;
+  specificResponses!: number;
   @ApiProperty()
   assessmentResults!: number;
   @ApiProperty()
@@ -152,9 +152,9 @@ class PeriodTotalsDto {
   @ApiProperty()
   assessments!: number;
   @ApiProperty()
-  phase1Responses!: number;
+  generalResponses!: number;
   @ApiProperty()
-  phase2Responses!: number;
+  specificResponses!: number;
   @ApiProperty()
   assessmentResults!: number;
   @ApiProperty()

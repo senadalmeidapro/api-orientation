@@ -1,15 +1,8 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CreatePhase1ResponsesDto } from './dto/create-phase1-responses.dto';
-import { CreatePhase2ResponsesDto } from './dto/create-phase2-responses.dto';
+import { CreateResponsesDto } from './dto/create-responses.dto';
 import { SubmitBatchResponsesDto } from './dto/submit-batch-responses.dto';
-import {
-  AssessmentStatus,
-  AssessmentType,
-  Phase2Type,
-  PhaseType,
-  RiasecType,
-} from '@prisma/client';
+import { TestStatus, TestType, RiasecType } from '@prisma/client';
 import { BadgesService } from '../badges/badges.service';
 import { resolveSessionAndAssessment } from '@common/utils/assessment.util';
 import { BehavioralAnalysisService } from './services/behavioral-analysis.service';
@@ -17,11 +10,7 @@ import { BatchManagementService } from '../sessions/services/batch-management.se
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';
 
 const defaultDepth = 5;
-const phase2Order: Phase2Type[] = [
-  Phase2Type.OCCUPATIONS,
-  Phase2Type.APTITUDES,
-  Phase2Type.PERSONALITY,
-];
+const categoryOrder: TestType[] = [TestType.OCCUPATIONS, TestType.APTITUDES, TestType.PERSONALITY];
 
 @Injectable()
 export class ResponsesService {
@@ -59,23 +48,22 @@ export class ResponsesService {
       this.prisma.assessment.update({
         where: { id: assessmentId },
         data: {
-          status: AssessmentStatus.IN_PROGRESS,
+          status: TestStatus.IN_PROGRESS,
           completedAt: null,
         },
       }),
     ]);
   }
 
-  private async ensurePhase1Prerequisite(sessionId: string) {
-    const phase1Done = await this.prisma.assessment.findFirst({
+  private async ensureCategoryPrerequisite(sessionId: string) {
+    const assessment = await this.prisma.assessment.findFirst({
       where: {
         sessionId,
-        type: AssessmentType.PHASE1,
-        status: AssessmentStatus.COMPLETED,
+        status: TestStatus.COMPLETED,
       },
       select: { id: true },
     });
-    if (!phase1Done) {
+    if (!assessment) {
       throw new BadRequestException("Le test d'amorce doit être complété avant un test spécifique");
     }
   }
@@ -100,15 +88,20 @@ export class ResponsesService {
     }, 0);
   }
 
-  private async computePhase1Progress(assessmentId: string, testVersionId: number, depth: number) {
-    const questions = await this.prisma.phase1Question.findMany({
-      where: { isActive: true, testVersionId },
+  private async computeProgress(
+    assessmentId: string,
+    testVersionId: number,
+    depth: number,
+    category: TestType,
+  ) {
+    const questions = await this.prisma.question.findMany({
+      where: { isActive: true, testVersionId, category },
       select: { riasecTypeId: true },
     });
     const questionCounts = this.buildCounts(questions);
     const total = this.computeTargetTotal(questionCounts, depth);
 
-    const responses = await this.prisma.phase1Response.findMany({
+    const responses = await this.prisma.response.findMany({
       where: { assessmentId },
       select: { question: { select: { riasecTypeId: true } } },
     });
@@ -120,195 +113,67 @@ export class ResponsesService {
     return { total, answered };
   }
 
-  private async computePhase2Progress(
-    assessmentId: string,
-    testVersionId: number,
-    depth: number,
-    section: Phase2Type,
-  ) {
-    const questions = await this.prisma.phase2Question.findMany({
-      where: { isActive: true, testVersionId, phase2Type: section },
-      select: { riasecTypeId: true },
-    });
-    const questionCounts = this.buildCounts(questions);
-    const total = this.computeTargetTotal(questionCounts, depth);
-
-    const responses = await this.prisma.phase2Response.findMany({
-      where: { assessmentId, phase2Type: section },
-      select: { question: { select: { riasecTypeId: true } } },
-    });
-    const answeredCounts = this.buildCounts(
-      responses.map((r) => ({ riasecTypeId: r.question.riasecTypeId })),
-    );
-    const answered = this.capAnsweredByDepth(answeredCounts, depth);
-
-    return { total, answered };
-  }
-
-  async savePhase1(dto: CreatePhase1ResponsesDto) {
+  async saveResponse(dto: CreateResponsesDto) {
     const { session, assessment } = await resolveSessionAndAssessment(
       this.prisma,
       dto.sessionToken,
       {
         ...(dto.assessmentId !== undefined ? { assessmentId: dto.assessmentId } : {}),
-        phase: PhaseType.PHASE1,
         requireInProgress: true,
       },
     );
-    if (assessment.type !== AssessmentType.PHASE1 && assessment.type !== AssessmentType.FULL) {
-      throw new BadRequestException('Ce test ne contient pas de phase 1');
-    }
+    /*if (assessment.type === TestType.FULL) {
+      await this.ensureCategoryPrerequisite(session.id);
+    }*/
 
     const questionIds = dto.responses.map((r) => r.questionId);
-    const questions = await this.prisma.phase1Question.findMany({
+    const questions = await this.prisma.question.findMany({
       where: {
         id: { in: questionIds },
         testVersionId: assessment.testVersionId,
         isActive: true,
       },
-      select: { id: true },
+      select: { id: true, category: true, maxValue: true },
     });
 
     if (questions.length !== questionIds.length) {
-      throw new BadRequestException('Certaines questions Phase 1 sont invalides');
-    }
-
-    await this.prisma.$transaction(
-      dto.responses.map((r) =>
-        this.prisma.phase1Response.upsert({
-          where: {
-            assessmentId_questionId: {
-              assessmentId: assessment.id,
-              questionId: r.questionId,
-            },
-          },
-          update: {
-            responseValue: r.responseValue,
-            ...(r.responseTimeMs !== undefined ? { responseTimeMs: r.responseTimeMs } : {}),
-          },
-          create: {
-            assessmentId: assessment.id,
-            questionId: r.questionId,
-            responseValue: r.responseValue,
-            ...(r.responseTimeMs !== undefined ? { responseTimeMs: r.responseTimeMs } : {}),
-          },
-        }),
-      ),
-    );
-
-    const depth = assessment.depth ?? defaultDepth;
-    const progress = await this.computePhase1Progress(
-      assessment.id,
-      assessment.testVersionId,
-      depth,
-    );
-    const phase1Completed = progress.total > 0 && progress.answered >= progress.total;
-
-    const isFull = assessment.type === AssessmentType.FULL;
-    const completionPercentage = phase1Completed
-      ? isFull
-        ? 50
-        : 100
-      : isFull
-        ? Math.round((progress.answered / Math.max(progress.total, 1)) * 50)
-        : Math.round((progress.answered / Math.max(progress.total, 1)) * 100);
-
-    await this.prisma.assessment.update({
-      where: { id: assessment.id },
-      data: {
-        status:
-          phase1Completed && !isFull ? AssessmentStatus.COMPLETED : AssessmentStatus.IN_PROGRESS,
-        ...(phase1Completed && !isFull ? { completedAt: new Date() } : {}),
-        currentPhase: phase1Completed && isFull ? PhaseType.PHASE2 : PhaseType.PHASE1,
-        currentSection:
-          phase1Completed && isFull ? Phase2Type.OCCUPATIONS : assessment.currentSection,
-        completionPercentage,
-        currentStepIndex: progress.answered,
-      },
-    });
-
-    if (phase1Completed) {
-      await this.badges.grantPhase1Completed(session);
-    }
-
-    await this.invalidateResultIfExists(assessment.id);
-
-    return { saved: dto.responses.length, phase1Completed };
-  }
-
-  async savePhase2(dto: CreatePhase2ResponsesDto) {
-    const { session, assessment } = await resolveSessionAndAssessment(
-      this.prisma,
-      dto.sessionToken,
-      {
-        ...(dto.assessmentId !== undefined ? { assessmentId: dto.assessmentId } : {}),
-        phase: PhaseType.PHASE2,
-        requireInProgress: true,
-      },
-    );
-    if (assessment.type === AssessmentType.PHASE1) {
-      throw new BadRequestException('La phase 2 est indisponible pour ce test');
-    }
-    if (
-      assessment.type === AssessmentType.PHASE2_OCCUPATIONS ||
-      assessment.type === AssessmentType.PHASE2_APTITUDES ||
-      assessment.type === AssessmentType.PHASE2_PERSONALITY
-    ) {
-      await this.ensurePhase1Prerequisite(session.id);
-    }
-
-    const questionIds = dto.responses.map((r) => r.questionId);
-    const questions = await this.prisma.phase2Question.findMany({
-      where: {
-        id: { in: questionIds },
-        testVersionId: assessment.testVersionId,
-        isActive: true,
-      },
-      select: { id: true, phase2Type: true, maxValue: true },
-    });
-
-    if (questions.length !== questionIds.length) {
-      throw new BadRequestException('Certaines questions Phase 2 sont invalides');
+      throw new BadRequestException('Certaines questions catégorie sont invalides');
     }
 
     const questionMap = new Map(questions.map((q) => [q.id, q]));
-    const sectionSet = new Set(questions.map((q) => q.phase2Type));
-    if (sectionSet.size > 1) {
-      throw new BadRequestException('Les réponses Phase 2 doivent appartenir à une seule section');
+    const categorySet = new Set(questions.map((q) => q.category));
+    if (categorySet.size > 1) {
+      throw new BadRequestException(
+        'Les réponses catégorie doivent appartenir à une seule category',
+      );
     }
-    const sectionType = questions[0]?.phase2Type ?? null;
+    const categoryType = questions[0]?.category ?? null;
 
-    if (!sectionType) {
-      throw new BadRequestException('Section de phase 2 introuvable');
+    if (!categoryType) {
+      throw new BadRequestException('Section de catégorie introuvable');
     }
 
-    if (assessment.currentSection && assessment.currentSection !== sectionType) {
+    if (assessment.currentCategory && assessment.currentCategory !== categoryType) {
       throw new BadRequestException('Section courante invalide pour cette requete');
     }
 
-    if (
-      assessment.type === AssessmentType.PHASE2_OCCUPATIONS &&
-      sectionType !== Phase2Type.OCCUPATIONS
-    ) {
+    if (assessment.type === TestType.GENERALE && categoryType !== TestType.GENERALE) {
       throw new BadRequestException('Section invalide pour ce test');
     }
-    if (
-      assessment.type === AssessmentType.PHASE2_APTITUDES &&
-      sectionType !== Phase2Type.APTITUDES
-    ) {
+    if (assessment.type === TestType.OCCUPATIONS && categoryType !== TestType.OCCUPATIONS) {
       throw new BadRequestException('Section invalide pour ce test');
     }
-    if (
-      assessment.type === AssessmentType.PHASE2_PERSONALITY &&
-      sectionType !== Phase2Type.PERSONALITY
-    ) {
+    if (assessment.type === TestType.APTITUDES && categoryType !== TestType.APTITUDES) {
+      throw new BadRequestException('Section invalide pour ce test');
+    }
+    if (assessment.type === TestType.PERSONALITY && categoryType !== TestType.PERSONALITY) {
       throw new BadRequestException('Section invalide pour ce test');
     }
 
     for (const r of dto.responses) {
       const q = questionMap.get(r.questionId);
-      if (!q) throw new BadRequestException('Question Phase 2 introuvable');
-      if (q.phase2Type === Phase2Type.APTITUDES) {
+      if (!q) throw new BadRequestException('Question catégorie introuvable');
+      if (q.category === TestType.APTITUDES) {
         const maxVal = q.maxValue ?? 3;
         if (r.responseValue < 1 || r.responseValue > maxVal) {
           throw new BadRequestException('Valeur aptitude invalide');
@@ -320,7 +185,7 @@ export class ResponsesService {
 
     await this.prisma.$transaction(
       dto.responses.map((r) =>
-        this.prisma.phase2Response.upsert({
+        this.prisma.response.upsert({
           where: {
             assessmentId_questionId: {
               assessmentId: assessment.id,
@@ -333,7 +198,6 @@ export class ResponsesService {
           },
           create: {
             assessmentId: assessment.id,
-            phase2Type: sectionType,
             questionId: r.questionId,
             responseValue: r.responseValue,
             ...(r.responseTimeMs !== undefined ? { responseTimeMs: r.responseTimeMs } : {}),
@@ -343,38 +207,38 @@ export class ResponsesService {
     );
 
     const depth = assessment.depth ?? defaultDepth;
-    const sectionProgress = await this.computePhase2Progress(
+    const sectionProgress = await this.computeProgress(
       assessment.id,
       assessment.testVersionId,
       depth,
-      sectionType,
+      categoryType,
     );
     const sectionCompleted =
       sectionProgress.total > 0 && sectionProgress.answered >= sectionProgress.total;
 
-    const isFull = assessment.type === AssessmentType.FULL;
+    const isFull = assessment.type === TestType.FULL;
     let overallProgress = sectionProgress;
-    let nextSection: Phase2Type | null = assessment.currentSection ?? sectionType;
+    let nextSection: TestType | null = assessment.currentCategory ?? categoryType;
     if (isFull) {
       const totals = await Promise.all(
-        phase2Order.map((section) =>
-          this.computePhase2Progress(assessment.id, assessment.testVersionId, depth, section),
+        categoryOrder.map((category) =>
+          this.computeProgress(assessment.id, assessment.testVersionId, depth, category),
         ),
       );
       const totalAll = totals.reduce((sum, item) => sum + item.total, 0);
       const answeredAll = totals.reduce((sum, item) => sum + item.answered, 0);
       overallProgress = { total: totalAll, answered: answeredAll };
-      const nextIncomplete = phase2Order.find((section, idx) => {
+      const nextIncomplete = categoryOrder.find((section, idx) => {
         const total = totals[idx];
         return total !== undefined && total.total > 0 && total.answered < total.total;
       });
-      nextSection = nextIncomplete ?? sectionType;
+      nextSection = nextIncomplete ?? categoryType;
     }
 
-    const phase2Completed =
+    const categoryCompleted =
       overallProgress.total > 0 && overallProgress.answered >= overallProgress.total;
     const completionPercentage = isFull
-      ? phase2Completed
+      ? categoryCompleted
         ? 100
         : 50 + Math.round((overallProgress.answered / Math.max(overallProgress.total, 1)) * 50)
       : Math.round((sectionProgress.answered / Math.max(sectionProgress.total, 1)) * 100);
@@ -382,22 +246,21 @@ export class ResponsesService {
     await this.prisma.assessment.update({
       where: { id: assessment.id },
       data: {
-        status: phase2Completed ? AssessmentStatus.COMPLETED : AssessmentStatus.IN_PROGRESS,
-        ...(phase2Completed ? { completedAt: new Date() } : {}),
-        currentPhase: PhaseType.PHASE2,
-        currentSection: isFull ? nextSection : sectionType,
+        status: categoryCompleted ? TestStatus.COMPLETED : TestStatus.IN_PROGRESS,
+        ...(categoryCompleted ? { completedAt: new Date() } : {}),
+        currentCategory: isFull ? nextSection : categoryType,
         completionPercentage,
         currentStepIndex: overallProgress.answered,
       },
     });
 
-    if (phase2Completed || sectionCompleted) {
-      await this.badges.grantPhase2Completed(session);
+    if (categoryCompleted || sectionCompleted) {
+      await this.badges.grantSpecificCompleted(session, assessment.type);
     }
 
     await this.invalidateResultIfExists(assessment.id);
 
-    return { saved: dto.responses.length, phase2Completed };
+    return { saved: dto.responses.length, categoryCompleted };
   }
 
   /**
@@ -405,14 +268,11 @@ export class ResponsesService {
    * Déclenche l'analyse comportementale et le calcul du profil intermédiaire
    */
   async submitBatchResponses(dto: SubmitBatchResponsesDto) {
-    const { session, assessment } = await resolveSessionAndAssessment(
-      this.prisma,
-      dto.sessionToken,
-      {
-        ...(dto.assessmentId !== undefined ? { assessmentId: dto.assessmentId } : {}),
-        requireInProgress: true,
-      },
-    );
+    // const { session, assessment } = await resolveSessionAndAssessment(
+    const { assessment } = await resolveSessionAndAssessment(this.prisma, dto.sessionToken, {
+      ...(dto.assessmentId !== undefined ? { assessmentId: dto.assessmentId } : {}),
+      requireInProgress: true,
+    });
 
     // Vérifier que le lot existe
     const batch = await this.batchService.getCurrentBatch(assessment.id);
@@ -436,82 +296,42 @@ export class ResponsesService {
     // Sauvegarder les réponses avec métadonnées comportementales
     const savedResponses: string[] = [];
 
-    if (assessment.currentPhase === PhaseType.PHASE1) {
-      for (const response of dto.responses) {
-        const created = await this.prisma.phase1Response.upsert({
-          where: {
-            assessmentId_questionId: {
-              assessmentId: assessment.id,
-              questionId: response.questionId,
-            },
-          },
-          update: {
-            responseValue: response.responseValue,
-            ...(response.timeTakenMs !== undefined ? { timeTakenMs: response.timeTakenMs } : {}),
-            changeCount: response.changeCount ?? 0,
-            metadata: response.metadata ?? {},
-          },
-          create: {
+    // const categoryType = assessment.currentCategory;
+
+    for (const response of dto.responses) {
+      const created = await this.prisma.response.upsert({
+        where: {
+          assessmentId_questionId: {
             assessmentId: assessment.id,
             questionId: response.questionId,
-            responseValue: response.responseValue,
-            ...(response.timeTakenMs !== undefined ? { timeTakenMs: response.timeTakenMs } : {}),
-            changeCount: response.changeCount ?? 0,
-            metadata: response.metadata ?? {},
           },
-        });
+        },
+        update: {
+          responseValue: response.responseValue,
+          ...(response.timeTakenMs !== undefined ? { timeTakenMs: response.timeTakenMs } : {}),
+          changeCount: response.changeCount ?? 0,
+          metadata: response.metadata ?? {},
+        },
+        create: {
+          assessmentId: assessment.id,
+          questionId: response.questionId,
+          responseValue: response.responseValue,
+          ...(response.timeTakenMs !== undefined ? { timeTakenMs: response.timeTakenMs } : {}),
+          changeCount: response.changeCount ?? 0,
+          metadata: response.metadata ?? {},
+        },
+      });
 
-        savedResponses.push(created.id);
+      savedResponses.push(created.id);
 
-        // Analyser le comportement si les données sont disponibles
-        if (response.timeTakenMs && response.timeTakenMs > 0) {
-          await this.behavioralService.analyzeResponse(
-            assessment.id,
-            created.id,
-            response.timeTakenMs,
-            response.changeCount ?? 0,
-          );
-        }
-      }
-    } else {
-      const sectionType = assessment.currentSection ?? Phase2Type.OCCUPATIONS;
-
-      for (const response of dto.responses) {
-        const created = await this.prisma.phase2Response.upsert({
-          where: {
-            assessmentId_questionId: {
-              assessmentId: assessment.id,
-              questionId: response.questionId,
-            },
-          },
-          update: {
-            responseValue: response.responseValue,
-            ...(response.timeTakenMs !== undefined ? { timeTakenMs: response.timeTakenMs } : {}),
-            changeCount: response.changeCount ?? 0,
-            metadata: response.metadata ?? {},
-          },
-          create: {
-            assessmentId: assessment.id,
-            questionId: response.questionId,
-            phase2Type: sectionType,
-            responseValue: response.responseValue,
-            ...(response.timeTakenMs !== undefined ? { timeTakenMs: response.timeTakenMs } : {}),
-            changeCount: response.changeCount ?? 0,
-            metadata: response.metadata ?? {},
-          },
-        });
-
-        savedResponses.push(created.id);
-
-        // Analyser le comportement
-        if (response.timeTakenMs && response.timeTakenMs > 0) {
-          await this.behavioralService.analyzeResponse(
-            assessment.id,
-            created.id,
-            response.timeTakenMs,
-            response.changeCount ?? 0,
-          );
-        }
+      // Analyser le comportement
+      if (response.timeTakenMs && response.timeTakenMs > 0) {
+        await this.behavioralService.analyzeResponse(
+          assessment.id,
+          created.id,
+          response.timeTakenMs,
+          response.changeCount ?? 0,
+        );
       }
     }
 
@@ -529,13 +349,9 @@ export class ResponsesService {
 
     // Vérifier si le test est complet
     const totalExpectedQuestions = assessment.depth * 6;
-    const totalResponses =
-      (await this.prisma.phase1Response.count({
-        where: { assessmentId: assessment.id },
-      })) +
-      (await this.prisma.phase2Response.count({
-        where: { assessmentId: assessment.id },
-      }));
+    const totalResponses = await this.prisma.response.count({
+      where: { assessmentId: assessment.id },
+    });
 
     const isComplete = totalResponses >= totalExpectedQuestions;
     const completionPercentage = Math.min(
@@ -547,20 +363,11 @@ export class ResponsesService {
     await this.prisma.assessment.update({
       where: { id: assessment.id },
       data: {
-        status: isComplete ? AssessmentStatus.COMPLETED : AssessmentStatus.IN_PROGRESS,
+        status: isComplete ? TestStatus.COMPLETED : TestStatus.IN_PROGRESS,
         completedAt: isComplete ? new Date() : null,
         completionPercentage,
       },
     });
-
-    // Accorder des badges si applicable
-    if (isComplete) {
-      if (assessment.currentPhase === PhaseType.PHASE1) {
-        await this.badges.grantPhase1Completed(session);
-      } else {
-        await this.badges.grantPhase2Completed(session);
-      }
-    }
 
     return {
       saved: savedResponses.length,

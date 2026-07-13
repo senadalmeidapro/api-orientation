@@ -1,16 +1,25 @@
 import { RecommendationsService } from './recommendations.service';
 import type { ResultsService } from '../results/results.service';
-import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma/client';
+import { TestStatus, TestType } from '@prisma/client';
 
 const prisma = {
   session: { findFirst: jest.fn() },
   assessment: { findFirst: jest.fn() },
   assessmentResult: { findUnique: jest.fn(), findMany: jest.fn() },
   career: { findMany: jest.fn() },
+  scholarship: { findMany: jest.fn() },
   assessmentCareerRecommendation: {
     upsert: jest.fn(),
     deleteMany: jest.fn(),
     findMany: jest.fn(),
+  },
+  assessmentFormationRecommendation: {
+    upsert: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  assessmentUniversityRecommendation: {
+    upsert: jest.fn(),
+    deleteMany: jest.fn(),
   },
   $transaction: jest.fn().mockImplementation((arg: unknown) => {
     if (typeof arg === 'function') {
@@ -27,22 +36,22 @@ describe('RecommendationsService', () => {
     prisma.assessment.findFirst.mockResolvedValue({
       id: 'a1',
       sessionId: 'session-1',
-      status: AssessmentStatus.COMPLETED,
-      type: AssessmentType.FULL,
+      status: TestStatus.COMPLETED,
+      type: TestType.FULL,
       testVersionId: 2,
-      currentPhase: PhaseType.PHASE2,
-      currentSection: Phase2Type.OCCUPATIONS,
+      currentCategory: TestType.OCCUPATIONS,
     });
     prisma.assessmentResult.findUnique.mockResolvedValue({
       id: 'r1',
-      phase2Code: 'RIA',
-      phase2Scores: { R: 8, I: 5, A: 3 },
-      phase1Scores: null,
-      sectionScores: null,
+      riasecCode: 'RIA',
+      scoresByCategory: { totalRaw: { R: 8, I: 5, A: 3 } },
     });
     prisma.assessmentResult.findMany.mockResolvedValue([]);
     prisma.assessmentCareerRecommendation.findMany.mockResolvedValue([]);
     prisma.assessmentCareerRecommendation.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.assessmentFormationRecommendation.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.assessmentUniversityRecommendation.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.scholarship.findMany.mockResolvedValue([]);
     prisma.assessmentCareerRecommendation.upsert.mockImplementation(({ create }: any) =>
       Promise.resolve({
         id: `rec-${create.careerId}`,
@@ -164,9 +173,7 @@ describe('RecommendationsService', () => {
     prisma.assessmentResult.findMany.mockResolvedValue([
       {
         id: 'neighbor-1',
-        phase2Scores: { R: 10, I: 6, A: 4 },
-        phase1Scores: null,
-        sectionScores: null,
+        scoresByCategory: { totalRaw: { R: 10, I: 6, A: 4 } },
       },
     ]);
     prisma.assessmentCareerRecommendation.findMany
@@ -179,16 +186,16 @@ describe('RecommendationsService', () => {
 
     const res = await service.getCareerRecommendations({ advanced: true, limit: 2 }, 'token');
 
-    expect(res[0]!.career!.id).toBe(2);
+    expect(res.map((item) => item.career.id)).toEqual([1, 2]);
+    expect(res[1]!.matchScore).toBeGreaterThan(0);
     expect(prisma.assessmentResult.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           assessment: expect.objectContaining({
-            status: AssessmentStatus.COMPLETED,
-            type: AssessmentType.FULL,
+            status: TestStatus.COMPLETED,
+            type: TestType.FULL,
             testVersionId: 2,
-            currentPhase: PhaseType.PHASE2,
-            currentSection: Phase2Type.OCCUPATIONS,
+            currentCategory: TestType.OCCUPATIONS,
           }),
         }),
       }),

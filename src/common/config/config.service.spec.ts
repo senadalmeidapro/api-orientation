@@ -18,6 +18,8 @@ describe('ConfigService', () => {
     APP_VERSION: '1.0.0',
     APP_DESCRIPTION: 'Test API',
     APP_URL: 'http://localhost:3000',
+    BACK_URL: 'http://localhost:3000',
+    FRONT_URL: 'http://localhost:5173',
     APP_LOCAL: 'fr',
     APP_FAKER_LOCAL: 'fr',
     APP_FALLBACK_LOCAL: 'fr',

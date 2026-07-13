@@ -8,7 +8,7 @@ describe('SessionsController', () => {
     } as unknown as SessionsService;
     const controller = new SessionsController(service);
 
-    await controller.create({} as any);
-    expect(service.createSession).toHaveBeenCalled();
+    await controller.create({ id: 'user-1' } as any, {} as any);
+    expect(service.createSession).toHaveBeenCalledWith('user-1', {});
   });
 });

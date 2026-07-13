@@ -33,8 +33,8 @@ export class ResultsController {
   //     dataExample: {
   //         id: 'clx-result-id',
   //         assessment_id: 'clx-assessment-id',
-  //         phase1_code: 'RIA',
-  //         phase2_code: 'RIS',
+  //         general_code: 'RIA',
+  //         specific_code: 'RIS',
   //         consistency_level: 'HIGH',
   //     },
   // })
@@ -59,7 +59,7 @@ export class ResultsController {
   //     dataExample: {
   //         id: 'clx-result-id',
   //         assessment_id: 'clx-assessment-id',
-  //         phase2_code: 'RIS',
+  //         specific_code: 'RIS',
   //         career_recommendations: [],
   //     },
   // })
@@ -83,8 +83,8 @@ export class ResultsController {
   //     dataExample: {
   //         id: 'clx-result-id',
   //         assessment_id: 'clx-assessment-id',
-  //         phase1_code: 'RIA',
-  //         phase2_code: 'RIS',
+  //         general_code: 'RIA',
+  //         specific_code: 'RIS',
   //     },
   // })
   getByAssessmentId(@Param('assessmentId') assessmentId: string) {
@@ -108,7 +108,7 @@ export class ResultsController {
   //     dataExample: {
   //         id: 'clx-result-id',
   //         assessment_id: 'clx-assessment-id',
-  //         phase2_code: 'RIS',
+  //         specific_code: 'RIS',
   //     },
   // })
   getBySessionId(@Param('sessionId') sessionId: string) {

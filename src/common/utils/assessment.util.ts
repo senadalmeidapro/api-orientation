@@ -1,11 +1,10 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { AssessmentStatus, type Phase2Type, type PhaseType } from '@prisma/client';
+import { TestStatus, type TestType } from '@prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
 
 type ResolveAssessmentOptions = {
   assessmentId?: string;
-  phase?: PhaseType;
-  section?: Phase2Type;
+  currentCategory?: TestType;
   requireInProgress?: boolean;
 };
 
@@ -20,7 +19,7 @@ export async function resolveSessionAndAssessment(
   });
   if (!session) throw new NotFoundException('Session introuvable');
 
-  const statusFilter = options.requireInProgress ? AssessmentStatus.IN_PROGRESS : undefined;
+  const statusFilter = options.requireInProgress ? TestStatus.IN_PROGRESS : undefined;
   const assessment = options.assessmentId
     ? await prisma.assessment.findFirst({
         where: {
@@ -33,7 +32,7 @@ export async function resolveSessionAndAssessment(
         where: {
           sessionId: session.id,
           ...(statusFilter ? { status: statusFilter } : {}),
-          ...(options.phase ? { currentPhase: options.phase } : {}),
+          ...(options.currentCategory ? { currentCategory: options.currentCategory } : {}),
         },
         orderBy: { startedAt: 'desc' },
       });
@@ -42,13 +41,13 @@ export async function resolveSessionAndAssessment(
     throw new NotFoundException('Aucun test actif pour cette session');
   }
 
-  if (options.phase && assessment.currentPhase !== options.phase) {
-    throw new BadRequestException('Phase courante invalide pour cette requete');
+  if (options.currentCategory && assessment.currentCategory !== options.currentCategory) {
+    throw new BadRequestException('Catégorie courante invalide pour cette requete');
   }
   if (
-    options.section &&
-    assessment.currentSection &&
-    assessment.currentSection !== options.section
+    options.currentCategory &&
+    assessment.currentCategory &&
+    assessment.currentCategory !== options.currentCategory
   ) {
     throw new BadRequestException('Section courante invalide pour cette requete');
   }

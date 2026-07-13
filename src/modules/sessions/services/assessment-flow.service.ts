@@ -1,5 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma/client';
+import { TestStatus, TestType } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAssessmentDto } from '../dto/create-assessment.dto';
 
@@ -46,22 +46,8 @@ export class AssessmentFlowService {
     return created.id;
   }
 
-  resolvePhaseForType(type: AssessmentType) {
-    if (type === AssessmentType.PHASE1 || type === AssessmentType.FULL) {
-      return { phase: PhaseType.PHASE1, section: null };
-    }
-    if (type === AssessmentType.PHASE2_OCCUPATIONS) {
-      return { phase: PhaseType.PHASE2, section: Phase2Type.OCCUPATIONS };
-    }
-    if (type === AssessmentType.PHASE2_APTITUDES) {
-      return { phase: PhaseType.PHASE2, section: Phase2Type.APTITUDES };
-    }
-    return { phase: PhaseType.PHASE2, section: Phase2Type.PERSONALITY };
-  }
-
   async createAssessment(sessionId: string, testVersionId: number, dto: CreateAssessmentDto) {
     const depth = dto.depth ?? defaultDepth;
-    const { phase, section } = this.resolvePhaseForType(dto.type);
 
     return this.prisma.assessment.create({
       data: {
@@ -69,9 +55,7 @@ export class AssessmentFlowService {
         testVersionId,
         type: dto.type,
         depth,
-        status: AssessmentStatus.IN_PROGRESS,
-        currentPhase: phase,
-        currentSection: section,
+        status: TestStatus.IN_PROGRESS,
         currentStepIndex: 0,
         completionPercentage: 0,
       },
@@ -85,20 +69,20 @@ export class AssessmentFlowService {
     if (!session) throw new NotFoundException('Session introuvable');
 
     if (
-      dto.type === AssessmentType.PHASE2_OCCUPATIONS ||
-      dto.type === AssessmentType.PHASE2_APTITUDES ||
-      dto.type === AssessmentType.PHASE2_PERSONALITY
+      dto.type === TestType.OCCUPATIONS ||
+      dto.type === TestType.APTITUDES ||
+      dto.type === TestType.PERSONALITY
     ) {
-      const phase1Done = await this.prisma.assessment.findFirst({
+      const generalDone = await this.prisma.assessment.findFirst({
         where: {
           sessionId: session.id,
-          type: AssessmentType.PHASE1,
-          status: AssessmentStatus.COMPLETED,
+          type: TestType.GENERALE,
+          status: TestStatus.COMPLETED,
         },
         select: { id: true },
       });
-      if (!phase1Done) {
-        throw new NotFoundException("Le test d'amorce doit être complété avant un test spécifique");
+      if (!generalDone) {
+        throw new NotFoundException('Le test générale doit être complété avant un test spécifique');
       }
     }
 
