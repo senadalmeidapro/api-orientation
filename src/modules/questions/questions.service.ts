@@ -58,7 +58,7 @@ export class QuestionsService {
 
     const targetSection = dto.currentCategory ?? assessment.currentCategory ?? TestType.OCCUPATIONS;
     if (assessment.currentCategory && assessment.currentCategory !== targetSection) {
-      throw new BadRequestException('Section courante invalide pour cette requete');
+      throw new BadRequestException('Section courante invalide pour cette requête');
     }
 
     const responses = await this.prisma.response.findMany({
@@ -106,19 +106,19 @@ export class QuestionsService {
   }
 
   createGeneralQuestion() {
-    throw new BadRequestException('Creation de questions desactivee');
+    throw new BadRequestException('Creation de questions désactivée');
   }
 
   updateGeneralQuestion() {
-    throw new BadRequestException('Mise a jour de questions desactivee');
+    throw new BadRequestException('Mise a jour de questions désactivée');
   }
 
   createSpecificQuestion() {
-    throw new BadRequestException('Creation de questions desactivee');
+    throw new BadRequestException('Creation de questions désactivée');
   }
 
   updateSpecificQuestion() {
-    throw new BadRequestException('Mise a jour de questions desactivee');
+    throw new BadRequestException('Mise a jour de questions désactivée');
   }
 
   /**

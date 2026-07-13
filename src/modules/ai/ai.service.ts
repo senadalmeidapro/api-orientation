@@ -72,7 +72,7 @@ export class AiService {
     });
     if (!result) {
       if (assessment.status !== TestStatus.COMPLETED) {
-        throw new BadRequestException('Resultat indisponible, test non termine');
+        throw new BadRequestException('Résultat indisponible, test non termine');
       }
       result = await this.resultsService.compute({
         sessionToken: dto.sessionToken,
@@ -160,7 +160,7 @@ export class AiService {
     };
 
     const instructions =
-      "Tu es un conseiller d'orientation RIASEC. Reponds en francais, clair, concret, et personnalise.";
+      "Tu es un conseiller d'orientation RIASEC. Réponds en français, clair, concret, et personnalise.";
     const input = JSON.stringify({
       task: 'Resume le profil et propose des recommandations et prochaines actions.',
       context,
@@ -186,7 +186,7 @@ export class AiService {
     );
 
     if (dto.section && assessment.currentCategory && dto.section !== assessment.currentCategory) {
-      throw new BadRequestException('Section courante invalide pour cette requete');
+      throw new BadRequestException('Section courante invalide pour cette requête');
     }
 
     const partialScores = await this.computePartialScores(
@@ -232,7 +232,7 @@ export class AiService {
     const instructions =
       "Tu es un coach d'orientation. Choisis les meilleures questions suivantes pour affiner le profil.";
     const input = JSON.stringify({
-      task: 'Selectionner les prochaines questions et donner un message clair.',
+      task: 'Selection les prochaines questions et donner un message clair.',
       assessment: {
         currentCategory: assessment.currentCategory,
         completionPercentage: assessment.completionPercentage,
@@ -343,7 +343,7 @@ export class AiService {
 
     const instructions = [
       "Tu es un conseiller d'orientation.",
-      'Reponds en francais, clair, concis et actionnable.',
+      'Réponds en français, clair, concis et actionnable.',
       'Ne demande pas de donnees personnelles.',
       "Si le test est incomplet, guide l'utilisateur.",
     ].join(' ');
@@ -426,7 +426,8 @@ export class AiService {
       },
     });
     for (const response of responses) {
-      const target = response.question.category === TestType.GENERALE ? generalScores : specificScores;
+      const target =
+        response.question.category === TestType.GENERALE ? generalScores : specificScores;
       this.addScore(target, response.question.riasecTypeId, response.responseValue);
     }
 

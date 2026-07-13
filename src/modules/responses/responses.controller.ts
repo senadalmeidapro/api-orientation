@@ -1,6 +1,5 @@
 import { Body, Controller, Post, Get, Param } from '@nestjs/common';
 import { ResponsesService } from './responses.service';
-import { CreateGeneralResponsesDto } from './dto/create-general-responses.dto';
 import { CreateResponsesDto } from './dto/create-responses.dto';
 import { SubmitBatchResponsesDto } from './dto/submit-batch-responses.dto';
 import { BehavioralAnalysisService } from './services/behavioral-analysis.service';
@@ -43,7 +42,7 @@ export class ResponsesController {
   @ApiOperation({
     summary: 'Enregistrer des réponses par catégorie',
     description:
-      'Enregistre ou met à jour un lot de réponses pour la catégorie active de l’assessment.',
+      'Enregistre ou met à jour un lot de réponses pour la catégorie active de assessment.',
   })
   @ApiBody({
     type: CreateResponsesDto,
@@ -57,7 +56,7 @@ export class ResponsesController {
   @Throttle({ default: { limit: 60, ttl: 60 } })
   @Post('batch')
   @ApiOperation({
-    summary: 'Soumettre un lot complet de réponses (système adaptatif)',
+    summary: 'soumettre un lot complet de réponses (système adaptatif)',
     description:
       "Enregistre les réponses d'un lot, effectue l'analyse comportementale et calcule le profil intermédiaire",
   })
@@ -92,7 +91,7 @@ export class ResponsesController {
   })
   @ApiParam({
     name: 'assessmentId',
-    description: "Identifiant de l'assessment.",
+    description: 'Identifiant de assessment.',
     example: 'clx-assessment-id',
   })
   // @ApiStandardOkResponse({
