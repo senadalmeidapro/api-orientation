@@ -62,7 +62,12 @@ export class QuestionsService {
     }
 
     const responses = await this.prisma.response.findMany({
-      where: { assessmentId: assessment.id },
+      where: {
+        assessmentId: assessment.id,
+        question: {
+          category: targetSection,
+        },
+      },
       select: { questionId: true, question: { select: { riasecTypeId: true } } },
     });
     const answeredIds = new Set(responses.map((r) => r.questionId));

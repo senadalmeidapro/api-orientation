@@ -107,7 +107,12 @@ export class ResponsesService {
     const total = this.computeTargetTotal(questionCounts, depth);
 
     const responses = await this.prisma.response.findMany({
-      where: { assessmentId },
+      where: {
+        assessmentId,
+        question: {
+          category,
+        },
+      },
       select: { question: { select: { riasecTypeId: true } } },
     });
     const answeredCounts = this.buildCounts(
