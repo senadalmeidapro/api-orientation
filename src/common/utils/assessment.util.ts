@@ -42,7 +42,9 @@ export async function resolveSessionAndAssessment(
   }
 
   if (options.currentCategory && assessment.currentCategory !== options.currentCategory) {
-    throw new BadRequestException('Catégorie courante invalide pour cette requete');
+    throw new BadRequestException(
+      `Catégorie courante invalide pour cette requete ${options.currentCategory} dd ${assessment.currentCategory}`,
+    );
   }
   if (
     options.currentCategory &&

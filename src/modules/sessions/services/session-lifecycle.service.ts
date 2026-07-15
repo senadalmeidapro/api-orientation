@@ -38,6 +38,7 @@ export class SessionLifecycleService {
       isActive: true,
       isCurrent: true,
       expiresAt,
+      ...{ userId ? { userId } : {} }, // will be set below if userId is provided
     };
 
     if (userId !== undefined) sessionCreateData.userId = userId;

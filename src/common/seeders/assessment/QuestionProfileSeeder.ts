@@ -235,10 +235,10 @@ const manualProfiles: {
   }, // Vérifier informations
   { category: TestType.GENERALE, questionId: 58, profiles: [{ riasecType: 'C', weight: 1.0 }] }, // Logiciels gestion – pur C
   { category: TestType.GENERALE, questionId: 59, profiles: [{ riasecType: 'C', weight: 1.0 }] }, // Aimer tâches régulières – pur C
-  { category: TestType.GENERALE, questionId: 60, profiles: [{ riasecType: 'C', weight: 1.0 }] }, // Suivre instructions – pur C
+  { category: TestType.GENERALE, questionId: 60, profiles: [{ riasecType: 'C', weight: 1.0 }] }, // suivre instructions – pur C
 
   // ============================================================
-  // SPECIFIQUE – OCCUPATIONS (IDs 1-60 dans le CSV Specific, type OCCUPATIONS)
+  // SPECIFIC – OCCUPATIONS (IDs 1-60 dans le CSV Specific, type OCCUPATIONS)
   // ============================================================
 
   {
@@ -358,7 +358,7 @@ const manualProfiles: {
     questionId: 18,
     category: TestType.OCCUPATIONS,
     profiles: [{ riasecType: 'I', weight: 1.0 }],
-  }, // Économiste/Statisticien
+  }, // Économiste/statisticien
   {
     questionId: 19,
     category: TestType.OCCUPATIONS,
@@ -416,7 +416,7 @@ const manualProfiles: {
     questionId: 27,
     category: TestType.OCCUPATIONS,
     profiles: [{ riasecType: 'A', weight: 1.0 }],
-  }, // Styliste
+  }, // styliste
   {
     questionId: 28,
     category: TestType.OCCUPATIONS,
@@ -630,7 +630,7 @@ const manualProfiles: {
     questionId: 59,
     category: TestType.OCCUPATIONS,
     profiles: [{ riasecType: 'C', weight: 1.0 }],
-  }, // Opérateur saisie
+  }, // Opérateur saisi
   {
     questionId: 60,
     category: TestType.OCCUPATIONS,
@@ -638,7 +638,7 @@ const manualProfiles: {
   }, // Agent impôts/douanes
 
   // ============================================================
-  // SPECIFIQUE – APTITUDES (IDs 61-120 dans le CSV Specific, type APTITUDES)
+  // SPECIFIC – APTITUDES (IDs 61-120 dans le CSV Specific, type APTITUDES)
   // ============================================================
 
   {
@@ -816,7 +816,7 @@ const manualProfiles: {
     questionId: 91,
     category: TestType.APTITUDES,
     profiles: [{ riasecType: 'S', weight: 1.0 }],
-  }, // Facilité communication
+  }, // Facilitée communication
   {
     questionId: 92,
     category: TestType.APTITUDES,
@@ -987,7 +987,7 @@ const manualProfiles: {
   }, // Ponctualité/délais
 
   // ============================================================
-  // SPECIFIQUE – PERSONALITY (IDs 121-180 dans le CSV Specific, type PERSONALITY)
+  // SPECIFIC – PERSONALITY (IDs 121-180 dans le CSV Specific, type PERSONALITY)
   // ============================================================
 
   {
@@ -1014,7 +1014,7 @@ const manualProfiles: {
     questionId: 125,
     category: TestType.PERSONALITY,
     profiles: [{ riasecType: 'R', weight: 1.0 }],
-  }, // Soin outils
+  }, // soin outils
   {
     questionId: 126,
     category: TestType.PERSONALITY,
@@ -1034,7 +1034,7 @@ const manualProfiles: {
     questionId: 129,
     category: TestType.PERSONALITY,
     profiles: [{ riasecType: 'R', weight: 1.0 }],
-  }, // Attaché méthodes tradi
+  }, // Attachées méthodes tradis
   {
     questionId: 130,
     category: TestType.PERSONALITY,
@@ -1171,7 +1171,7 @@ const manualProfiles: {
     questionId: 154,
     category: TestType.PERSONALITY,
     profiles: [{ riasecType: 'S', weight: 1.0 }],
-  }, // Serviable/généreux
+  }, // serviable/généreux
   {
     questionId: 155,
     category: TestType.PERSONALITY,
@@ -1342,7 +1342,7 @@ export async function seedQuestionProfiles(prisma: PrismaService) {
       continue;
     }
 
-    // Supprimer les anciens profils de cette question
+    // supprimer les anciens profils de cette question
     await prisma.questionProfile.deleteMany({
       where: {
         questionId: item.questionId,
