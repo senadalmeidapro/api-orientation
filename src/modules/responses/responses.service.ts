@@ -10,7 +10,12 @@ import { BatchManagementService } from '../sessions/services/batch-management.se
 import { AdaptiveSelectionService } from '../questions/services/adaptive-selection.service';
 
 const defaultDepth = 5;
-const categoryOrder: TestType[] = [TestType.OCCUPATIONS, TestType.APTITUDES, TestType.PERSONALITY];
+const categoryOrder: TestType[] = [
+  TestType.GENERALE,
+  TestType.OCCUPATIONS,
+  TestType.APTITUDES,
+  TestType.PERSONALITY,
+];
 
 @Injectable()
 export class ResponsesService {
@@ -237,11 +242,11 @@ export class ResponsesService {
 
     const categoryCompleted =
       overallProgress.total > 0 && overallProgress.answered >= overallProgress.total;
-    const completionPercentage = isFull
-      ? categoryCompleted
-        ? 100
-        : 50 + Math.round((overallProgress.answered / Math.max(overallProgress.total, 1)) * 50)
-      : Math.round((sectionProgress.answered / Math.max(sectionProgress.total, 1)) * 100);
+    const completionPercentage = Math.round(
+      ((isFull ? overallProgress.answered : sectionProgress.answered) /
+        Math.max(isFull ? overallProgress.total : sectionProgress.total, 1)) *
+        100,
+    );
 
     await this.prisma.assessment.update({
       where: { id: assessment.id },

@@ -73,7 +73,7 @@ export class ResultsService {
 
     const categories =
       assessment.type === TestType.FULL
-        ? [TestType.OCCUPATIONS, TestType.APTITUDES, TestType.PERSONALITY]
+        ? [TestType.GENERALE, TestType.OCCUPATIONS, TestType.APTITUDES, TestType.PERSONALITY]
         : assessment.type === TestType.GENERALE
           ? []
           : [assessment.type];

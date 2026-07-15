@@ -4,7 +4,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAssessmentDto } from '../dto/create-assessment.dto';
 
 const defaultDepth = 5;
-const firstFullTestCategory = TestType.OCCUPATIONS;
+const firstFullTestCategory = TestType.GENERALE;
 
 @Injectable()
 export class AssessmentFlowService {
