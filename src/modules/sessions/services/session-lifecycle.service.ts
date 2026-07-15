@@ -41,8 +41,20 @@ export class SessionLifecycleService {
       ...(userId ? { userId: userId as UUID } : {}),
     };
 
-    return this.prisma.session.create({
-      data: sessionCreateData,
+    return this.prisma.$transaction(async (tx) => {
+      if (userId) {
+        await tx.session.updateMany({
+          where: {
+            userId,
+            isCurrent: true,
+          },
+          data: { isCurrent: false },
+        });
+      }
+
+      return tx.session.create({
+        data: sessionCreateData,
+      });
     });
   }
 

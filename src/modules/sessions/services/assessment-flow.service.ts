@@ -4,12 +4,17 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAssessmentDto } from '../dto/create-assessment.dto';
 
 const defaultDepth = 5;
+const firstFullTestCategory = TestType.OCCUPATIONS;
 
 @Injectable()
 export class AssessmentFlowService {
   private readonly logger = new Logger(AssessmentFlowService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  private getInitialCurrentCategory(type: TestType) {
+    return type === TestType.FULL ? firstFullTestCategory : type;
+  }
 
   async resolveTestVersionId(explicitId?: number) {
     if (explicitId) {
@@ -54,7 +59,7 @@ export class AssessmentFlowService {
         sessionId,
         testVersionId,
         type: dto.type,
-        currentCategory: dto.type,
+        currentCategory: this.getInitialCurrentCategory(dto.type),
         depth,
         status: TestStatus.IN_PROGRESS,
         currentStepIndex: 0,
@@ -88,7 +93,33 @@ export class AssessmentFlowService {
     }
 
     const testVersionId = await this.resolveTestVersionId(dto.testVersionId);
-    return this.createAssessment(session.id, testVersionId, dto);
+    const depth = dto.depth ?? defaultDepth;
+
+    const [, assessment] = await this.prisma.$transaction([
+      this.prisma.assessment.updateMany({
+        where: {
+          sessionId: session.id,
+          status: TestStatus.IN_PROGRESS,
+        },
+        data: {
+          status: TestStatus.ABANDONED,
+        },
+      }),
+      this.prisma.assessment.create({
+        data: {
+          sessionId: session.id,
+          testVersionId,
+          type: dto.type,
+          currentCategory: this.getInitialCurrentCategory(dto.type),
+          depth,
+          status: TestStatus.IN_PROGRESS,
+          currentStepIndex: 0,
+          completionPercentage: 0,
+        },
+      }),
+    ]);
+
+    return assessment;
   }
 
   async listAssessments(sessionToken: string) {
