@@ -54,6 +54,7 @@ export class AssessmentFlowService {
         sessionId,
         testVersionId,
         type: dto.type,
+        currentCategory: dto.type,
         depth,
         status: TestStatus.IN_PROGRESS,
         currentStepIndex: 0,
