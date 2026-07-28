@@ -29,7 +29,7 @@ const enhancedBadges: BadgeSeed[] = [
     emoji: '🧭',
     rarity: BadgeRarity.COMMON,
     pointsValue: 15,
-    unlockCondition: { type: 'category_completion', category: "GENERALE" },
+    unlockCondition: { type: 'category_completion', category: 'GENERALE' },
   },
   {
     code: 'ANALYSTE',
@@ -38,7 +38,7 @@ const enhancedBadges: BadgeSeed[] = [
     emoji: '🔍',
     rarity: BadgeRarity.RARE,
     pointsValue: 40,
-    unlockCondition: { type: 'category_completion', category: "SPECIFIC" },
+    unlockCondition: { type: 'category_completion', category: 'SPECIFIC' },
   },
   {
     code: 'MAITRE_RIASEC',

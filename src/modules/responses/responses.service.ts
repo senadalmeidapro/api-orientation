@@ -24,9 +24,9 @@ export class ResponsesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly badges: BadgesService,
-    private readonly behavioralService: BehavioralAnalysisService,
-    private readonly batchService: BatchManagementService,
-    private readonly adaptiveService: AdaptiveSelectionService,
+    private readonly behavioral: BehavioralAnalysisService,
+    private readonly batch: BatchManagementService,
+    private readonly adaptive: AdaptiveSelectionService,
   ) {}
 
   private emptyScores(): Record<RiasecType, number> {
@@ -285,7 +285,7 @@ export class ResponsesService {
     });
 
     // Vérifier que le lot existe
-    const batch = await this.batchService.getCurrentBatch(assessment.id);
+    const batch = await this.batch.getCurrentBatch(assessment.id);
     if (!batch || batch.batchIndex !== dto.batchIndex) {
       throw new BadRequestException(
         `Le lot ${dto.batchIndex} n'est pas le lot actuel ou n'existe pas`,
@@ -336,7 +336,7 @@ export class ResponsesService {
 
       // Analyser le comportement
       if (response.timeTakenMs && response.timeTakenMs > 0) {
-        await this.behavioralService.analyzeResponse(
+        await this.behavioral.analyzeResponse(
           assessment.id,
           created.id,
           response.timeTakenMs,
@@ -346,10 +346,10 @@ export class ResponsesService {
     }
 
     // Marquer le lot comme complété
-    await this.batchService.completeBatch(assessment.id, dto.batchIndex);
+    await this.batch.completeBatch(assessment.id, dto.batchIndex);
 
     // Calculer le profil intermédiaire
-    const intermediateProfile = await this.adaptiveService.calculateIntermediateProfile(
+    const intermediateProfile = await this.adaptive.calculateIntermediateProfile(
       assessment.id,
       dto.batchIndex,
     );

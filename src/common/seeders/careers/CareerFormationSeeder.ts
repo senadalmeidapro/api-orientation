@@ -62,7 +62,12 @@ export function buildCareerFormationLinks(
 
     return availableFormations
       .map((formation) => {
-        const formationTokens = tokensFrom(formation.title, formation.degree, formation.field, formation.programs);
+        const formationTokens = tokensFrom(
+          formation.title,
+          formation.degree,
+          formation.field,
+          formation.programs,
+        );
         const tokenScore = formationTokens.filter((token) => careerTokens.has(token)).length * 10;
         const keywordScore = keywords.some((keyword) =>
           formationTokens.some((token) => token.includes(normalizeToken(keyword))),

@@ -22,7 +22,9 @@ const prisma = {
 describe('AssessmentFlowService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma.$transaction.mockImplementation(async (operations: unknown[]) => Promise.all(operations));
+    prisma.$transaction.mockImplementation(async (operations: unknown[]) =>
+      Promise.all(operations),
+    );
   });
 
   it('abandons existing in-progress assessments before starting a new one in the same session', async () => {

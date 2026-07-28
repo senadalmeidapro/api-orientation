@@ -5,16 +5,8 @@ import { AdaptiveSelectionService } from '../questions/services/adaptive-selecti
 import { MultiProfileUtil, RiasecScores } from '@common/utils/multi-profile.util';
 
 const riasecOrder: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
-const categoryOrder = [
-  TestType.OCCUPATIONS,
-  TestType.APTITUDES,
-  TestType.PERSONALITY,
-] as const;
-type ScoredCategory =
-  | 'GENERALE'
-  | 'OCCUPATIONS'
-  | 'APTITUDES'
-  | 'PERSONALITY';
+const categoryOrder = [TestType.OCCUPATIONS, TestType.APTITUDES, TestType.PERSONALITY] as const;
+type ScoredCategory = 'GENERALE' | 'OCCUPATIONS' | 'APTITUDES' | 'PERSONALITY';
 
 @Injectable()
 export class ScoringService {

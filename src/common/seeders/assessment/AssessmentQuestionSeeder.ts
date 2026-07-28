@@ -862,7 +862,7 @@ const badges: BadgeSeed[] = [
     emoji: '🧭',
     rarity: BadgeRarity.COMMON,
     pointsValue: 10,
-    unlockCondition: { type: 'category_started', category: "GENERALE" },
+    unlockCondition: { type: 'category_started', category: 'GENERALE' },
   },
   {
     code: 'AVENTURIER',
@@ -871,7 +871,7 @@ const badges: BadgeSeed[] = [
     emoji: '🗺️',
     rarity: BadgeRarity.COMMON,
     pointsValue: 25,
-    unlockCondition: { type: 'category_completion', category: "GENERALE" },
+    unlockCondition: { type: 'category_completion', category: 'GENERALE' },
   },
   {
     code: 'CHERCHEUR',
@@ -880,7 +880,7 @@ const badges: BadgeSeed[] = [
     emoji: '🔍',
     rarity: BadgeRarity.RARE,
     pointsValue: 50,
-    unlockCondition: { type: 'category_completion', category: "SPECIFIC" },
+    unlockCondition: { type: 'category_completion', category: 'SPECIFIC' },
   },
   {
     code: 'MAITRE_DE_SOI',

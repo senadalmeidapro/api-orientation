@@ -556,7 +556,10 @@ export class BackofficeService {
 
   private getSpecificQuestionCategory(dto: { category?: TestType }): TestType | undefined {
     const legacyCategory = (dto as Record<string, unknown>)[`category${2}Type`];
-    return dto.category ?? (typeof legacyCategory === 'string' ? (legacyCategory as TestType) : undefined);
+    return (
+      dto.category ??
+      (typeof legacyCategory === 'string' ? (legacyCategory as TestType) : undefined)
+    );
   }
 
   async listGeneralResponses(dto: AdminPaginationDto) {

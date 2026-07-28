@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import {BadgeRarity, Session, TestType} from '@prisma/client';
+import { BadgeRarity, Session, TestType } from '@prisma/client';
 
 @Injectable()
 export class BadgesService {
@@ -16,7 +16,7 @@ export class BadgesService {
       emoji: 'compass',
       rarity: BadgeRarity.COMMON,
       pointsValue: 20,
-      unlockCondition: { type: 'category_completion', category: "GENERALE" },
+      unlockCondition: { type: 'category_completion', category: 'GENERALE' },
     },
     {
       code: 'SPECIFIC_COMPLETED',
@@ -25,7 +25,7 @@ export class BadgesService {
       emoji: 'brain',
       rarity: BadgeRarity.RARE,
       pointsValue: 30,
-      unlockCondition: { type: 'category_completion', category: "SPECIFIC" },
+      unlockCondition: { type: 'category_completion', category: 'SPECIFIC' },
     },
     {
       code: 'TEST_COMPLETED',
