@@ -48,22 +48,41 @@ export class BehavioralAnalysisService {
     responseId: string,
     indicator: BehavioralIndicatorData,
   ): Promise<void> {
-    await this.prisma.behavioralIndicator.create({
+    const response = await this.prisma.response.findFirst({
+      where: { id: responseId, assessmentId },
+      select: { behavioralFlags: true, metadata: true },
+    });
+    if (!response) return;
+
+    const behavioralFlags = Array.from(new Set([...response.behavioralFlags, indicator.type]));
+    await this.prisma.response.update({
+      where: { id: responseId },
       data: {
-        assessmentId,
-        responseId,
-        indicatorType: indicator.type,
+        behavioralFlags,
         timeTakenMs: indicator.timeTakenMs ?? null,
         changeCount: indicator.changeCount ?? 0,
-        metadata: indicator.metadata ?? {},
+        metadata: {
+          ...(response.metadata &&
+          typeof response.metadata === 'object' &&
+          !Array.isArray(response.metadata)
+            ? response.metadata
+            : {}),
+          behavioral: indicator.metadata ?? {},
+        },
       },
     });
   }
 
   async getAssessmentBehaviors(assessmentId: string): Promise<BehavioralIndicatorData[]> {
-    const indicators = await this.prisma.behavioralIndicator.findMany({
+    const responses = await this.prisma.response.findMany({
       where: { assessmentId },
-      orderBy: { detectedAt: 'asc' },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        behavioralFlags: true,
+        timeTakenMs: true,
+        changeCount: true,
+        metadata: true,
+      },
     });
 
     const allowedTypes: ReadonlySet<BehavioralIndicatorData['type']> = new Set([
@@ -74,39 +93,31 @@ export class BehavioralAnalysisService {
       'consistent',
     ]);
 
-    return indicators.map((i) => ({
-      type: allowedTypes.has(i.indicatorType as BehavioralIndicatorData['type'])
-        ? (i.indicatorType as BehavioralIndicatorData['type'])
-        : 'change',
-      ...(i.timeTakenMs !== null && i.timeTakenMs !== undefined
-        ? { timeTakenMs: i.timeTakenMs }
-        : {}),
-      ...(i.changeCount !== null && i.changeCount !== undefined
-        ? { changeCount: i.changeCount }
-        : {}),
-      ...(i.metadata && typeof i.metadata === 'object' && !Array.isArray(i.metadata)
-        ? { metadata: i.metadata }
-        : {}),
-    }));
+    return responses.flatMap((response) =>
+      response.behavioralFlags.map((flag) => ({
+        type: allowedTypes.has(flag as BehavioralIndicatorData['type'])
+          ? (flag as BehavioralIndicatorData['type'])
+          : 'change',
+        ...(response.timeTakenMs !== null && response.timeTakenMs !== undefined
+          ? { timeTakenMs: response.timeTakenMs }
+          : {}),
+        ...(response.changeCount !== null && response.changeCount !== undefined
+          ? { changeCount: response.changeCount }
+          : {}),
+        ...(response.metadata &&
+        typeof response.metadata === 'object' &&
+        !Array.isArray(response.metadata)
+          ? { metadata: response.metadata }
+          : {}),
+      })),
+    );
   }
 
   async calculateBehavioralMetrics(assessmentId: string): Promise<BehavioralMetrics> {
-    const [phase1Responses, phase2Responses, indicators] = await Promise.all([
-      this.prisma.phase1Response.findMany({
-        where: { assessmentId },
-        select: { timeTakenMs: true, changeCount: true },
-      }),
-      this.prisma.phase2Response.findMany({
-        where: { assessmentId },
-        select: { timeTakenMs: true, changeCount: true },
-      }),
-      this.prisma.behavioralIndicator.findMany({
-        where: { assessmentId },
-        select: { indicatorType: true },
-      }),
-    ]);
-
-    const allResponses = [...phase1Responses, ...phase2Responses];
+    const allResponses = await this.prisma.response.findMany({
+      where: { assessmentId },
+      select: { timeTakenMs: true, changeCount: true, behavioralFlags: true },
+    });
     const responseTimes = allResponses
       .map((r) => r.timeTakenMs)
       .filter((t): t is number => t !== null && t !== undefined);
@@ -126,20 +137,22 @@ export class BehavioralAnalysisService {
       consistentCount: 0,
     };
 
-    for (const indicator of indicators) {
-      switch (indicator.indicatorType) {
-        case 'hesitation':
-          indicatorCounts.hesitationCount++;
-          break;
-        case 'doubt':
-          indicatorCounts.doubtCount++;
-          break;
-        case 'excitement':
-          indicatorCounts.excitementCount++;
-          break;
-        case 'consistent':
-          indicatorCounts.consistentCount++;
-          break;
+    for (const response of allResponses) {
+      for (const flag of response.behavioralFlags) {
+        switch (flag) {
+          case 'hesitation':
+            indicatorCounts.hesitationCount++;
+            break;
+          case 'doubt':
+            indicatorCounts.doubtCount++;
+            break;
+          case 'excitement':
+            indicatorCounts.excitementCount++;
+            break;
+          case 'consistent':
+            indicatorCounts.consistentCount++;
+            break;
+        }
       }
     }
 
@@ -175,18 +188,10 @@ export class BehavioralAnalysisService {
   }
 
   private async calculateAverageResponseTime(assessmentId: string): Promise<number> {
-    const [phase1Responses, phase2Responses] = await Promise.all([
-      this.prisma.phase1Response.findMany({
-        where: { assessmentId },
-        select: { timeTakenMs: true },
-      }),
-      this.prisma.phase2Response.findMany({
-        where: { assessmentId },
-        select: { timeTakenMs: true },
-      }),
-    ]);
-
-    const allResponses = [...phase1Responses, ...phase2Responses];
+    const allResponses = await this.prisma.response.findMany({
+      where: { assessmentId },
+      select: { timeTakenMs: true },
+    });
     const responseTimes = allResponses
       .map((r) => r.timeTakenMs)
       .filter((t): t is number => t !== null && t !== undefined);

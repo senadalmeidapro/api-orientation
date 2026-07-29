@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma, AssessmentStatus, FeedbackType } from '@prisma/client';
+import { Prisma, TestStatus, FeedbackType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   AnalyticsSummaryDto,
@@ -44,7 +44,7 @@ export class AnalyticsService {
       : await this.prisma.assessment.findFirst({
           where: {
             sessionId: session.id,
-            status: AssessmentStatus.COMPLETED,
+            status: TestStatus.COMPLETED,
           },
           orderBy: { completedAt: 'desc' },
         });
@@ -106,7 +106,7 @@ export class AnalyticsService {
       await this.prisma.$transaction([
         this.prisma.assessment.count({
           where: {
-            status: AssessmentStatus.COMPLETED,
+            status: TestStatus.COMPLETED,
             ...(completedAtFilter ? { completedAt: completedAtFilter } : {}),
           },
         }),

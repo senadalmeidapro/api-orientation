@@ -1,13 +1,13 @@
 import { ResponsesService } from './responses.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { BadgesService } from '../badges/badges.service';
-import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma/client';
+import { TestStatus, TestType } from '@prisma/client';
 
 const prisma = {
   session: { findUnique: jest.fn() },
   assessment: { findFirst: jest.fn(), update: jest.fn() },
-  phase2Question: { findMany: jest.fn() },
-  phase2Response: { upsert: jest.fn(), findMany: jest.fn() },
+  question: { findMany: jest.fn() },
+  response: { upsert: jest.fn(), findMany: jest.fn() },
   assessmentResult: { findUnique: jest.fn() },
   assessmentCareerRecommendation: { deleteMany: jest.fn() },
   treasureMap: { deleteMany: jest.fn() },
@@ -15,26 +15,29 @@ const prisma = {
 } as any;
 
 describe('ResponsesService', () => {
-  it('rejects phase2 if phase1 prerequisite missing', async () => {
-    prisma.session.findUnique.mockResolvedValue({ id: 1 });
-    prisma.assessment.findFirst
-      .mockResolvedValueOnce({
-        id: 'a1',
-        sessionId: 1,
-        status: AssessmentStatus.IN_PROGRESS,
-        currentPhase: PhaseType.PHASE_2,
-        currentSection: Phase2Type.OCCUPATIONS,
-        testVersionId: 1,
-        depth: 5,
-        type: AssessmentType.PHASE2_OCCUPATIONS,
-      })
-      .mockResolvedValueOnce(null);
+  beforeEach(() => {
+    jest.clearAllMocks();
+    prisma.$transaction.mockImplementation((args: any[]) => Promise.all(args));
+  });
 
-    const badges = { grantPhase2Completed: jest.fn() } as unknown as BadgesService;
-    const service = new ResponsesService(prisma, badges);
+  it('rejects invalid questions', async () => {
+    prisma.session.findUnique.mockResolvedValue({ id: 1 });
+    prisma.assessment.findFirst.mockResolvedValue({
+      id: 'a1',
+      sessionId: 1,
+      status: TestStatus.IN_PROGRESS,
+      currentCategory: TestType.OCCUPATIONS,
+      testVersionId: 1,
+      depth: 5,
+      type: TestType.OCCUPATIONS,
+    });
+    prisma.question.findMany.mockResolvedValue([]);
+
+    const badges = { grantSpecificCompleted: jest.fn() } as unknown as BadgesService;
+    const service = new ResponsesService(prisma, badges, {} as any, {} as any, {} as any);
 
     await expect(
-      service.savePhase2({
+      service.saveResponse({
         sessionToken: 'tok',
         responses: [{ questionId: 1, responseValue: 1 }],
       } as any),
@@ -43,11 +46,11 @@ describe('ResponsesService', () => {
 
   it('throws when session not found', async () => {
     prisma.session.findUnique.mockResolvedValue(null);
-    const badges = { grantPhase1Completed: jest.fn() } as unknown as BadgesService;
-    const service = new ResponsesService(prisma, badges);
+    const badges = { grantGeneralCompleted: jest.fn() } as unknown as BadgesService;
+    const service = new ResponsesService(prisma, badges, {} as any, {} as any, {} as any);
 
     await expect(
-      service.savePhase1({ sessionToken: 'tok', responses: [] } as any),
+      service.saveResponse({ sessionToken: 'tok', responses: [] } as any),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

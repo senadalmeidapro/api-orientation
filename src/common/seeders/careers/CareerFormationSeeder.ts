@@ -1,4 +1,99 @@
+import { CareerCategory } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
+
+type CareerFormationCareer = {
+  id: number;
+  name: string;
+  tags?: string[] | null;
+  formationLevel?: string | null;
+  category?: CareerCategory | null;
+};
+
+type CareerFormationFormation = {
+  id: number;
+  title: string;
+  degree?: string | null;
+  field?: string | null;
+  programs?: string[] | null;
+  universityId?: number | null;
+};
+
+type CareerFormationLink = {
+  careerId: number;
+  formationId: number;
+  isPrimary: boolean;
+};
+
+const categoryKeywords: Partial<Record<CareerCategory, string[]>> = {
+  [CareerCategory.NUMERIQUE]: ['informatique', 'data', 'web', 'digital', 'logiciel'],
+  [CareerCategory.SANTE]: ['sante', 'medical', 'hospitalier'],
+  [CareerCategory.ARTISANAT]: ['art', 'design', 'communication', 'visuel', 'artisanat'],
+  [CareerCategory.EDUCATION]: ['education', 'enseignement', 'formation'],
+  [CareerCategory.COMMERCE]: ['commerce', 'marketing', 'gestion', 'finance'],
+  [CareerCategory.ADMINISTRATION]: ['administration', 'droit', 'secretariat'],
+  [CareerCategory.AGRICULTURE]: ['agriculture', 'agronomie', 'foresterie'],
+};
+
+function normalizeToken(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function tokensFrom(...values: Array<string | string[] | null | undefined>) {
+  return values
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .filter((value): value is string => Boolean(value))
+    .flatMap((value) => normalizeToken(value).split(/[^a-z0-9]+/))
+    .filter((value) => value.length >= 3);
+}
+
+export function buildCareerFormationLinks(
+  careers: CareerFormationCareer[],
+  formations: CareerFormationFormation[],
+  maxPerCareer = 3,
+): CareerFormationLink[] {
+  const availableFormations = formations.filter((formation) => formation.universityId);
+
+  return careers.flatMap((career) => {
+    const careerTokens = new Set(tokensFrom(career.name, career.tags));
+    const keywords = career.category ? (categoryKeywords[career.category] ?? []) : [];
+
+    return availableFormations
+      .map((formation) => {
+        const formationTokens = tokensFrom(
+          formation.title,
+          formation.degree,
+          formation.field,
+          formation.programs,
+        );
+        const tokenScore = formationTokens.filter((token) => careerTokens.has(token)).length * 10;
+        const keywordScore = keywords.some((keyword) =>
+          formationTokens.some((token) => token.includes(normalizeToken(keyword))),
+        )
+          ? 5
+          : 0;
+        const levelScore =
+          career.formationLevel &&
+          normalizeToken(formation.degree ?? '').includes(normalizeToken(career.formationLevel))
+            ? 3
+            : 0;
+
+        return {
+          formation,
+          score: tokenScore + keywordScore + levelScore,
+        };
+      })
+      .sort((a, b) => b.score - a.score || a.formation.id - b.formation.id)
+      .slice(0, maxPerCareer)
+      .map((item, index) => ({
+        careerId: career.id,
+        formationId: item.formation.id,
+        isPrimary: index === 0,
+      }));
+  });
+}
 
 const careerFormations = [
   {

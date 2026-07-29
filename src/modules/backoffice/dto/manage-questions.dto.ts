@@ -1,8 +1,8 @@
 import { Type } from 'class-transformer';
-import { Phase2Type, RiasecType } from '@prisma/client';
+import { RiasecType, TestType } from '@prisma/client';
 import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
-export class CreatePhase1QuestionAdminDto {
+export class CreateGeneralQuestionAdminDto {
   @IsEnum(RiasecType)
   riasecTypeId!: RiasecType;
 
@@ -37,7 +37,7 @@ export class CreatePhase1QuestionAdminDto {
   isActive?: boolean;
 }
 
-export class UpdatePhase1QuestionAdminDto {
+export class UpdateGeneralQuestionAdminDto {
   @IsOptional()
   @IsEnum(RiasecType)
   riasecTypeId?: RiasecType;
@@ -69,9 +69,9 @@ export class UpdatePhase1QuestionAdminDto {
   isActive?: boolean;
 }
 
-export class CreatePhase2QuestionAdminDto extends CreatePhase1QuestionAdminDto {
-  @IsEnum(Phase2Type)
-  phase2Type!: Phase2Type;
+export class CreateSpecificQuestionAdminDto extends CreateGeneralQuestionAdminDto {
+  @IsEnum(TestType)
+  category!: TestType;
 
   @IsOptional()
   @IsString()
@@ -79,10 +79,10 @@ export class CreatePhase2QuestionAdminDto extends CreatePhase1QuestionAdminDto {
   questionSubtext?: string;
 }
 
-export class UpdatePhase2QuestionAdminDto extends UpdatePhase1QuestionAdminDto {
+export class UpdateSpecificQuestionAdminDto extends UpdateGeneralQuestionAdminDto {
   @IsOptional()
-  @IsEnum(Phase2Type)
-  phase2Type?: Phase2Type;
+  @IsEnum(TestType)
+  category?: TestType;
 
   @IsOptional()
   @IsString()

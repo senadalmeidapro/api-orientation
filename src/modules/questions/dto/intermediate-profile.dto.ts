@@ -5,8 +5,8 @@ export class IntermediateProfileDto {
   @ApiProperty({ description: 'Batch index' })
   batchIndex!: number;
 
-  @ApiProperty({ description: 'Phase type (PHASE1 or PHASE2)' })
-  phaseType!: string;
+  @ApiProperty({ description: 'Category (GENERAL or SPECIFIC)' })
+  category!: string;
 
   @ApiProperty({
     description: 'Normalized RIASEC profile scores',

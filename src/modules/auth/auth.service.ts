@@ -143,7 +143,7 @@ export class AuthService {
         where: { id: user.id },
         data: { lastLoginAt: new Date() },
       }),
-      this.prisma.authToken.upsert(refreshTokenUpsert),
+      this.prisma.token.upsert(refreshTokenUpsert),
     ]);
 
     return {
@@ -171,7 +171,7 @@ export class AuthService {
       req,
     );
 
-    const result = await this.prisma.authToken.updateMany({
+    const result = await this.prisma.token.updateMany({
       where: {
         id: tokenRecord.id,
         tokenHash: tokenRecord.tokenHash,
@@ -195,7 +195,7 @@ export class AuthService {
 
     await this.token.addToBlacklist(token);
 
-    const result = await this.prisma.authToken.updateMany({
+    const result = await this.prisma.token.updateMany({
       where: {
         id: tokenRecord.id,
         tokenHash: tokenRecord.tokenHash,
@@ -279,7 +279,7 @@ export class AuthService {
         where: { id: tokenId },
         data: { deletedAt: now },
       }),
-      this.prisma.authToken.updateMany({
+      this.prisma.token.updateMany({
         where: { userId: user.id, invalidatedAt: null },
         data: { invalidatedAt: now },
       }),

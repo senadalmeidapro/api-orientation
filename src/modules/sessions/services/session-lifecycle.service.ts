@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { randomUUID, createHash } from 'crypto';
+import { randomUUID, createHash, type UUID } from 'crypto';
 
 @Injectable()
 export class SessionLifecycleService {
@@ -30,7 +30,7 @@ export class SessionLifecycleService {
       isActive: boolean;
       isCurrent: boolean;
       expiresAt: Date;
-      userId?: string;
+      userId?: UUID;
     } = {
       sessionToken,
       sessionHash,
@@ -38,12 +38,23 @@ export class SessionLifecycleService {
       isActive: true,
       isCurrent: true,
       expiresAt,
+      ...(userId ? { userId: userId as UUID } : {}),
     };
 
-    if (userId !== undefined) sessionCreateData.userId = userId;
+    return this.prisma.$transaction(async (tx) => {
+      if (userId) {
+        await tx.session.updateMany({
+          where: {
+            userId,
+            isCurrent: true,
+          },
+          data: { isCurrent: false },
+        });
+      }
 
-    return this.prisma.session.create({
-      data: sessionCreateData,
+      return tx.session.create({
+        data: sessionCreateData,
+      });
     });
   }
 

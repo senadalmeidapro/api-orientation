@@ -20,29 +20,23 @@ enum RiasecType {
   C // Conventionnel
 }
 
-enum AssessmentType {
-  PHASE1
-  PHASE2_OCCUPATIONS
-  PHASE2_APTITUDES
-  PHASE2_PERSONALITY
-  FULL
-}
-
-enum AssessmentStatus {
-  IN_PROGRESS
-  COMPLETED
-  ABANDONED
-}
-
-enum PhaseType {
-  PHASE1
-  PHASE2
-}
-
-enum Phase2Type {
+/// Sert à la fois pour le type d'un Assessment (test complet) et
+/// pour la catégorie d'une Question isolée. FULL n'est pertinent
+/// qu'au niveau Assessment (un assessment "FULL" regroupe des
+/// questions de plusieurs catégories) ; une Question individuelle
+/// ne doit jamais avoir category = FULL (à valider côté application).
+enum TestType {
+  GENERALE
   OCCUPATIONS
   APTITUDES
   PERSONALITY
+  FULL
+}
+
+enum TestStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
 }
 
 enum BadgeRarity {
@@ -65,12 +59,6 @@ enum ConsistencyLevel {
   FAIBLE // 1
   MOYENNE // 2
   FORTE // 3
-}
-
-enum Label {
-  Faible
-  Moyen
-  Fort
 }
 
 enum CareerCategory {
@@ -153,6 +141,13 @@ enum ScholarshipRecordApplicationMode {
   MIXED
 }
 
+enum TokenType {
+  REFRESH
+  EMAIL_VERIFY
+  PASSWORD_RESET
+  MFA
+}
+
 // =====================================================
 // UTILISATEURS
 // =====================================================
@@ -171,6 +166,13 @@ model User {
   role      UserRole   @default(USER)
   status    UserStatus @default(ACTIVE)
 
+  // Gamification cumulée : persiste à travers toutes les sessions de
+  // l'utilisateur (contrairement à Session.totalXp/level qui ne reflète
+  // que la session en cours). À la liaison d'une session anonyme à ce
+  // compte, l'application additionne les compteurs de session ici.
+  totalXp Int @default(0) @map("total_xp")
+  level   Int @default(1)
+
   emailVerifiedAt DateTime? @map("email_verified_at")
   lastLoginAt     DateTime? @map("last_login_at")
   roleAssignedAt  DateTime? @map("role_assigned_at")
@@ -180,9 +182,8 @@ model User {
 
   authAccounts AuthAccount[]
   authSessions Session[]
-  authToken    AuthToken?
   tokens       Token[]
-  sholarships  ScholarshipUser[]
+  scholarships ScholarshipUser[]
 
   @@index([email])
   @@index([status])
@@ -218,11 +219,19 @@ model AuthAccount {
   @@map("auth_accounts")
 }
 
-model AuthToken {
-  id            String    @id @default(uuid())
-  userId        String    @unique @map("user_id")
-  tokenHash     String    @map("token_hash")
-  tokenType     String    @map("token_type")
+/// Fusion de l'ancien AuthToken (refresh token, 1 par user) et de
+/// l'ancien Token (multi-usage : email verify, reset password, MFA...).
+/// Un même modèle, tokenType distingue l'usage. Si tu veux forcer un
+/// seul refresh token actif par user, ajoute une contrainte applicative
+/// (invalider les anciens à la création d'un nouveau) plutôt qu'une
+/// table dédiée.
+model Token {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @map("token_hash")
+  tokenType TokenType @map("token_type") // REFRESH, EMAIL_VERIFY, PASSWORD_RESET, MFA...
+
   expiresAt     DateTime  @map("expires_at")
   usedAt        DateTime? @map("used_at")
   invalidatedAt DateTime? @map("invalidated_at")
@@ -231,30 +240,10 @@ model AuthToken {
   userAgent String? @map("user_agent") @db.Text
   metadata  Json?
 
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([expiresAt])
-  @@index([tokenHash])
-  @@index([tokenHash, tokenType])
-  @@map("refresh_tokens")
-}
-
-model Token {
-  id        Int      @id @default(autoincrement())
-  userId    String   @map("user_id")
-  tokenHash String   @map("token_hash")
-  tokenType String   @map("token_type")
-  expiresAt DateTime @map("expires_at")
-
-  metadata Json?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   createdAt DateTime  @default(now()) @map("created_at")
   deletedAt DateTime? @map("deleted_at")
 
+  @@unique([userId, tokenType])
   @@index([tokenHash])
   @@index([expiresAt])
   @@index([tokenHash, tokenType])
@@ -262,7 +251,7 @@ model Token {
 }
 
 // =====================================================
-// VERSIONING & LOCALISATION
+// VERSIONING
 // =====================================================
 
 model TestVersion {
@@ -275,33 +264,11 @@ model TestVersion {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  phase1Questions Phase1Question[]
-  phase2Questions Phase2Question[]
-  assessments     Assessment[]
+  questions   Question[]
+  assessments Assessment[]
 
   @@index([isActive])
   @@map("test_versions")
-}
-
-model Language {
-  id         Int     @id @default(autoincrement())
-  code       String  @unique
-  name       String
-  nativeName String? @map("native_name")
-  isActive   Boolean @default(true) @map("is_active")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  phase1QuestionTranslations Phase1QuestionTranslation[]
-  phase2QuestionTranslations Phase2QuestionTranslation[]
-  careerTranslations         CareerTranslation[]
-  resourceTranslations       ResourceTranslation[]
-  universityTranslations     UniversityTranslation[]
-  formationTranslations      FormationTranslation[]
-
-  @@index([isActive])
-  @@map("languages")
 }
 
 // =====================================================
@@ -315,7 +282,7 @@ model Session {
 
   sessionToken String  @unique @map("session_token")
   sessionHash  String  @map("session_hash")
-  shareToken   String? @unique @map("share_token") // Pour partage public
+  shareToken   String? @unique @map("share_token") // Partage du profil/résultats de CETTE session
 
   isActive  Boolean  @default(true) @map("is_active")
   isCurrent Boolean  @default(false) @map("is_current")
@@ -324,7 +291,8 @@ model Session {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Gamification (niveau global de l'utilisateur)
+  // Gamification live de la session en cours (remise à zéro à chaque
+  // nouvelle session ; le cumul persistant vit sur User.totalXp/level).
   totalXp Int @default(0) @map("total_xp")
   level   Int @default(1)
 
@@ -353,32 +321,29 @@ model Assessment {
   testVersionId Int         @map("test_version_id")
   testVersion   TestVersion @relation(fields: [testVersionId], references: [id], onDelete: Restrict)
 
-  type   AssessmentType
+  type   TestType
   depth  Int // Nombre de questions par axe RIASEC (ex: 10 = profond, 5 = moyen, 3 = léger)
-  status AssessmentStatus @default(IN_PROGRESS)
+  status TestStatus @default(IN_PROGRESS)
 
-  // Progression (pour les tests FULL ou multi-phases)
-  currentPhase     PhaseType   @default(PHASE1) @map("current_phase") // PHASE1, PHASE2
-  currentSection   Phase2Type? @map("current_section") // OCCUPATIONS, APTITUDES, PERSONALITY (phase2 uniquement)
-  currentStepIndex Int         @default(0) @map("current_stepIndex")
+  // Progression : catégorie en cours (null si le test ne couvre qu'une
+  // seule catégorie).
+  currentCategory  TestType? @map("current_category")
+  currentStepIndex Int       @default(0) @map("current_step_index")
 
   // Système adaptatif par lots
-  batchSize    Int @default(5) @map("batch_size") // Taille d'un lot de questions
-  currentBatch Int @default(0) @map("current_batch") // Index du lot en cours
+  batchSize    Int @default(5) @map("batch_size")
+  currentBatch Int @default(0) @map("current_batch")
 
-  // État adaptatif (stocke l'estimation du profil RIASEC en temps réel)
-  adaptiveState Json? @map("adaptive_state") // { "probabilities": { "R": 0.3, "I": 0.2, ... }, "askedQuestions": [...] }
+  adaptiveState Json? @map("adaptive_state") // { "probabilities": { "R": 0.3, ... }, "askedQuestions": [...] }
 
   startedAt      DateTime  @default(now()) @map("started_at")
-  lastActivityAt DateTime  @updatedAt @map("lastActivity_at")
+  lastActivityAt DateTime  @updatedAt @map("last_activity_at")
   completedAt    DateTime? @map("completed_at")
 
-  // Métriques
   completionPercentage Int @default(0) @map("completion_percentage")
 
   // Relations
-  phase1Responses      Phase1Response[]
-  phase2Responses      Phase2Response[]
+  responses            Response[]
   result               AssessmentResult?
   treasureMap          TreasureMap?
   feedbacks            AssessmentFeedback[]
@@ -386,7 +351,6 @@ model Assessment {
   interactions         AssessmentInteraction[]
   xpHistory            XPHistory[]
   batches              BatchHistory[]
-  behavioralIndicators BehavioralIndicator[]
   intermediateProfiles IntermediateProfile[]
 
   @@index([sessionId])
@@ -410,53 +374,25 @@ model RiasecTypeModel {
   iconUrl      String?    @map("icon_url")
   displayOrder Int        @default(0) @map("display_order")
 
-  phase1Questions Phase1Question[]
-  phase2Questions Phase2Question[]
+  questions Question[]
 
   @@map("riasec_types")
 }
 
-model Phase1Question {
+model Question {
   id            Int             @id @default(autoincrement())
   riasecTypeId  RiasecType      @map("riasec_type_id")
   riasecType    RiasecTypeModel @relation(fields: [riasecTypeId], references: [id])
   testVersionId Int             @map("test_version_id")
   testVersion   TestVersion     @relation(fields: [testVersionId], references: [id], onDelete: Cascade)
 
-  questionText    String  @map("question_text") @db.Text
-  questionShort   String? @map("question_short")
-  illustrationUrl String? @map("illustration_url")
-  displayOrder    Int     @default(0) @map("display_order")
-  isActive        Boolean @default(true) @map("is_active")
+  category TestType @map("category") // GENERALE, OCCUPATIONS, APTITUDES, PERSONALITY
 
-  pointsValue Int @default(10)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  responses    Phase1Response[]
-  translations Phase1QuestionTranslation[]
-  profiles     QuestionProfile[]           @relation("Phase1QuestionProfiles")
-
-  @@unique([testVersionId, displayOrder])
-  @@index([riasecTypeId])
-  @@index([testVersionId])
-  @@map("phase1_questions")
-}
-
-model Phase2Question {
-  id            Int             @id @default(autoincrement())
-  riasecTypeId  RiasecType      @map("riasec_type_id")
-  riasecType    RiasecTypeModel @relation(fields: [riasecTypeId], references: [id])
-  testVersionId Int             @map("test_version_id")
-  testVersion   TestVersion     @relation(fields: [testVersionId], references: [id], onDelete: Cascade)
-
-  phase2Type      Phase2Type @map("phase2_type")
-  questionText    String     @map("question_text") @db.Text
-  questionSubtext String?    @map("question_subtext")
-  mediaUrl        String?    @map("media_url")
-  displayOrder    Int        @default(0) @map("display_order")
-  isActive        Boolean    @default(true) @map("is_active")
+  questionText String  @map("question_text") @db.Text
+  subtitle     String? @map("subtitle") // texte court / complément d'affichage
+  mediaUrl     String? @map("media_url") // illustration ou média associé
+  displayOrder Int     @default(0) @map("display_order")
+  isActive     Boolean @default(true) @map("is_active")
 
   minValue    Int?  @default(1) @map("min_value")
   maxValue    Int?  @default(3) @map("max_value")
@@ -467,138 +403,62 @@ model Phase2Question {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  responses    Phase2Response[]
-  translations Phase2QuestionTranslation[]
-  profiles     QuestionProfile[]           @relation("Phase2QuestionProfiles")
+  responses Response[]
+  profiles  QuestionProfile[]
 
-  @@unique([testVersionId, phase2Type, displayOrder])
+  @@unique([testVersionId, category, displayOrder])
   @@index([riasecTypeId])
   @@index([testVersionId])
-  @@index([phase2Type])
-  @@map("phase2_questions")
+  @@index([category])
+  @@map("questions")
 }
 
-model Phase1QuestionTranslation {
-  id         Int            @id @default(autoincrement())
-  questionId Int            @map("question_id")
-  question   Phase1Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  languageId Int            @map("language_id")
-  language   Language       @relation(fields: [languageId], references: [id], onDelete: Cascade)
+model Response {
+  id           String     @id @default(uuid())
+  assessmentId String     @map("assessment_id")
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  questionId   Int        @map("question_id")
+  question     Question   @relation(fields: [questionId], references: [id])
 
-  questionText  String  @map("question_text") @db.Text
-  questionShort String? @map("question_short")
-  audioUrl      String? @map("audio_url")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([questionId, languageId])
-  @@index([languageId])
-  @@map("phase1_question_translations")
-}
-
-model Phase2QuestionTranslation {
-  id         Int            @id @default(autoincrement())
-  questionId Int            @map("question_id")
-  question   Phase2Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  languageId Int            @map("language_id")
-  language   Language       @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  questionText    String  @map("question_text") @db.Text
-  questionSubtext String? @map("question_subtext")
-  audioUrl        String? @map("audio_url")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([questionId, languageId])
-  @@index([languageId])
-  @@map("phase2_question_translations")
-}
-
-model AptitudeResponseOption {
-  id        Int     @id @default(autoincrement())
-  value     Int     @unique
-  label     Label
-  emoji     String?
-  colorCode String? @map("color_code")
-
-  @@map("aptitude_response_options")
-}
-
-model Phase1Response {
-  id           String         @id @default(uuid())
-  assessmentId String         @map("assessment_id")
-  assessment   Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  questionId   Int            @map("question_id")
-  question     Phase1Question @relation(fields: [questionId], references: [id])
-
-  responseValue  Int  @map("response_value") // 0 = non, 1 = oui
+  // 0/1 pour GENERALE/OCCUPATIONS/PERSONALITY, 1-3 pour APTITUDES
+  responseValue  Int  @map("response_value")
   responseTimeMs Int? @map("response_time_ms")
 
-  // Tracking comportemental
-  timeTakenMs Int?  @map("time_taken_ms") // Temps total pris pour répondre
-  changeCount Int   @default(0) @map("change_count") // Nombre de fois que la réponse a été modifiée
-  metadata    Json? // Métadonnées supplémentaires (ex: timestamps des changements)
+  // Tracking comportemental (fusionné depuis l'ancien BehavioralIndicator)
+  timeTakenMs     Int?     @map("time_taken_ms")
+  changeCount     Int      @default(0) @map("change_count")
+  behavioralFlags String[] @default([]) @map("behavioral_flags") // 'hesitation', 'doubt', 'excitement', 'consistent'...
+  metadata        Json?
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([assessmentId, questionId])
   @@index([assessmentId])
   @@index([questionId])
-  @@map("phase1_responses")
-}
-
-model Phase2Response {
-  id           String         @id @default(uuid())
-  assessmentId String         @map("assessment_id")
-  assessment   Assessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  questionId   Int            @map("question_id")
-  question     Phase2Question @relation(fields: [questionId], references: [id])
-  phase2Type   Phase2Type     @map("phase2_type")
-
-  responseValue  Int  @map("response_value") // 0/1 pour occupations/personnalité, 1-3 pour aptitudes
-  responseTimeMs Int? @map("response_time_ms")
-
-  // Tracking comportemental
-  timeTakenMs Int?  @map("time_taken_ms") // Temps total pris pour répondre
-  changeCount Int   @default(0) @map("change_count") // Nombre de fois que la réponse a été modifiée
-  metadata    Json? // Métadonnées supplémentaires (ex: timestamps des changements)
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@unique([assessmentId, questionId])
-  @@index([assessmentId])
-  @@index([questionId])
-  @@map("phase2_responses")
+  @@map("responses")
 }
 
 // =====================================================
-// SYSTÈME ADAPTATIF - PROFILS MULTI-QUESTIONS
+// SYSTÈME ADAPTATIF - PROFILS PAR QUESTION
 // =====================================================
 
+/// Pondération d'une question sur un ou plusieurs axes RIASEC pour le
+/// scoring adaptatif fin (une question peut contribuer à plusieurs
+/// types à la fois, ex: 0.8 sur R et 0.2 sur I). Question.riasecTypeId
+/// reste l'axe primaire pour l'affichage/filtrage simple.
 model QuestionProfile {
-  id    Int       @id @default(autoincrement())
-  phase PhaseType
-
-  phase1QuestionId Int? @map("phase1_question_id")
-  phase2QuestionId Int? @map("phase2_question_id")
-
+  id         Int        @id @default(autoincrement())
+  questionId Int        @map("question_id")
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
   riasecType RiasecType @map("riasec_type")
+  category   TestType   @map("category") // GENERALE, OCCUPATIONS, APTITUDES, PERSONALITY
   weight     Float
 
-  phase1Question Phase1Question? @relation("Phase1QuestionProfiles", fields: [phase1QuestionId], references: [id], onDelete: Cascade)
-  phase2Question Phase2Question? @relation("Phase2QuestionProfiles", fields: [phase2QuestionId], references: [id], onDelete: Cascade)
-
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // Contrainte d'intégrité : une seule des deux colonnes doit être remplie selon la phase
-  @@unique([phase1QuestionId, phase, riasecType])
-  @@unique([phase2QuestionId, phase, riasecType])
-  @@index([phase1QuestionId])
-  @@index([phase2QuestionId])
-  @@index([phase])
+  @@unique([questionId, riasecType])
+  @@index([questionId])
   @@index([riasecType])
   @@map("question_profiles")
 }
@@ -612,9 +472,8 @@ model BatchHistory {
   assessmentId String     @map("assessment_id")
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
-  batchIndex  Int       @map("batch_index") // Index du lot (0, 1, 2, ...)
-  phaseType   PhaseType @map("phase_type")
-  questionIds Int[]     @map("question_ids") // IDs des questions présentées dans ce lot
+  batchIndex  Int   @map("batch_index")
+  questionIds Int[] @map("question_ids")
 
   presentedAt DateTime  @default(now()) @map("presented_at")
   completedAt DateTime? @map("completed_at")
@@ -626,30 +485,6 @@ model BatchHistory {
 }
 
 // =====================================================
-// ANALYSE COMPORTEMENTALE
-// =====================================================
-
-model BehavioralIndicator {
-  id           String     @id @default(uuid())
-  assessmentId String     @map("assessment_id")
-  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-
-  responseId    String @map("response_id") // Phase1Response ou Phase2Response ID
-  indicatorType String @map("indicator_type") // 'hesitation', 'doubt', 'change', 'excitement', 'consistent'
-
-  timeTakenMs Int?  @map("time_taken_ms") // Temps pris pour répondre (si applicable)
-  changeCount Int   @default(0) @map("change_count") // Nombre de changements de réponse
-  metadata    Json? // Données supplémentaires contextuelles
-
-  detectedAt DateTime @default(now()) @map("detected_at")
-
-  @@index([assessmentId])
-  @@index([indicatorType])
-  @@index([detectedAt])
-  @@map("behavioral_indicators")
-}
-
-// =====================================================
 // PROFILS INTERMÉDIAIRES (APRÈS CHAQUE LOT)
 // =====================================================
 
@@ -658,11 +493,10 @@ model IntermediateProfile {
   assessmentId String     @map("assessment_id")
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
-  batchIndex Int       @map("batch_index") // Index du lot après lequel ce profil a été calculé
-  phaseType  PhaseType @map("phase_type")
+  batchIndex Int @map("batch_index")
 
   profileData Json  @map("profile_data") // { "R": 0.3, "I": 0.2, "A": 0.15, "S": 0.1, "E": 0.15, "C": 0.1 }
-  rawScores   Json? @map("raw_scores") // Scores bruts avant normalisation
+  rawScores   Json? @map("raw_scores")
 
   calculatedAt DateTime @default(now()) @map("calculated_at")
 
@@ -681,38 +515,31 @@ model AssessmentResult {
   assessmentId String     @unique @map("assessment_id")
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
-  // Codes
-  phase1Code        String? @map("phase1_code") @db.Char(3) // Ex: "RIA" (si phase1 incluse)
-  phase2Code        String? @map("phase2_code") @db.Char(3) // Ex: "RIS" (si phase2 incluse)
-  subjectiveRanking Json?   @map("subjective_ranking") // Classement subjectif (cartes EPCR)
+  riasecCode        String? @map("riasec_code") @db.Char(3)
+  subjectiveRanking Json?   @map("subjective_ranking")
 
-  // Scores bruts
-  phase1Scores  Json? @map("phase1_scores") // { "R": 5, "I": 3, ... }
-  phase2Scores  Json? @map("phase2_scores") // { "R": 15, "I": 22, ... }
-  sectionScores Json? @map("section_scores") // Détails par section (occupations, aptitudes, personnalité)
+  // { "GENERALE": { "R": 5, ... }, "OCCUPATIONS": {...}, "APTITUDES": {...}, "PERSONALITY": {...} }
+  scoresByCategory Json? @map("scores_by_category")
 
-  // Indicateurs de qualité
   consistencyScore     Float?            @map("consistency_score")
   consistencyLevel     ConsistencyLevel? @map("consistency_level")
   differentiationScore Float?            @map("differentiation_score")
   profileStrength      ProfileStrength?  @map("profile_strength")
 
-  // Interprétations (générées par l'IA)
-  insights   Json? // Liste d'insights personnalisés
-  strengths  String[] // Forces identifiées
-  weaknesses String[] // Faiblesses identifiées (pour conseils)
+  insights   Json?
+  strengths  String[]
+  weaknesses String[]
 
   createdAt    DateTime  @default(now()) @map("created_at")
-  lastViewedAt DateTime? @map("lastViewed_at")
-  viewSount    Int       @default(0) @map("view_sount")
+  lastViewedAt DateTime? @map("last_viewed_at")
+  viewCount    Int       @default(0) @map("view_count")
 
-  // Relations
   careerRecommendations               AssessmentCareerRecommendation[]
   assessmentFormationRecommendations  AssessmentFormationRecommendation[]
   assessmentUniversityRecommendations AssessmentUniversityRecommendation[]
 
   @@index([assessmentId])
-  @@index([phase2Code])
+  @@index([riasecCode])
   @@index([consistencyLevel])
   @@index([createdAt])
   @@map("assessment_results")
@@ -728,10 +555,10 @@ model Career {
   description String  @db.Text
   summary     String?
 
-  riasecCodes RiasecType[] @map("riasec_codes") // Codes RIASEC associés
+  riasecCodes RiasecType[] @map("riasec_codes")
 
-  localDemand    Int?    @map("local_demand") // 1-5 (demande au Bénin)
-  formationLevel String? @map("formation_level") // 'CAP', 'BAC', 'BTS', etc.
+  localDemand    Int?    @map("local_demand")
+  formationLevel String? @map("formation_level")
   salaryRangeMin Int?    @map("salary_range_min")
   salaryRangeMax Int?    @map("salary_range_max")
   careerPath     String? @map("career_path")
@@ -754,7 +581,6 @@ model Career {
   recommendations AssessmentCareerRecommendation[]
   institutions    CareerFormation[]
   resources       CareerResource[]
-  translations    CareerTranslation[]
   outcomes        AssessmentOutcome[]
 
   @@index([category])
@@ -790,26 +616,6 @@ model CareerResource {
   @@map("career_resources")
 }
 
-model CareerTranslation {
-  id         Int      @id @default(autoincrement())
-  careerId   Int      @map("career_id")
-  career     Career   @relation(fields: [careerId], references: [id], onDelete: Cascade)
-  languageId Int      @map("language_id")
-  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  name        String
-  summary     String?
-  description String  @db.Text
-  audioUrl    String?
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([careerId, languageId])
-  @@index([languageId])
-  @@map("career_translations")
-}
-
 model AssessmentCareerRecommendation {
   id       String           @id @default(uuid())
   resultId String           @map("result_id")
@@ -817,11 +623,11 @@ model AssessmentCareerRecommendation {
   careerId Int              @map("career_id")
   career   Career           @relation(fields: [careerId], references: [id], onDelete: Cascade)
 
-  matchScore   Int @map("match_score") // 0-100
+  matchScore   Int @map("match_score")
   rankPosition Int @map("rank_position")
 
   viewedAt      DateTime? @map("viewed_at")
-  savedForLater Boolean   @default(false) @map("saved_forLater")
+  savedForLater Boolean   @default(false) @map("saved_for_later")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -849,7 +655,7 @@ model Badge {
   rarity      BadgeRarity @default(COMMON)
   pointsValue Int         @default(50) @map("points_value")
 
-  unlockCondition Json? @map("unlock_condition") // { "type": "phase_completion", "phase": 1 }
+  unlockCondition Json? @map("unlock_condition")
 
   unlockCount Int @default(0) @map("unlock_count")
 
@@ -884,8 +690,8 @@ model XPHistory {
   session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   amount       Int
-  reason       String? // "test_completed", "badge_earned", etc.
-  assessmentId String?     @map("assessment_id") // optionnel, lien vers l'évaluation qui a rapporté ces XP
+  reason       String?
+  assessmentId String?     @map("assessment_id")
   assessment   Assessment? @relation(fields: [assessmentId], references: [id])
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -906,7 +712,7 @@ model TreasureMap {
 
   mapData    Json    @map("map_data")
   pdfUrl     String? @map("pdf_url")
-  shareToken String  @unique @map("share_token")
+  shareToken String  @unique @map("share_token") // Partage d'UN résultat précis (distinct de Session.shareToken)
 
   viewCount     Int @default(0) @map("view_count")
   downloadCount Int @default(0) @map("download_count")
@@ -989,7 +795,7 @@ model AssessmentInteraction {
 }
 
 // =====================================================
-// CONTENU ÉDUCATIF ET FORMATIONS
+// CONTENU ÉDUCATIF
 // =====================================================
 
 model Resource {
@@ -1014,36 +820,11 @@ model Resource {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   relatedCareers CareerResource[]
-  translations   ResourceTranslation[]
 
   @@index([category])
   @@index([isPublished])
   @@map("resources")
 }
-
-model ResourceTranslation {
-  id         Int      @id @default(autoincrement())
-  resourceId Int      @map("resource_id")
-  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  languageId Int      @map("language_id")
-  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String  @db.Text
-  content     String  @db.Text
-  audioUrl    String? @map("audio_url")
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([resourceId, languageId])
-  @@index([languageId])
-  @@map("resource_translations")
-}
-
-// =====================================================
-// LIENS UTILES
-// =====================================================
 
 // =====================================================
 // UNIVERSITÉS ET FORMATIONS
@@ -1076,7 +857,6 @@ model University {
   formations                          Formation[]
   scholarships                        UniversityScholarship[]
   media                               UniversityMedia[]
-  translations                        UniversityTranslation[]
   assessmentUniversityRecommendations AssessmentUniversityRecommendation[]
 
   @@index([isActive])
@@ -1095,24 +875,6 @@ model UniversityMedia {
 
   @@index([universityId])
   @@map("university_media")
-}
-
-model UniversityTranslation {
-  id           Int        @id @default(autoincrement())
-  universityId Int        @map("university_id")
-  university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
-  languageId   Int        @map("language_id")
-  language     Language   @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String? @db.Text
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([universityId, languageId])
-  @@index([languageId])
-  @@map("university_translations")
 }
 
 model Formation {
@@ -1136,31 +898,12 @@ model Formation {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  translations                       FormationTranslation[]
   career                             CareerFormation[]
   assessmentFormationRecommendations AssessmentFormationRecommendation[]
 
   @@index([universityId])
   @@index([isActive])
   @@map("formations")
-}
-
-model FormationTranslation {
-  id          Int       @id @default(autoincrement())
-  formationId Int       @map("formation_id")
-  formation   Formation @relation(fields: [formationId], references: [id], onDelete: Cascade)
-  languageId  Int       @map("language_id")
-  language    Language  @relation(fields: [languageId], references: [id], onDelete: Cascade)
-
-  title       String
-  description String? @db.Text
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@unique([formationId, languageId])
-  @@index([languageId])
-  @@map("formation_translations")
 }
 
 model UniversityScholarship {
@@ -1263,7 +1006,7 @@ model AssessmentFormationRecommendation {
   rankPosition Int @map("rank_position")
 
   viewedAt      DateTime? @map("viewed_at")
-  savedForLater Boolean   @default(false) @map("saved_forLater")
+  savedForLater Boolean   @default(false) @map("saved_for_later")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -1285,7 +1028,7 @@ model AssessmentUniversityRecommendation {
   rankPosition Int @map("rank_position")
 
   viewedAt      DateTime? @map("viewed_at")
-  savedForLater Boolean   @default(false) @map("saved_forLater")
+  savedForLater Boolean   @default(false) @map("saved_for_later")
 
   createdAt DateTime @default(now()) @map("created_at")
 

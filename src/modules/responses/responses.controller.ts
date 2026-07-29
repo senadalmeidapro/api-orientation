@@ -1,7 +1,6 @@
 import { Body, Controller, Post, Get, Param } from '@nestjs/common';
 import { ResponsesService } from './responses.service';
-import { CreatePhase1ResponsesDto } from './dto/create-phase1-responses.dto';
-import { CreatePhase2ResponsesDto } from './dto/create-phase2-responses.dto';
+import { CreateResponsesDto } from './dto/create-responses.dto';
 import { SubmitBatchResponsesDto } from './dto/submit-batch-responses.dto';
 import { BehavioralAnalysisService } from './services/behavioral-analysis.service';
 import { Throttle } from '@nestjs/throttler';
@@ -22,50 +21,42 @@ export class ResponsesController {
     private readonly behavioralService: BehavioralAnalysisService,
   ) {}
 
-  @Throttle({ default: { limit: 120, ttl: 60 } })
-  @Post('phase1')
+  /*@Throttle({ default: { limit: 120, ttl: 60 } })
+  @Post('general')
   @ApiOperation({
-    summary: 'Enregistrer des réponses phase 1',
+    summary: 'Enregistrer des réponses générales',
     description:
-      'Enregistre ou met à jour un lot de réponses phase 1 pour la session/assessment fourni.',
+      'Enregistre ou met à jour un lot de réponses générales pour la session/assessment fourni.',
   })
   @ApiBody({
-    type: CreatePhase1ResponsesDto,
+    type: CreateGeneralResponsesDto,
     description:
       'Token de session, assessmentId optionnel et liste des réponses (questionId, valeur, temps de réponse).',
   })
-  // @ApiStandardCreatedResponse({
-  //     description: 'Réponses phase 1 enregistrées.',
-  //     dataExample: { saved: 6, phase1Completed: false },
-  // })
-  savePhase1(@Body() dto: CreatePhase1ResponsesDto) {
-    return this.service.savePhase1(dto);
-  }
+  saveGeneral(@Body() dto: CreateGeneralResponsesDto) {
+    return this.service.saveResponse(dto);
+  }*/
 
   @Throttle({ default: { limit: 120, ttl: 60 } })
-  @Post('phase2')
+  @Post('category')
   @ApiOperation({
-    summary: 'Enregistrer des réponses phase 2',
+    summary: 'Enregistrer des réponses par catégorie',
     description:
-      'Enregistre ou met à jour un lot de réponses phase 2 pour la section active de l’assessment.',
+      'Enregistre ou met à jour un lot de réponses pour la catégorie active de assessment.',
   })
   @ApiBody({
-    type: CreatePhase2ResponsesDto,
+    type: CreateResponsesDto,
     description:
-      'Token de session, assessmentId optionnel et liste des réponses phase 2 (questionId, responseValue).',
+      'Token de session, assessmentId optionnel et liste des réponses (questionId, responseValue).',
   })
-  // @ApiStandardCreatedResponse({
-  //     description: 'Réponses phase 2 enregistrées.',
-  //     dataExample: { saved: 6, phase2Completed: true },
-  // })
-  savePhase2(@Body() dto: CreatePhase2ResponsesDto) {
-    return this.service.savePhase2(dto);
+  saveCategory(@Body() dto: CreateResponsesDto) {
+    return this.service.saveResponse(dto);
   }
 
   @Throttle({ default: { limit: 60, ttl: 60 } })
   @Post('batch')
   @ApiOperation({
-    summary: 'Soumettre un lot complet de réponses (système adaptatif)',
+    summary: 'soumettre un lot complet de réponses (système adaptatif)',
     description:
       "Enregistre les réponses d'un lot, effectue l'analyse comportementale et calcule le profil intermédiaire",
   })
@@ -100,7 +91,7 @@ export class ResponsesController {
   })
   @ApiParam({
     name: 'assessmentId',
-    description: "Identifiant de l'assessment.",
+    description: 'Identifiant de assessment.',
     example: 'clx-assessment-id',
   })
   // @ApiStandardOkResponse({

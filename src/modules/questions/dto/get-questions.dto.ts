@@ -1,9 +1,9 @@
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { Phase2Type } from '@prisma/client';
+import { TestType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class GetPhase2QuestionsDto {
+export class GetQuestionsDto {
   @ApiProperty({ description: 'Session token', type: String, example: 'tok_sample_123456' })
   @IsString()
   sessionToken!: string;
@@ -15,12 +15,12 @@ export class GetPhase2QuestionsDto {
 
   @ApiPropertyOptional({
     description: 'Section',
-    enum: Phase2Type,
-    example: Object.values(Phase2Type)[0],
+    enum: TestType,
+    example: Object.values(TestType)[0],
   })
   @IsOptional()
-  @IsEnum(Phase2Type)
-  section?: Phase2Type;
+  @IsEnum(TestType)
+  currentCategory!: TestType;
 
   @ApiPropertyOptional({ description: 'Take', type: Number, example: 1 })
   @IsOptional()

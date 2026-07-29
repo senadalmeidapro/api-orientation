@@ -147,7 +147,7 @@ export class AdaptiveUtil {
     };
   }
 
-  static determineNextPhaseTransition(
+  static determineNextCategoryTransition(
     currentProfile: RiasecScores,
     batchesCompleted: number,
     minBatches: number = 3,

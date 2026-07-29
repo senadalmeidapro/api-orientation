@@ -1,15 +1,20 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { AssessmentStatus, AssessmentType, Phase2Type, PhaseType } from '@prisma/client';
+import { TestStatus, TestType } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateAssessmentDto } from '../dto/create-assessment.dto';
 
 const defaultDepth = 5;
+const firstFullTestCategory = TestType.GENERALE;
 
 @Injectable()
 export class AssessmentFlowService {
   private readonly logger = new Logger(AssessmentFlowService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  private getInitialCurrentCategory(type: TestType) {
+    return type === TestType.FULL ? firstFullTestCategory : type;
+  }
 
   async resolveTestVersionId(explicitId?: number) {
     if (explicitId) {
@@ -46,32 +51,17 @@ export class AssessmentFlowService {
     return created.id;
   }
 
-  resolvePhaseForType(type: AssessmentType) {
-    if (type === AssessmentType.PHASE1 || type === AssessmentType.FULL) {
-      return { phase: PhaseType.PHASE1, section: null };
-    }
-    if (type === AssessmentType.PHASE2_OCCUPATIONS) {
-      return { phase: PhaseType.PHASE2, section: Phase2Type.OCCUPATIONS };
-    }
-    if (type === AssessmentType.PHASE2_APTITUDES) {
-      return { phase: PhaseType.PHASE2, section: Phase2Type.APTITUDES };
-    }
-    return { phase: PhaseType.PHASE2, section: Phase2Type.PERSONALITY };
-  }
-
   async createAssessment(sessionId: string, testVersionId: number, dto: CreateAssessmentDto) {
     const depth = dto.depth ?? defaultDepth;
-    const { phase, section } = this.resolvePhaseForType(dto.type);
 
     return this.prisma.assessment.create({
       data: {
         sessionId,
         testVersionId,
         type: dto.type,
+        currentCategory: this.getInitialCurrentCategory(dto.type),
         depth,
-        status: AssessmentStatus.IN_PROGRESS,
-        currentPhase: phase,
-        currentSection: section,
+        status: TestStatus.IN_PROGRESS,
         currentStepIndex: 0,
         completionPercentage: 0,
       },
@@ -85,25 +75,51 @@ export class AssessmentFlowService {
     if (!session) throw new NotFoundException('Session introuvable');
 
     if (
-      dto.type === AssessmentType.PHASE2_OCCUPATIONS ||
-      dto.type === AssessmentType.PHASE2_APTITUDES ||
-      dto.type === AssessmentType.PHASE2_PERSONALITY
+      dto.type === TestType.OCCUPATIONS ||
+      dto.type === TestType.APTITUDES ||
+      dto.type === TestType.PERSONALITY
     ) {
-      const phase1Done = await this.prisma.assessment.findFirst({
+      const generalDone = await this.prisma.assessment.findFirst({
         where: {
           sessionId: session.id,
-          type: AssessmentType.PHASE1,
-          status: AssessmentStatus.COMPLETED,
+          type: TestType.GENERALE,
+          status: TestStatus.COMPLETED,
         },
         select: { id: true },
       });
-      if (!phase1Done) {
-        throw new NotFoundException("Le test d'amorce doit être complété avant un test spécifique");
+      if (!generalDone) {
+        throw new NotFoundException('Le test générale doit être complété avant un test spécifique');
       }
     }
 
     const testVersionId = await this.resolveTestVersionId(dto.testVersionId);
-    return this.createAssessment(session.id, testVersionId, dto);
+    const depth = dto.depth ?? defaultDepth;
+
+    const [, assessment] = await this.prisma.$transaction([
+      this.prisma.assessment.updateMany({
+        where: {
+          sessionId: session.id,
+          status: TestStatus.IN_PROGRESS,
+        },
+        data: {
+          status: TestStatus.ABANDONED,
+        },
+      }),
+      this.prisma.assessment.create({
+        data: {
+          sessionId: session.id,
+          testVersionId,
+          type: dto.type,
+          currentCategory: this.getInitialCurrentCategory(dto.type),
+          depth,
+          status: TestStatus.IN_PROGRESS,
+          currentStepIndex: 0,
+          completionPercentage: 0,
+        },
+      }),
+    ]);
+
+    return assessment;
   }
 
   async listAssessments(sessionToken: string) {

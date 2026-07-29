@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { AssessmentStatus, Phase2Type, PhaseType, RiasecType } from '@prisma/client';
+import { TestStatus, TestType, RiasecType } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RecommendationsService } from '../recommendations/recommendations.service';
 import { ResultsService } from '../results/results.service';
@@ -22,7 +22,7 @@ type CandidateQuestion = {
   id: number;
   text: string;
   riasecType: string;
-  sectionType?: Phase2Type;
+  sectionType?: TestType;
 };
 
 type RecommendationContextItem = {
@@ -62,7 +62,7 @@ export class AiService {
           where: { id: dto.assessmentId, sessionId: session.id },
         })
       : await this.prisma.assessment.findFirst({
-          where: { sessionId: session.id, status: AssessmentStatus.COMPLETED },
+          where: { sessionId: session.id, status: TestStatus.COMPLETED },
           orderBy: { completedAt: 'desc' },
         });
     if (!assessment) throw new NotFoundException('Aucun test disponible pour cette session');
@@ -71,8 +71,8 @@ export class AiService {
       where: { assessmentId: assessment.id },
     });
     if (!result) {
-      if (assessment.status !== AssessmentStatus.COMPLETED) {
-        throw new BadRequestException('Resultat indisponible, test non termine');
+      if (assessment.status !== TestStatus.COMPLETED) {
+        throw new BadRequestException('Résultat indisponible, test non termine');
       }
       result = await this.resultsService.compute({
         sessionToken: dto.sessionToken,
@@ -85,7 +85,8 @@ export class AiService {
       assessment.id,
       dto.limit ?? 6,
     );
-    const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
+    const resultView = this.toResultView(result);
+    const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentCategory);
     const profile = this.mergeProfiles(null, this.parseProfile(session.user?.bio));
 
     const context = {
@@ -96,21 +97,20 @@ export class AiService {
       assessment: {
         id: assessment.id,
         type: assessment.type,
-        currentPhase: assessment.currentPhase,
-        currentSection: assessment.currentSection,
+        currentCategory: assessment.currentCategory,
         completionPercentage: assessment.completionPercentage,
         startedAt: assessment.startedAt,
       },
       result: {
-        phase1Code: result.phase1Code,
-        phase2Code: result.phase2Code,
+        generalCode: resultView.generalCode,
+        specificCode: resultView.specificCode,
         strengths: result.strengths,
         consistencyLevel: result.consistencyLevel,
         profileStrength: result.profileStrength,
         differentiationScore: result.differentiationScore,
-        phase1Scores: result.phase1Scores,
-        phase2Scores: result.phase2Scores,
-        sectionScores: result.sectionScores,
+        generalScores: resultView.generalScores,
+        specificScores: resultView.specificScores,
+        sectionScores: resultView.sectionScores,
       },
       recommendations: recommendations.map((rec) => ({
         id: rec.career.id,
@@ -134,13 +134,13 @@ export class AiService {
           profile: {
             type: 'object',
             properties: {
-              phase1Code: { type: 'string' },
-              phase2Code: { type: 'string' },
+              generalCode: { type: 'string' },
+              specificCode: { type: 'string' },
               strengths: { type: 'array', items: { type: 'string' } },
               consistencyLevel: { type: 'string' },
               profileStrength: { type: 'string' },
             },
-            required: ['phase1Code', 'phase2Code'],
+            required: ['generalCode', 'specificCode'],
           },
           recommendations: {
             type: 'array',
@@ -160,7 +160,7 @@ export class AiService {
     };
 
     const instructions =
-      "Tu es un conseiller d'orientation RIASEC. Reponds en francais, clair, concret, et personnalise.";
+      "Tu es un conseiller d'orientation RIASEC. Réponds en français, clair, concret, et personnalise.";
     const input = JSON.stringify({
       task: 'Resume le profil et propose des recommandations et prochaines actions.',
       context,
@@ -185,16 +185,16 @@ export class AiService {
       },
     );
 
-    if (dto.section && assessment.currentSection && dto.section !== assessment.currentSection) {
-      throw new BadRequestException('Section courante invalide pour cette requete');
+    if (dto.section && assessment.currentCategory && dto.section !== assessment.currentCategory) {
+      throw new BadRequestException('Section courante invalide pour cette requête');
     }
 
     const partialScores = await this.computePartialScores(
       assessment.id,
-      assessment.currentPhase,
+      assessment.currentCategory,
       dto.section,
     );
-    const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
+    const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentCategory);
     const candidates = await this.getCandidateQuestions(assessment, dto.section, dto.maxQuestions);
     if (!candidates.length) {
       throw new BadRequestException('Aucune question disponible');
@@ -232,10 +232,9 @@ export class AiService {
     const instructions =
       "Tu es un coach d'orientation. Choisis les meilleures questions suivantes pour affiner le profil.";
     const input = JSON.stringify({
-      task: 'Selectionner les prochaines questions et donner un message clair.',
+      task: 'Selection les prochaines questions et donner un message clair.',
       assessment: {
-        currentPhase: assessment.currentPhase,
-        currentSection: assessment.currentSection,
+        currentCategory: assessment.currentCategory,
         completionPercentage: assessment.completionPercentage,
       },
       profile,
@@ -294,7 +293,7 @@ export class AiService {
     let result = await this.prisma.assessmentResult.findUnique({
       where: { assessmentId: assessment.id },
     });
-    if (!result && assessment.status === AssessmentStatus.COMPLETED) {
+    if (!result && assessment.status === TestStatus.COMPLETED) {
       result = await this.resultsService.compute({
         sessionToken: dto.sessionToken,
         assessmentId: assessment.id,
@@ -302,10 +301,10 @@ export class AiService {
     }
 
     const recommendations =
-      result && assessment.status === AssessmentStatus.COMPLETED
+      result && assessment.status === TestStatus.COMPLETED
         ? await this.ensureRecommendations(dto.sessionToken, assessment.id, 6)
         : [];
-    const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentPhase);
+    const behavior = await this.computeBehaviorMetrics(assessment.id, assessment.currentCategory);
     const profile = this.mergeProfiles(null, this.parseProfile(session.user?.bio));
 
     const context = {
@@ -317,14 +316,13 @@ export class AiService {
         id: assessment.id,
         type: assessment.type,
         status: assessment.status,
-        currentPhase: assessment.currentPhase,
-        currentSection: assessment.currentSection,
+        currentCategory: assessment.currentCategory,
         completionPercentage: assessment.completionPercentage,
       },
       result: result
         ? {
-            phase1Code: result.phase1Code,
-            phase2Code: result.phase2Code,
+            generalCode: this.toResultView(result).generalCode,
+            specificCode: this.toResultView(result).specificCode,
             strengths: result.strengths,
             consistencyLevel: result.consistencyLevel,
             profileStrength: result.profileStrength,
@@ -345,7 +343,7 @@ export class AiService {
 
     const instructions = [
       "Tu es un conseiller d'orientation.",
-      'Reponds en francais, clair, concis et actionnable.',
+      'Réponds en français, clair, concis et actionnable.',
       'Ne demande pas de donnees personnelles.',
       "Si le test est incomplet, guide l'utilisateur.",
     ].join(' ');
@@ -408,50 +406,46 @@ export class AiService {
     }
   }
 
-  private async computePartialScores(assessmentId: string, phase: PhaseType, section?: Phase2Type) {
-    const phase1Scores = this.emptyScores();
-    const phase2Scores = this.emptyScores();
+  private async computePartialScores(
+    assessmentId: string,
+    currentCategory: TestType | null,
+    section?: TestType,
+  ) {
+    const generalScores = this.emptyScores();
+    const specificScores = this.emptyScores();
+    const targetCategory = section ?? currentCategory;
 
-    if (phase === PhaseType.PHASE1) {
-      const responses = await this.prisma.phase1Response.findMany({
-        where: { assessmentId: assessmentId },
-        select: { responseValue: true, question: { select: { riasecTypeId: true } } },
-      });
-      for (const response of responses) {
-        this.addScore(phase1Scores, response.question.riasecTypeId, response.responseValue);
-      }
-    } else if (phase === PhaseType.PHASE2) {
-      const responses = await this.prisma.phase2Response.findMany({
-        where: {
-          assessmentId: assessmentId,
-          ...(section ? { phase2Type: section } : {}),
-        },
-        select: { responseValue: true, question: { select: { riasecTypeId: true } } },
-      });
-      for (const response of responses) {
-        this.addScore(phase2Scores, response.question.riasecTypeId, response.responseValue);
-      }
+    const responses = await this.prisma.response.findMany({
+      where: {
+        assessmentId,
+        ...(targetCategory ? { question: { category: targetCategory } } : {}),
+      },
+      select: {
+        responseValue: true,
+        question: { select: { riasecTypeId: true, category: true } },
+      },
+    });
+    for (const response of responses) {
+      const target =
+        response.question.category === TestType.GENERALE ? generalScores : specificScores;
+      this.addScore(target, response.question.riasecTypeId, response.responseValue);
     }
 
     return {
-      phase1Scores,
-      phase2Scores,
+      generalScores,
+      specificScores,
     };
   }
 
-  private async computeBehaviorMetrics(assessmentId: string, phase: PhaseType) {
-    let responses: Array<{ responseTimeMs: number | null }> = [];
-    if (phase === PhaseType.PHASE1) {
-      responses = await this.prisma.phase1Response.findMany({
-        where: { assessmentId: assessmentId, responseTimeMs: { not: null } },
-        select: { responseTimeMs: true },
-      });
-    } else if (phase === PhaseType.PHASE2) {
-      responses = await this.prisma.phase2Response.findMany({
-        where: { assessmentId: assessmentId, responseTimeMs: { not: null } },
-        select: { responseTimeMs: true },
-      });
-    }
+  private async computeBehaviorMetrics(assessmentId: string, category: TestType | null) {
+    const responses = await this.prisma.response.findMany({
+      where: {
+        assessmentId,
+        responseTimeMs: { not: null },
+        ...(category ? { question: { category } } : {}),
+      },
+      select: { responseTimeMs: true },
+    });
 
     const times = responses
       .map((r) => r.responseTimeMs ?? 0)
@@ -475,56 +469,33 @@ export class AiService {
     assessment: {
       id: string;
       testVersionId: number;
-      currentPhase: PhaseType;
-      currentSection: Phase2Type | null;
+      currentCategory: TestType | null;
       depth: number;
     },
-    section?: Phase2Type,
+    section?: TestType,
     maxQuestions = 5,
   ): Promise<CandidateQuestion[]> {
     const poolSize = Math.max(10, maxQuestions * 2);
     const depth = assessment.depth ?? defaultDepth;
-    if (assessment.currentPhase === PhaseType.PHASE1) {
-      const answered = await this.prisma.phase1Response.findMany({
-        where: { assessmentId: assessment.id },
-        select: { questionId: true, question: { select: { riasecTypeId: true } } },
-      });
-      const answeredSet = new Set(answered.map((r) => r.questionId));
-      const answeredCounts = this.buildCountsFromResponses(answered);
-      const questions = await this.prisma.phase1Question.findMany({
-        where: { isActive: true, testVersionId: assessment.testVersionId },
-        orderBy: { displayOrder: 'asc' },
-        select: {
-          id: true,
-          riasecTypeId: true,
-          questionText: true,
-          displayOrder: true,
-        },
-      });
-      return this.applyDepthFilter(questions, answeredSet, answeredCounts, depth)
-        .slice(0, poolSize)
-        .map((q) => ({ id: q.id, text: q.questionText, riasecType: q.riasecTypeId }));
-    }
-
-    const targetSection = section ?? assessment.currentSection ?? Phase2Type.OCCUPATIONS;
-    const answered = await this.prisma.phase2Response.findMany({
-      where: { assessmentId: assessment.id, phase2Type: targetSection },
+    const targetSection = section ?? assessment.currentCategory ?? TestType.OCCUPATIONS;
+    const answered = await this.prisma.response.findMany({
+      where: { assessmentId: assessment.id, question: { category: targetSection } },
       select: { questionId: true, question: { select: { riasecTypeId: true } } },
     });
     const answeredSet = new Set(answered.map((r) => r.questionId));
     const answeredCounts = this.buildCountsFromResponses(answered);
-    const questions = await this.prisma.phase2Question.findMany({
+    const questions = await this.prisma.question.findMany({
       where: {
         isActive: true,
         testVersionId: assessment.testVersionId,
-        phase2Type: targetSection,
+        category: targetSection,
       },
       orderBy: { displayOrder: 'asc' },
       select: {
         id: true,
         riasecTypeId: true,
         questionText: true,
-        phase2Type: true,
+        category: true,
         displayOrder: true,
       },
     });
@@ -534,8 +505,25 @@ export class AiService {
         id: q.id,
         text: q.questionText,
         riasecType: q.riasecTypeId,
-        sectionType: q.phase2Type,
+        sectionType: q.category,
       }));
+  }
+
+  private toResultView(result: { riasecCode: string | null; scoresByCategory: unknown }) {
+    const scores = this.isRecord(result.scoresByCategory) ? result.scoresByCategory : {};
+    const generale = this.isRecord(scores.GENERALE) ? scores.GENERALE : null;
+    const totalRaw = this.isRecord(scores.totalRaw) ? scores.totalRaw : null;
+    return {
+      generalCode: result.riasecCode,
+      specificCode: result.riasecCode,
+      generalScores: generale,
+      specificScores: totalRaw,
+      sectionScores: scores,
+    };
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
 
   private toRecommendationContextItem(rec: unknown): RecommendationContextItem {

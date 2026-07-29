@@ -18,16 +18,16 @@ import { DashboardSummaryDto } from './dto/dashboard-summary.dto';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
 import {
   AdminAssessmentsFilterDto,
-  AdminPhase1QuestionsFilterDto,
-  AdminPhase2QuestionsFilterDto,
+  AdminGeneralQuestionsFilterDto,
+  AdminSpecificQuestionsFilterDto,
   AdminSessionsFilterDto,
   AdminUsersFilterDto,
 } from './dto/admin-filters.dto';
 import {
-  CreatePhase1QuestionAdminDto,
-  CreatePhase2QuestionAdminDto,
-  UpdatePhase1QuestionAdminDto,
-  UpdatePhase2QuestionAdminDto,
+  CreateGeneralQuestionAdminDto,
+  CreateSpecificQuestionAdminDto,
+  UpdateGeneralQuestionAdminDto,
+  UpdateSpecificQuestionAdminDto,
 } from './dto/manage-questions.dto';
 import { AdminPaginationDto } from './dto/admin-pagination.dto';
 import { UsersService } from '@modules/users/users.service';
@@ -102,46 +102,46 @@ export class BackofficeController {
     return this.backofficeService.listAssessments(dto);
   }
 
-  @ApiOperation({ summary: 'Lister les questions phase 1 (admin)' })
-  @Get('questions/phase1')
-  listPhase1Questions(@Query() dto: AdminPhase1QuestionsFilterDto) {
-    return this.backofficeService.listPhase1Questions(dto);
+  @ApiOperation({ summary: 'Lister les questions générales (admin)' })
+  @Get('questions/general')
+  listGeneralQuestions(@Query() dto: AdminGeneralQuestionsFilterDto) {
+    return this.backofficeService.listGeneralQuestions(dto);
   }
 
-  @ApiOperation({ summary: 'Créer une question phase 1 (admin)' })
-  @Post('questions/phase1')
-  createPhase1Question(@Body() dto: CreatePhase1QuestionAdminDto) {
-    return this.backofficeService.createPhase1Question(dto);
+  @ApiOperation({ summary: 'Créer une question générale (admin)' })
+  @Post('questions/general')
+  createGeneralQuestion(@Body() dto: CreateGeneralQuestionAdminDto) {
+    return this.backofficeService.createGeneralQuestion(dto);
   }
 
-  @ApiOperation({ summary: 'Mettre à jour une question phase 1 (admin)' })
-  @Patch('questions/phase1/:id')
-  updatePhase1Question(
+  @ApiOperation({ summary: 'Mettre à jour une question générale (admin)' })
+  @Patch('questions/general/:id')
+  updateGeneralQuestion(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdatePhase1QuestionAdminDto,
+    @Body() dto: UpdateGeneralQuestionAdminDto,
   ) {
-    return this.backofficeService.updatePhase1Question(id, dto);
+    return this.backofficeService.updateGeneralQuestion(id, dto);
   }
 
-  @ApiOperation({ summary: 'Lister les questions phase 2 (admin)' })
-  @Get('questions/phase2')
-  listPhase2Questions(@Query() dto: AdminPhase2QuestionsFilterDto) {
-    return this.backofficeService.listPhase2Questions(dto);
+  @ApiOperation({ summary: 'Lister les questions spécifiques (admin)' })
+  @Get('questions/specific')
+  listSpecificQuestions(@Query() dto: AdminSpecificQuestionsFilterDto) {
+    return this.backofficeService.listSpecificQuestions(dto);
   }
 
-  @ApiOperation({ summary: 'Créer une question phase 2 (admin)' })
-  @Post('questions/phase2')
-  createPhase2Question(@Body() dto: CreatePhase2QuestionAdminDto) {
-    return this.backofficeService.createPhase2Question(dto);
+  @ApiOperation({ summary: 'Créer une question spécifique (admin)' })
+  @Post('questions/specific')
+  createSpecificQuestion(@Body() dto: CreateSpecificQuestionAdminDto) {
+    return this.backofficeService.createSpecificQuestion(dto);
   }
 
-  @ApiOperation({ summary: 'Mettre à jour une question phase 2 (admin)' })
-  @Patch('questions/phase2/:id')
-  updatePhase2Question(
+  @ApiOperation({ summary: 'Mettre à jour une question spécifique (admin)' })
+  @Patch('questions/specific/:id')
+  updateSpecificQuestion(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdatePhase2QuestionAdminDto,
+    @Body() dto: UpdateSpecificQuestionAdminDto,
   ) {
-    return this.backofficeService.updatePhase2Question(id, dto);
+    return this.backofficeService.updateSpecificQuestion(id, dto);
   }
 
   @ApiOperation({ summary: 'Lister les carrières (admin)' })
@@ -266,40 +266,40 @@ export class BackofficeController {
     return this.universitiesService.deleteScholarship(id);
   }
 
-  @ApiOperation({ summary: 'Lister les réponses phase 1 (admin)' })
-  @Get('responses/phase1')
-  listPhase1Responses(@Query() dto: AdminPaginationDto) {
-    return this.backofficeService.listPhase1Responses(dto);
+  @ApiOperation({ summary: 'Lister les réponses générales (admin)' })
+  @Get('responses/general')
+  listGeneralResponses(@Query() dto: AdminPaginationDto) {
+    return this.backofficeService.listGeneralResponses(dto);
   }
 
-  @ApiOperation({ summary: 'Lire réponse phase 1 (admin)' })
-  @Get('responses/phase1/:id')
-  getPhase1Response(@Param('id') id: string) {
-    return this.backofficeService.getPhase1Response(id);
+  @ApiOperation({ summary: 'Lire une réponse générale (admin)' })
+  @Get('responses/general/:id')
+  getGeneralResponse(@Param('id') id: string) {
+    return this.backofficeService.getGeneralResponse(id);
   }
 
-  @ApiOperation({ summary: 'Supprimer réponse phase 1 (admin)' })
-  @Delete('responses/phase1/:id')
-  deletePhase1Response(@Param('id') id: string) {
-    return this.backofficeService.deletePhase1Response(id);
+  @ApiOperation({ summary: 'Supprimer une réponse générale (admin)' })
+  @Delete('responses/general/:id')
+  deleteGeneralResponse(@Param('id') id: string) {
+    return this.backofficeService.deleteGeneralResponse(id);
   }
 
-  @ApiOperation({ summary: 'Lister les réponses phase 2 (admin)' })
-  @Get('responses/phase2')
-  listPhase2Responses(@Query() dto: AdminPaginationDto) {
-    return this.backofficeService.listPhase2Responses(dto);
+  @ApiOperation({ summary: 'Lister les réponses spécifiques (admin)' })
+  @Get('responses/specific')
+  listSpecificResponses(@Query() dto: AdminPaginationDto) {
+    return this.backofficeService.listSpecificResponses(dto);
   }
 
-  @ApiOperation({ summary: 'Lire réponse phase 2 (admin)' })
-  @Get('responses/phase2/:id')
-  getPhase2Response(@Param('id') id: string) {
-    return this.backofficeService.getPhase2Response(id);
+  @ApiOperation({ summary: 'Lire une réponse spécifique (admin)' })
+  @Get('responses/specific/:id')
+  getCategoryResponse(@Param('id') id: string) {
+    return this.backofficeService.getCategoryResponse(id);
   }
 
-  @ApiOperation({ summary: 'Supprimer réponse phase 2 (admin)' })
-  @Delete('responses/phase2/:id')
-  deletePhase2Response(@Param('id') id: string) {
-    return this.backofficeService.deletePhase2Response(id);
+  @ApiOperation({ summary: 'Supprimer une réponse spécifique (admin)' })
+  @Delete('responses/specific/:id')
+  deleteSpecificResponse(@Param('id') id: string) {
+    return this.backofficeService.deleteSpecificResponse(id);
   }
 
   @ApiOperation({ summary: 'Lister les résultats (admin)' })

@@ -1,6 +1,18 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "resolvePackageJsonExports": false,
+    "baseUrl": ".",
+    "rootDir": ".",
+    "outDir": "./dist-spec",
+    "noEmit": false,
+    "noEmitOnError": false,
+    "declaration": false,
+    "declarationMap": false,
+    "incremental": false,
+    "isolatedModules": true,
     "types": ["node", "jest"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"],

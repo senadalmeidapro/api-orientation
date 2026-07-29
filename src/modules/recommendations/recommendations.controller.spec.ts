@@ -24,11 +24,11 @@ describe('RecommendationsController', () => {
     } as unknown as RecommendationsService;
     const controller = new RecommendationsController(service);
 
-    await expect(
-      controller.getCareerRecommendations(undefined, { limit: 1 }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-    await expect(
-      controller.getFormationRecommendations(undefined, { limit: 1 }),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
+    expect(() => controller.getCareerRecommendations(undefined, { limit: 1 })).toThrow(
+      UnauthorizedException,
+    );
+    expect(() => controller.getFormationRecommendations(undefined, { limit: 1 })).toThrow(
+      UnauthorizedException,
+    );
   });
 });

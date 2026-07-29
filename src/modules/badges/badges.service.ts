@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BadgeRarity, Session } from '@prisma/client';
+import { BadgeRarity, Session, TestType } from '@prisma/client';
 
 @Injectable()
 export class BadgesService {
@@ -10,22 +10,22 @@ export class BadgesService {
 
   private defaultBadges = [
     {
-      code: 'PHASE1_COMPLETED',
+      code: 'GENERAL_COMPLETED',
       name: 'Explorateur',
-      description: 'Tu as termine la phase 1 du test.',
+      description: 'Tu as termine la générales du test.',
       emoji: 'compass',
       rarity: BadgeRarity.COMMON,
       pointsValue: 20,
-      unlockCondition: { type: 'phase_completion', phase: 1 },
+      unlockCondition: { type: 'category_completion', category: 'GENERALE' },
     },
     {
-      code: 'PHASE2_COMPLETED',
+      code: 'SPECIFIC_COMPLETED',
       name: 'Analyste',
-      description: 'Tu as termine la phase 2 du test.',
+      description: 'Tu as termine la catégorie du test.',
       emoji: 'brain',
       rarity: BadgeRarity.RARE,
       pointsValue: 30,
-      unlockCondition: { type: 'phase_completion', phase: 2 },
+      unlockCondition: { type: 'category_completion', category: 'SPECIFIC' },
     },
     {
       code: 'TEST_COMPLETED',
@@ -115,12 +115,12 @@ export class BadgesService {
     return created;
   }
 
-  async grantPhase1Completed(session: Pick<Session, 'id'>) {
-    return this.awardBadge(session, 'PHASE1_COMPLETED', 'Phase 1 terminee');
+  async grantGeneralCompleted(session: Pick<Session, 'id'>) {
+    return this.awardBadge(session, 'GENERAL_COMPLETED', 'générales terminee');
   }
 
-  async grantPhase2Completed(session: Pick<Session, 'id'>) {
-    return this.awardBadge(session, 'PHASE2_COMPLETED', 'Phase 2 terminee');
+  async grantSpecificCompleted(session: Pick<Session, 'id'>, type: TestType) {
+    return this.awardBadge(session, type, 'catégorie terminee');
   }
 
   async grantTestCompleted(session: Pick<Session, 'id'>) {

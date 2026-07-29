@@ -1,4 +1,5 @@
 import { SessionsService } from './sessions.service';
+import { TestType } from '@prisma/client';
 
 const lifecycleService = {
   createSession: jest.fn(),
@@ -21,14 +22,14 @@ describe('SessionsService', () => {
   it('creates session with initial assessment', async () => {
     lifecycleService.createSession.mockResolvedValue({
       id: 1,
-      session_token: 'token',
-      share_token: 'share',
-      created_at: new Date(),
+      sessionToken: 'token',
+      shareToken: 'share',
+      createdAt: new Date(),
     });
     flowService.resolveTestVersionId.mockResolvedValue(1);
     flowService.createAssessment.mockResolvedValue({
       id: 'a1',
-      type: 'PHASE1',
+      type: TestType.GENERALE,
     });
 
     const service = new SessionsService(lifecycleService, flowService);

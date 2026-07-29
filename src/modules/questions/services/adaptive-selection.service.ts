@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { PhaseType, Prisma, RiasecType } from '@prisma/client';
+import { TestType, Prisma, RiasecType } from '@prisma/client';
 import {
   MultiProfileQuestion,
   QuestionProfileWeight,
@@ -11,7 +11,6 @@ import { AdaptiveUtil } from '@common/utils/adaptive.util';
 
 export interface IntermediateProfileData {
   batchIndex: number;
-  phaseType: PhaseType;
   profileData: RiasecScores;
   rawScores: RiasecScores;
   calculatedAt: Date;
@@ -39,7 +38,7 @@ export class AdaptiveSelectionService {
       where: { id: assessmentId },
       select: {
         testVersionId: true,
-        currentPhase: true,
+        currentCategory: true,
         depth: true,
       },
     });
@@ -50,7 +49,7 @@ export class AdaptiveSelectionService {
 
     const availableQuestions = await this.getMultiProfileQuestions(
       assessment.testVersionId,
-      assessment.currentPhase,
+      assessment.currentCategory,
       excludedQuestionIds,
     );
 
@@ -70,23 +69,7 @@ export class AdaptiveSelectionService {
     const assessment = await this.prisma.assessment.findUnique({
       where: { id: assessmentId },
       include: {
-        phase1Responses: {
-          include: {
-            question: {
-              select: {
-                id: true,
-                riasecTypeId: true,
-                profiles: {
-                  select: {
-                    riasecType: true,
-                    weight: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        phase2Responses: {
+        responses: {
           include: {
             question: {
               select: {
@@ -111,28 +94,7 @@ export class AdaptiveSelectionService {
 
     let rawScores = MultiProfileUtil.emptyScores();
 
-    for (const response of assessment.phase1Responses) {
-      const profiles: QuestionProfileWeight[] =
-        response.question.profiles.length > 0
-          ? response.question.profiles.map((p) => ({
-              riasecType: p.riasecType,
-              weight: p.weight,
-            }))
-          : [
-              {
-                riasecType: response.question.riasecTypeId,
-                weight: 1.0,
-              },
-            ];
-
-      rawScores = MultiProfileUtil.applyWeightedResponse(
-        rawScores,
-        profiles,
-        response.responseValue,
-      );
-    }
-
-    for (const response of assessment.phase2Responses) {
+    for (const response of assessment.responses) {
       const profiles: QuestionProfileWeight[] =
         response.question.profiles.length > 0
           ? response.question.profiles.map((p) => ({
@@ -167,7 +129,6 @@ export class AdaptiveSelectionService {
       create: {
         assessmentId,
         batchIndex,
-        phaseType: assessment.currentPhase,
         profileData: normalizedScoresJson,
         rawScores: rawScoresJson,
       },
@@ -179,7 +140,6 @@ export class AdaptiveSelectionService {
 
     return {
       batchIndex,
-      phaseType: intermediateProfile.phaseType,
       profileData: normalizedScores,
       rawScores,
       calculatedAt: intermediateProfile.calculatedAt,
@@ -188,74 +148,45 @@ export class AdaptiveSelectionService {
 
   async getMultiProfileQuestions(
     testVersionId: number,
-    phase: PhaseType,
+    category: TestType | null,
     excludedIds: number[],
   ): Promise<MultiProfileQuestion[]> {
-    if (phase === PhaseType.PHASE1) {
-      const questions = await this.prisma.phase1Question.findMany({
-        where: {
-          testVersionId,
-          isActive: true,
-          id: { notIn: excludedIds },
-        },
-        include: {
-          profiles: {
-            where: { phase: PhaseType.PHASE1 },
-            select: {
-              riasecType: true,
-              weight: true,
-            },
+    const questions = await this.prisma.question.findMany({
+      where: {
+        testVersionId,
+        isActive: true,
+        ...(category ? { category } : {}),
+        id: { notIn: excludedIds },
+      },
+      include: {
+        profiles: {
+          ...(category ? { where: { category } } : {}),
+          select: {
+            riasecType: true,
+            weight: true,
           },
         },
-      });
+      },
+    });
 
-      return questions.map((q) => ({
-        id: q.id,
-        profiles:
-          q.profiles.length > 0
-            ? q.profiles.map((p) => ({
-                riasecType: p.riasecType,
-                weight: p.weight,
-              }))
-            : [{ riasecType: q.riasecTypeId, weight: 1.0 }],
-      }));
-    } else {
-      const questions = await this.prisma.phase2Question.findMany({
-        where: {
-          testVersionId,
-          isActive: true,
-          id: { notIn: excludedIds },
-        },
-        include: {
-          profiles: {
-            where: { phase: PhaseType.PHASE2 },
-            select: {
-              riasecType: true,
-              weight: true,
-            },
-          },
-        },
-      });
-
-      return questions.map((q) => ({
-        id: q.id,
-        profiles:
-          q.profiles.length > 0
-            ? q.profiles.map((p) => ({
-                riasecType: p.riasecType,
-                weight: p.weight,
-              }))
-            : [{ riasecType: q.riasecTypeId, weight: 1.0 }],
-      }));
-    }
+    return questions.map((q) => ({
+      id: q.id,
+      profiles:
+        q.profiles.length > 0
+          ? q.profiles.map((p) => ({
+              riasecType: p.riasecType,
+              weight: p.weight,
+            }))
+          : [{ riasecType: q.riasecTypeId, weight: 1.0 }],
+    }));
   }
 
   async scoreQuestionRelevance(
     questionId: number,
-    phase: PhaseType,
+    category: TestType,
     currentProfile: RiasecScores,
   ): Promise<number> {
-    const question = await this.getQuestionWithProfiles(questionId, phase);
+    const question = await this.getQuestionWithProfiles(questionId, category);
 
     if (!question) {
       return 0;
@@ -278,7 +209,6 @@ export class AdaptiveSelectionService {
 
     return {
       batchIndex: latestProfile.batchIndex,
-      phaseType: latestProfile.phaseType,
       profileData: latestProfile.profileData as unknown as RiasecScores,
       rawScores:
         (latestProfile.rawScores as unknown as RiasecScores) || MultiProfileUtil.emptyScores(),
@@ -288,54 +218,29 @@ export class AdaptiveSelectionService {
 
   private async getQuestionWithProfiles(
     questionId: number,
-    phase: PhaseType,
+    category: TestType,
   ): Promise<MultiProfileQuestion | null> {
-    if (phase === PhaseType.PHASE1) {
-      const question = await this.prisma.phase1Question.findUnique({
-        where: { id: questionId },
-        include: {
-          profiles: {
-            where: { phase: PhaseType.PHASE1 },
-            select: { riasecType: true, weight: true },
-          },
+    const question = await this.prisma.question.findUnique({
+      where: { id: questionId },
+      include: {
+        profiles: {
+          where: { category },
+          select: { riasecType: true, weight: true },
         },
-      });
+      },
+    });
 
-      if (!question) return null;
+    if (!question) return null;
 
-      return {
-        id: question.id,
-        profiles:
-          question.profiles.length > 0
-            ? question.profiles.map((p) => ({
-                riasecType: p.riasecType,
-                weight: p.weight,
-              }))
-            : [{ riasecType: question.riasecTypeId, weight: 1.0 }],
-      };
-    } else {
-      const question = await this.prisma.phase2Question.findUnique({
-        where: { id: questionId },
-        include: {
-          profiles: {
-            where: { phase: PhaseType.PHASE2 },
-            select: { riasecType: true, weight: true },
-          },
-        },
-      });
-
-      if (!question) return null;
-
-      return {
-        id: question.id,
-        profiles:
-          question.profiles.length > 0
-            ? question.profiles.map((p) => ({
-                riasecType: p.riasecType,
-                weight: p.weight,
-              }))
-            : [{ riasecType: question.riasecTypeId, weight: 1.0 }],
-      };
-    }
+    return {
+      id: question.id,
+      profiles:
+        question.profiles.length > 0
+          ? question.profiles.map((p) => ({
+              riasecType: p.riasecType,
+              weight: p.weight,
+            }))
+          : [{ riasecType: question.riasecTypeId, weight: 1.0 }],
+    };
   }
 }

@@ -48,7 +48,7 @@ export class SessionsController {
   //         startedAt: '2026-04-15T07:37:14.360Z',
   //         assessment: {
   //             id: 'clx-assessment-id',
-  //             type: 'PHASE1',
+  //             type: 'GENERAL',
   //             status: 'IN_PROGRESS',
   //             depth: 5,
   //         },
@@ -111,12 +111,12 @@ export class SessionsController {
   //     dataExample: {
   //         id: 'clx-assessment-id',
   //         session_id: 'clx-session-id',
-  //         type: 'PHASE2_OCCUPATIONS',
+  //         type: 'SPECIFIC_OCCUPATIONS',
   //         status: 'IN_PROGRESS',
   //     },
   // })
   @ApiNotFoundResponse({
-    description: 'Session introuvable ou prérequis de phase non satisfaits.',
+    description: 'Session introuvable ou prérequis de category non satisfaits.',
     type: ApiErrorResponseDto,
   })
   @Throttle({ default: { limit: 30, ttl: 60 } })
@@ -139,7 +139,7 @@ export class SessionsController {
   //     dataExample: [
   //         {
   //             id: 'clx-assessment-id',
-  //             type: 'PHASE1',
+  //             type: 'GENERAL',
   //             status: 'COMPLETED',
   //         },
   //     ],

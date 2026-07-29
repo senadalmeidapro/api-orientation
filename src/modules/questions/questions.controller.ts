@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { QuestionsService } from './questions.service';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { GetPhase1QuestionsDto, GetPhase2QuestionsDto, GetNextBatchDto } from './dto';
+import { GetQuestionsDto, GetNextBatchDto } from './dto';
 // import { ApiStandardErrorResponses, ApiStandardOkResponse } from '@common/swagger';
 
 @ApiTags('Questions')
@@ -12,12 +12,12 @@ import { GetPhase1QuestionsDto, GetPhase2QuestionsDto, GetNextBatchDto } from '.
 export class QuestionsController {
   constructor(private readonly service: QuestionsService) {}
 
-  @Throttle({ default: { limit: 120, ttl: 60 } })
-  @Get('phase1')
+  /*@Throttle({ default: { limit: 120, ttl: 60 } })
+  @Get('general')
   @ApiOperation({
-    summary: 'Récupérer les questions de phase 1',
+    summary: 'Récupérer les questions générales',
     description:
-      'Retourne les questions phase 1 restantes pour la session/assessment fournis, en tenant compte de la profondeur (`depth`) et des réponses déjà soumises.',
+      'Retourne les questions générales restantes pour la session/assessment fournis, en tenant compte de la profondeur (`depth`) et des réponses déjà soumises.',
   })
   @ApiQuery({
     name: 'sessionToken',
@@ -25,30 +25,16 @@ export class QuestionsController {
     description: 'Token de session actif.',
     example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
   })
-  // @ApiStandardOkResponse({
-  //     description: 'Questions phase 1 récupérées.',
-  //     dataExample: [
-  //         {
-  //             id: 42,
-  //             riasecType: 'R',
-  //             text: 'J’aime construire des objets concrets.',
-  //             short: 'Construire',
-  //             illustrationUrl: null,
-  //             pointsValue: 1,
-  //             displayOrder: 12,
-  //         },
-  //     ],
-  // })
-  getPhase1(@Query() query: GetPhase1QuestionsDto) {
-    return this.service.getPhase1Questions(query);
-  }
+  getGeneral(@Query() query: GetGeneralQuestionsDto) {
+    return this.service.getQuestions({ ...query, currentCategory: TestType.GENERALE });
+  }*/
 
   @Throttle({ default: { limit: 120, ttl: 60 } })
-  @Get('phase2')
+  @Get('category')
   @ApiOperation({
-    summary: 'Récupérer les questions de phase 2',
+    summary: 'Récupérer les questions par catégorie',
     description:
-      'Retourne les questions de la section phase 2 demandée (ou section courante), filtrées selon les réponses déjà enregistrées.',
+      'Retourne les questions de la catégorie demandée (ou catégorie courante), filtrées selon les réponses déjà enregistrées.',
   })
   @ApiQuery({
     name: 'sessionToken',
@@ -56,25 +42,11 @@ export class QuestionsController {
     description: 'Token de session actif.',
     example: '4ce2f33a-8dfe-4b20-a5f2-9d3d8b6d2dcd',
   })
-  // @ApiStandardOkResponse({
-  //     description: 'Questions phase 2 récupérées.',
-  //     dataExample: [
-  //         {
-  //             id: 314,
-  //             riasecType: 'I',
-  //             sectionType: 'APTITUDES',
-  //             text: 'Évaluez votre aisance en résolution de problèmes complexes.',
-  //             subtext: '1 = faible, 5 = élevée',
-  //             minValue: 1,
-  //             maxValue: 5,
-  //             valueLabels: ['Faible', 'Moyen', 'Fort'],
-  //             pointsValue: 1,
-  //             displayOrder: 8,
-  //         },
-  //     ],
-  // })
-  getPhase2(@Query() query: GetPhase2QuestionsDto) {
-    return this.service.getPhase2Questions(query);
+  getCategory(@Query() query: GetQuestionsDto) {
+    return this.service.getQuestions({
+      ...query,
+      currentCategory: query.currentCategory,
+    });
   }
 
   @Throttle({ default: { limit: 60, ttl: 60 } })

@@ -1,19 +1,19 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AssessmentStatus, Prisma, UserRole, UserStatus } from '@prisma/client';
+import { Prisma, TestStatus, TestType, UserRole, UserStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DashboardSummaryDto } from './dto/dashboard-summary.dto';
 import {
   AdminAssessmentsFilterDto,
-  AdminPhase1QuestionsFilterDto,
-  AdminPhase2QuestionsFilterDto,
+  AdminGeneralQuestionsFilterDto,
+  AdminSpecificQuestionsFilterDto,
   AdminSessionsFilterDto,
   AdminUsersFilterDto,
 } from './dto/admin-filters.dto';
 import {
-  CreatePhase1QuestionAdminDto,
-  CreatePhase2QuestionAdminDto,
-  UpdatePhase1QuestionAdminDto,
-  UpdatePhase2QuestionAdminDto,
+  CreateGeneralQuestionAdminDto,
+  CreateSpecificQuestionAdminDto,
+  UpdateGeneralQuestionAdminDto,
+  UpdateSpecificQuestionAdminDto,
 } from './dto/manage-questions.dto';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
 import { AdminPaginationDto } from './dto/admin-pagination.dto';
@@ -61,11 +61,10 @@ export class BackofficeService {
       resources,
       universities,
       testVersions,
-      languages,
-      phase1Questions,
-      phase2Questions,
-      phase1Responses,
-      phase2Responses,
+      questionsGenerale,
+      questionsSpecific,
+      responsesGenerale,
+      responsesSpecific,
       assessmentResults,
       recommendations,
       treasureMaps,
@@ -101,10 +100,10 @@ export class BackofficeService {
       formationsInactive,
       scholarshipsActive,
       scholarshipsInactive,
-      phase1QuestionsActive,
-      phase1QuestionsInactive,
-      phase2QuestionsActive,
-      phase2QuestionsInactive,
+      questionsGeneraleActive,
+      questionsGeneraleInactive,
+      questionsSpecificActive,
+      questionsSpecificInactive,
       recommendationsViewed,
       recommendationsNotViewed,
       recommendationsSavedForLater,
@@ -114,8 +113,8 @@ export class BackofficeService {
       pUsers,
       pSessions,
       pAssessments,
-      pPhase1Responses,
-      pPhase2Responses,
+      pResponsesGenerale,
+      pResponsesSpecific,
       pAssessmentResults,
       pRecommendations,
       pResources,
@@ -135,11 +134,10 @@ export class BackofficeService {
       this.prisma.resource.count(),
       this.prisma.university.count(),
       this.prisma.testVersion.count(),
-      this.prisma.language.count(),
-      this.prisma.phase1Question.count(),
-      this.prisma.phase2Question.count(),
-      this.prisma.phase1Response.count(),
-      this.prisma.phase2Response.count(),
+      this.prisma.question.count({ where: { category: TestType.GENERALE } }),
+      this.prisma.question.count({ where: { category: { not: TestType.GENERALE } } }),
+      this.prisma.response.count({ where: { question: { category: TestType.GENERALE } } }),
+      this.prisma.response.count({ where: { question: { category: { not: TestType.GENERALE } } } }),
       this.prisma.assessmentResult.count(),
       this.prisma.assessmentCareerRecommendation.count(),
       this.prisma.treasureMap.count(),
@@ -158,9 +156,9 @@ export class BackofficeService {
       this.prisma.user.count({ where: { status: UserStatus.PENDING } }),
       this.prisma.user.count({ where: { status: UserStatus.SUSPENDED } }),
       this.prisma.user.count({ where: { status: UserStatus.DELETED } }),
-      this.prisma.assessment.count({ where: { status: AssessmentStatus.IN_PROGRESS } }),
-      this.prisma.assessment.count({ where: { status: AssessmentStatus.COMPLETED } }),
-      this.prisma.assessment.count({ where: { status: AssessmentStatus.ABANDONED } }),
+      this.prisma.assessment.count({ where: { status: TestStatus.IN_PROGRESS } }),
+      this.prisma.assessment.count({ where: { status: TestStatus.COMPLETED } }),
+      this.prisma.assessment.count({ where: { status: TestStatus.ABANDONED } }),
       this.prisma.session.count({ where: { isActive: true } }),
       this.prisma.session.count({ where: { isActive: false } }),
       this.prisma.session.count({ where: { isCurrent: true } }),
@@ -175,10 +173,14 @@ export class BackofficeService {
       this.prisma.formation.count({ where: { isActive: false } }),
       this.prisma.scholarship.count({ where: { isActive: true } }),
       this.prisma.scholarship.count({ where: { isActive: false } }),
-      this.prisma.phase1Question.count({ where: { isActive: true } }),
-      this.prisma.phase1Question.count({ where: { isActive: false } }),
-      this.prisma.phase2Question.count({ where: { isActive: true } }),
-      this.prisma.phase2Question.count({ where: { isActive: false } }),
+      this.prisma.question.count({ where: { category: TestType.GENERALE, isActive: true } }),
+      this.prisma.question.count({ where: { category: TestType.GENERALE, isActive: false } }),
+      this.prisma.question.count({
+        where: { category: { not: TestType.GENERALE }, isActive: true },
+      }),
+      this.prisma.question.count({
+        where: { category: { not: TestType.GENERALE }, isActive: false },
+      }),
       this.prisma.assessmentCareerRecommendation.count({ where: { viewedAt: { not: null } } }),
       this.prisma.assessmentCareerRecommendation.count({ where: { viewedAt: null } }),
       this.prisma.assessmentCareerRecommendation.count({ where: { savedForLater: true } }),
@@ -188,11 +190,17 @@ export class BackofficeService {
       this.prisma.user.count({ where: period.hasRange ? { createdAt: period.range } : {} }),
       this.prisma.session.count({ where: period.hasRange ? { createdAt: period.range } : {} }),
       this.prisma.assessment.count({ where: period.hasRange ? { startedAt: period.range } : {} }),
-      this.prisma.phase1Response.count({
-        where: period.hasRange ? { createdAt: period.range } : {},
+      this.prisma.response.count({
+        where: {
+          ...(period.hasRange ? { createdAt: period.range } : {}),
+          question: { category: TestType.GENERALE },
+        },
       }),
-      this.prisma.phase2Response.count({
-        where: period.hasRange ? { createdAt: period.range } : {},
+      this.prisma.response.count({
+        where: {
+          ...(period.hasRange ? { createdAt: period.range } : {}),
+          question: { category: { not: TestType.GENERALE } },
+        },
       }),
       this.prisma.assessmentResult.count({
         where: period.hasRange ? { createdAt: period.range } : {},
@@ -223,11 +231,11 @@ export class BackofficeService {
       totals: { users, sessions, assessments, careers, resources, universities },
       totalsExtended: {
         testVersions,
-        languages,
-        phase1Questions,
-        phase2Questions,
-        phase1Responses,
-        phase2Responses,
+        languages: 0,
+        generalQuestions: questionsGenerale,
+        specificQuestions: questionsSpecific,
+        generalResponses: responsesGenerale,
+        specificResponses: responsesSpecific,
         assessmentResults,
         recommendations,
         treasureMaps,
@@ -271,10 +279,10 @@ export class BackofficeService {
         formationsInactive,
         scholarshipsActive,
         scholarshipsInactive,
-        phase1QuestionsActive,
-        phase1QuestionsInactive,
-        phase2QuestionsActive,
-        phase2QuestionsInactive,
+        generalQuestionsActive: questionsGeneraleActive,
+        generalQuestionsInactive: questionsGeneraleInactive,
+        specificQuestionsActive: questionsSpecificActive,
+        specificQuestionsInactive: questionsSpecificInactive,
       },
       recommendationStats: {
         viewed: recommendationsViewed,
@@ -290,8 +298,8 @@ export class BackofficeService {
         users: pUsers,
         sessions: pSessions,
         assessments: pAssessments,
-        phase1Responses: pPhase1Responses,
-        phase2Responses: pPhase2Responses,
+        generalResponses: pResponsesGenerale,
+        specificResponses: pResponsesSpecific,
         assessmentResults: pAssessmentResults,
         recommendations: pRecommendations,
         resources: pResources,
@@ -390,8 +398,7 @@ export class BackofficeService {
           },
           _count: {
             select: {
-              phase1Responses: true,
-              phase2Responses: true,
+              responses: true,
               interactions: true,
               feedbacks: true,
             },
@@ -406,9 +413,10 @@ export class BackofficeService {
     return { page: currentPage, pageSize: take, total, data };
   }
 
-  async listPhase1Questions(dto: AdminPhase1QuestionsFilterDto) {
+  async listGeneralQuestions(dto: AdminGeneralQuestionsFilterDto) {
     const { take, skip, currentPage } = this.toPagination(dto.page, dto.pageSize);
-    const where: Prisma.Phase1QuestionWhereInput = {
+    const where: Prisma.QuestionWhereInput = {
+      category: TestType.GENERALE,
       ...(dto.testVersionId ? { testVersionId: dto.testVersionId } : {}),
       ...(dto.riasecTypeId ? { riasecTypeId: dto.riasecTypeId } : {}),
       ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
@@ -416,8 +424,8 @@ export class BackofficeService {
     };
 
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.phase1Question.count({ where }),
-      this.prisma.phase1Question.findMany({
+      this.prisma.question.count({ where }),
+      this.prisma.question.findMany({
         where,
         include: { testVersion: true, riasecType: true, _count: { select: { responses: true } } },
         orderBy: [{ testVersionId: 'asc' }, { displayOrder: 'asc' }],
@@ -429,22 +437,23 @@ export class BackofficeService {
     return { page: currentPage, pageSize: take, total, data };
   }
 
-  async listPhase2Questions(dto: AdminPhase2QuestionsFilterDto) {
+  async listSpecificQuestions(dto: AdminSpecificQuestionsFilterDto) {
     const { take, skip, currentPage } = this.toPagination(dto.page, dto.pageSize);
-    const where: Prisma.Phase2QuestionWhereInput = {
+    const category = this.getSpecificQuestionCategory(dto);
+    const where: Prisma.QuestionWhereInput = {
+      category: category ?? { not: TestType.GENERALE },
       ...(dto.testVersionId ? { testVersionId: dto.testVersionId } : {}),
       ...(dto.riasecTypeId ? { riasecTypeId: dto.riasecTypeId } : {}),
-      ...(dto.phase2Type ? { phase2Type: dto.phase2Type } : {}),
       ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
       ...(dto.q ? { questionText: { contains: dto.q, mode: 'insensitive' } } : {}),
     };
 
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.phase2Question.count({ where }),
-      this.prisma.phase2Question.findMany({
+      this.prisma.question.count({ where }),
+      this.prisma.question.findMany({
         where,
         include: { testVersion: true, riasecType: true, _count: { select: { responses: true } } },
-        orderBy: [{ testVersionId: 'asc' }, { phase2Type: 'asc' }, { displayOrder: 'asc' }],
+        orderBy: [{ testVersionId: 'asc' }, { category: 'asc' }, { displayOrder: 'asc' }],
         skip,
         take,
       }),
@@ -453,22 +462,23 @@ export class BackofficeService {
     return { page: currentPage, pageSize: take, total, data };
   }
 
-  async createPhase1Question(dto: CreatePhase1QuestionAdminDto) {
+  async createGeneralQuestion(dto: CreateGeneralQuestionAdminDto) {
     const displayOrder =
       dto.displayOrder ??
       ((
-        await this.prisma.phase1Question.aggregate({
-          where: { testVersionId: dto.testVersionId },
+        await this.prisma.question.aggregate({
+          where: { testVersionId: dto.testVersionId, category: TestType.GENERALE },
           _max: { displayOrder: true },
         })
       )._max.displayOrder ?? 0) + 1;
 
-    return this.prisma.phase1Question.create({
+    return this.prisma.question.create({
       data: {
         riasecTypeId: dto.riasecTypeId,
         testVersionId: dto.testVersionId,
+        category: TestType.GENERALE,
         questionText: dto.questionText,
-        ...(dto.questionShort !== undefined ? { questionShort: dto.questionShort } : {}),
+        ...(dto.questionShort !== undefined ? { subtitle: dto.questionShort } : {}),
         displayOrder,
         pointsValue: dto.pointsValue ?? 10,
         isActive: dto.isActive ?? true,
@@ -476,16 +486,18 @@ export class BackofficeService {
     });
   }
 
-  async updatePhase1Question(id: number, dto: UpdatePhase1QuestionAdminDto) {
-    const existing = await this.prisma.phase1Question.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Question phase 1 introuvable');
+  async updateGeneralQuestion(id: number, dto: UpdateGeneralQuestionAdminDto) {
+    const existing = await this.prisma.question.findFirst({
+      where: { id, category: TestType.GENERALE },
+    });
+    if (!existing) throw new NotFoundException('Question générales introuvable');
 
-    return this.prisma.phase1Question.update({
+    return this.prisma.question.update({
       where: { id },
       data: {
         ...(dto.riasecTypeId ? { riasecTypeId: dto.riasecTypeId } : {}),
         ...(dto.questionText !== undefined ? { questionText: dto.questionText } : {}),
-        ...(dto.questionShort !== undefined ? { questionShort: dto.questionShort } : {}),
+        ...(dto.questionShort !== undefined ? { subtitle: dto.questionShort } : {}),
         ...(dto.displayOrder !== undefined ? { displayOrder: dto.displayOrder } : {}),
         ...(dto.pointsValue !== undefined ? { pointsValue: dto.pointsValue } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
@@ -493,23 +505,27 @@ export class BackofficeService {
     });
   }
 
-  async createPhase2Question(dto: CreatePhase2QuestionAdminDto) {
+  async createSpecificQuestion(dto: CreateSpecificQuestionAdminDto) {
+    const category = this.getSpecificQuestionCategory(dto);
+    if (!category) {
+      throw new BadRequestException('La catégorie de question est requise');
+    }
     const displayOrder =
       dto.displayOrder ??
       ((
-        await this.prisma.phase2Question.aggregate({
-          where: { testVersionId: dto.testVersionId, phase2Type: dto.phase2Type },
+        await this.prisma.question.aggregate({
+          where: { testVersionId: dto.testVersionId, category },
           _max: { displayOrder: true },
         })
       )._max.displayOrder ?? 0) + 1;
 
-    return this.prisma.phase2Question.create({
+    return this.prisma.question.create({
       data: {
         riasecTypeId: dto.riasecTypeId,
         testVersionId: dto.testVersionId,
-        phase2Type: dto.phase2Type,
+        category,
         questionText: dto.questionText,
-        ...(dto.questionSubtext !== undefined ? { questionSubtext: dto.questionSubtext } : {}),
+        ...(dto.questionSubtext !== undefined ? { subtitle: dto.questionSubtext } : {}),
         displayOrder,
         pointsValue: dto.pointsValue ?? 15,
         isActive: dto.isActive ?? true,
@@ -517,17 +533,20 @@ export class BackofficeService {
     });
   }
 
-  async updatePhase2Question(id: number, dto: UpdatePhase2QuestionAdminDto) {
-    const existing = await this.prisma.phase2Question.findUnique({ where: { id } });
-    if (!existing) throw new NotFoundException('Question phase 2 introuvable');
+  async updateSpecificQuestion(id: number, dto: UpdateSpecificQuestionAdminDto) {
+    const existing = await this.prisma.question.findFirst({
+      where: { id, category: { not: TestType.GENERALE } },
+    });
+    if (!existing) throw new NotFoundException('Question catégorie introuvable');
+    const category = this.getSpecificQuestionCategory(dto);
 
-    return this.prisma.phase2Question.update({
+    return this.prisma.question.update({
       where: { id },
       data: {
         ...(dto.riasecTypeId ? { riasecTypeId: dto.riasecTypeId } : {}),
-        ...(dto.phase2Type ? { phase2Type: dto.phase2Type } : {}),
+        ...(category ? { category } : {}),
         ...(dto.questionText !== undefined ? { questionText: dto.questionText } : {}),
-        ...(dto.questionSubtext !== undefined ? { questionSubtext: dto.questionSubtext } : {}),
+        ...(dto.questionSubtext !== undefined ? { subtitle: dto.questionSubtext } : {}),
         ...(dto.displayOrder !== undefined ? { displayOrder: dto.displayOrder } : {}),
         ...(dto.pointsValue !== undefined ? { pointsValue: dto.pointsValue } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
@@ -535,14 +554,23 @@ export class BackofficeService {
     });
   }
 
-  async listPhase1Responses(dto: AdminPaginationDto) {
+  private getSpecificQuestionCategory(dto: { category?: TestType }): TestType | undefined {
+    const legacyCategory = (dto as Record<string, unknown>)[`category${2}Type`];
+    return (
+      dto.category ??
+      (typeof legacyCategory === 'string' ? (legacyCategory as TestType) : undefined)
+    );
+  }
+
+  async listGeneralResponses(dto: AdminPaginationDto) {
     const { take, skip, currentPage } = this.toPagination(dto.page, dto.pageSize);
-    const where: Prisma.Phase1ResponseWhereInput = dto.q
-      ? { assessmentId: { contains: dto.q, mode: 'insensitive' } }
-      : {};
+    const where: Prisma.ResponseWhereInput = {
+      question: { category: TestType.GENERALE },
+      ...(dto.q ? { assessmentId: { contains: dto.q, mode: 'insensitive' } } : {}),
+    };
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.phase1Response.count({ where }),
-      this.prisma.phase1Response.findMany({
+      this.prisma.response.count({ where }),
+      this.prisma.response.findMany({
         where,
         include: { question: true, assessment: true },
         orderBy: { createdAt: 'desc' },
@@ -553,28 +581,29 @@ export class BackofficeService {
     return { page: currentPage, pageSize: take, total, data };
   }
 
-  async getPhase1Response(id: string) {
-    const item = await this.prisma.phase1Response.findUnique({
-      where: { id },
+  async getGeneralResponse(id: string) {
+    const item = await this.prisma.response.findFirst({
+      where: { id, question: { category: TestType.GENERALE } },
       include: { question: true, assessment: true },
     });
-    if (!item) throw new NotFoundException('Réponse phase 1 introuvable');
+    if (!item) throw new NotFoundException('Réponse générales introuvable');
     return item;
   }
 
-  async deletePhase1Response(id: string) {
-    await this.getPhase1Response(id);
-    return this.prisma.phase1Response.delete({ where: { id } });
+  async deleteGeneralResponse(id: string) {
+    await this.getGeneralResponse(id);
+    return this.prisma.response.delete({ where: { id } });
   }
 
-  async listPhase2Responses(dto: AdminPaginationDto) {
+  async listSpecificResponses(dto: AdminPaginationDto) {
     const { take, skip, currentPage } = this.toPagination(dto.page, dto.pageSize);
-    const where: Prisma.Phase2ResponseWhereInput = dto.q
-      ? { assessmentId: { contains: dto.q, mode: 'insensitive' } }
-      : {};
+    const where: Prisma.ResponseWhereInput = {
+      question: { category: { not: TestType.GENERALE } },
+      ...(dto.q ? { assessmentId: { contains: dto.q, mode: 'insensitive' } } : {}),
+    };
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.phase2Response.count({ where }),
-      this.prisma.phase2Response.findMany({
+      this.prisma.response.count({ where }),
+      this.prisma.response.findMany({
         where,
         include: { question: true, assessment: true },
         orderBy: { createdAt: 'desc' },
@@ -585,24 +614,24 @@ export class BackofficeService {
     return { page: currentPage, pageSize: take, total, data };
   }
 
-  async getPhase2Response(id: string) {
-    const item = await this.prisma.phase2Response.findUnique({
-      where: { id },
+  async getCategoryResponse(id: string) {
+    const item = await this.prisma.response.findFirst({
+      where: { id, question: { category: { not: TestType.GENERALE } } },
       include: { question: true, assessment: true },
     });
-    if (!item) throw new NotFoundException('Réponse phase 2 introuvable');
+    if (!item) throw new NotFoundException('Réponse catégorie introuvable');
     return item;
   }
 
-  async deletePhase2Response(id: string) {
-    await this.getPhase2Response(id);
-    return this.prisma.phase2Response.delete({ where: { id } });
+  async deleteSpecificResponse(id: string) {
+    await this.getCategoryResponse(id);
+    return this.prisma.response.delete({ where: { id } });
   }
 
   async listResults(dto: AdminPaginationDto) {
     const { take, skip, currentPage } = this.toPagination(dto.page, dto.pageSize);
     const where: Prisma.AssessmentResultWhereInput = dto.q
-      ? { OR: [{ phase1Code: { contains: dto.q } }, { phase2Code: { contains: dto.q } }] }
+      ? { riasecCode: { contains: dto.q } }
       : {};
     const [total, data] = await this.prisma.$transaction([
       this.prisma.assessmentResult.count({ where }),

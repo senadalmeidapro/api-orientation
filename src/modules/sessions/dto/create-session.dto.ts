@@ -1,6 +1,6 @@
 import { IsEnum, IsInt, IsObject, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AssessmentType } from '@prisma/client';
+import { TestType } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateSessionDto {
@@ -12,12 +12,12 @@ export class CreateSessionDto {
 
   @ApiPropertyOptional({
     description: 'Initial assessment type',
-    enum: AssessmentType,
-    example: Object.values(AssessmentType)[0],
+    enum: TestType,
+    example: Object.values(TestType)[0],
   })
   @IsOptional()
-  @IsEnum(AssessmentType)
-  initialAssessmentType?: AssessmentType;
+  @IsEnum(TestType)
+  initialTestType?: TestType;
 
   @ApiPropertyOptional({ description: 'Depth', type: Number, example: 1 })
   @IsOptional()

@@ -2,13 +2,13 @@ import type { ResponsesService } from './responses.service';
 import { ResponsesController } from './responses.controller';
 
 describe('ResponsesController', () => {
-  it('delegates phase1', async () => {
+  it('delegates general', async () => {
     const service = {
-      savePhase1: jest.fn().mockResolvedValue({ saved: 1 }),
+      saveResponse: jest.fn().mockResolvedValue({ saved: 1 }),
     } as unknown as ResponsesService;
-    const controller = new ResponsesController(service);
+    const controller = new ResponsesController(service, {} as any);
 
-    await controller.savePhase1({} as any);
-    expect(service.savePhase1).toHaveBeenCalled();
+    await controller.saveGeneral({} as any);
+    expect(service.saveResponse).toHaveBeenCalled();
   });
 });
