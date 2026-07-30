@@ -1273,7 +1273,7 @@ export class TreasureMapService {
     return Buffer.concat(chunks);
   }
 
-  async generate(sessionToken: string, assessmentId?: string, generatePdf = false) {
+  async generate(sessionToken: string, assessmentId?: string) {
     const session = await this.prisma.session.findUnique({
       where: {
         sessionToken: sessionToken,
@@ -1522,21 +1522,8 @@ export class TreasureMapService {
       nextSteps: this.buildNextSteps(mapDataBase),
     } satisfies TreasureMapPayload;
 
-    let pdfUrl: string | null = null;
-
-    if (generatePdf) {
-      const buffer = await this.generatePdfBuffer(mapData);
-
-      pdfUrl = await this.storage.uploadBuffer(buffer, 'application/pdf');
-    }
-
     const updateData: Prisma.TreasureMapUpdateInput = {
       mapData: mapData,
-      ...(generatePdf
-        ? {
-            pdfUrl,
-          }
-        : {}),
     };
 
     const treasureMap = await this.prisma.treasureMap.upsert({
@@ -1549,7 +1536,7 @@ export class TreasureMapService {
       create: {
         assessmentId: assessment.id,
         mapData: mapData,
-        pdfUrl,
+        pdfUrl: null,
         shareToken: randomUUID(),
       },
     });
@@ -1570,12 +1557,22 @@ export class TreasureMapService {
       throw new NotFoundException('Carte introuvable');
     }
 
-    await this.prisma.treasureMap.update({
+    let pdfUrl = map.pdfUrl;
+
+    if (!pdfUrl) {
+      const buffer = await this.generatePdfBuffer(map.mapData as TreasureMapPayload);
+
+      pdfUrl = await this.storage.uploadBuffer(buffer, 'application/pdf');
+    }
+
+    const updatedMap = await this.prisma.treasureMap.update({
       where: {
         id: map.id,
       },
 
       data: {
+        pdfUrl,
+
         viewCount: {
           increment: 1,
         },
@@ -1584,7 +1581,7 @@ export class TreasureMapService {
       },
     });
 
-    return map;
+    return updatedMap;
   }
 
   async getBySessionToken(sessionToken: string) {
