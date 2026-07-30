@@ -124,11 +124,9 @@ export class TreasureMapService {
   private buildWeights(specificCode: string) {
     const letters = specificCode.split('') as RiasecType[];
     const weights: Record<string, number> = {};
-
     if (letters[0]) weights[letters[0]] = 50;
     if (letters[1]) weights[letters[1]] = 30;
     if (letters[2]) weights[letters[2]] = 20;
-
     return weights;
   }
 
@@ -137,44 +135,29 @@ export class TreasureMapService {
   }
 
   private toNumber(value: unknown): number {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
     if (typeof value === 'string' && value.trim() !== '') {
       const parsed = Number(value);
       return Number.isFinite(parsed) ? parsed : 0;
     }
-
     return 0;
   }
 
   private extractScores(value: unknown): Record<RiasecType, number> {
-    const empty: Record<RiasecType, number> = {
-      R: 0,
-      I: 0,
-      A: 0,
-      S: 0,
-      E: 0,
-      C: 0,
-    };
-
+    const empty: Record<RiasecType, number> = { R: 0, I: 0, A: 0, S: 0, E: 0, C: 0 };
     if (!this.isRecord(value)) return empty;
 
     for (const code of Object.keys(empty) as RiasecType[]) {
       empty[code] = this.toNumber(value[code]);
     }
-
     return empty;
   }
 
   private toResultView(result: { riasecCode: string | null; scoresByCategory: unknown }) {
     const scores = this.isRecord(result.scoresByCategory) ? result.scoresByCategory : {};
-
     const generalScores = this.isRecord(scores.GENERALE)
       ? (scores.GENERALE as Prisma.JsonValue)
       : null;
-
     const specificScores = this.isRecord(scores.totalRaw)
       ? (scores.totalRaw as Prisma.JsonValue)
       : null;
@@ -190,13 +173,10 @@ export class TreasureMapService {
 
   private sortScores(scores: Record<RiasecType, number>) {
     const order: RiasecType[] = ['R', 'I', 'A', 'S', 'E', 'C'];
-
     return [...order]
       .sort((a, b) => {
         const diff = scores[b] - scores[a];
-
         if (diff !== 0) return diff;
-
         return order.indexOf(a) - order.indexOf(b);
       })
       .map((code, index) => ({
@@ -209,7 +189,6 @@ export class TreasureMapService {
 
   private formatEnum(value: string | null | undefined): string {
     if (!value) return 'Non disponible';
-
     return value
       .toLowerCase()
       .split('_')
@@ -218,38 +197,23 @@ export class TreasureMapService {
   }
 
   private formatCurrency(min: number | null, max: number | null) {
-    if (min === null && max === null) {
-      return 'Non renseigne';
-    }
-
-    if (min !== null && max !== null) {
+    if (min === null && max === null) return 'Non renseigne';
+    if (min !== null && max !== null)
       return `${min.toLocaleString('fr-FR')} - ${max.toLocaleString('fr-FR')}`;
-    }
-
-    if (min !== null) {
-      return `A partir de ${min.toLocaleString('fr-FR')}`;
-    }
-
+    if (min !== null) return `A partir de ${min.toLocaleString('fr-FR')}`;
     return `Jusqu a ${max?.toLocaleString('fr-FR')}`;
   }
 
   private buildSectionSummary(sectionScores: unknown): TreasureMapPayload['sectionSummary'] {
     if (!this.isRecord(sectionScores)) return [];
-
     const normalized = sectionScores.normalized;
-
     if (!this.isRecord(normalized)) return [];
 
     return (Object.keys(sectionLabels) as TestType[])
       .map((section) => {
         const scores = this.sortScores(this.extractScores(normalized[section])).map(
-          ({ code, score, rank }) => ({
-            code,
-            score,
-            rank,
-          }),
+          ({ code, score, rank }) => ({ code, score, rank }),
         );
-
         return {
           section,
           label: sectionLabels[section] ?? section,
@@ -286,674 +250,189 @@ export class TreasureMapService {
     return steps;
   }
 
-  // ============================================================
-  // PDF - PRESENTATION
-  // ============================================================
-
-  private readonly pdfColors = {
-    navy: '#172554',
-    blue: '#2563EB',
-    blueDark: '#1D4ED8',
-    blueLight: '#EFF6FF',
-    blueSoft: '#DBEAFE',
-    text: '#1F2937',
-    textMuted: '#6B7280',
-    border: '#E5E7EB',
-    background: '#F8FAFC',
-    white: '#FFFFFF',
-    green: '#059669',
-    greenLight: '#ECFDF5',
-    orange: '#D97706',
-    orangeLight: '#FFFBEB',
-  };
-
-  private getPdfLayout(doc: PDFKit.PDFDocument) {
-    return {
-      left: doc.page.margins.left,
-      right: doc.page.width - doc.page.margins.right,
-      width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
-    };
-  }
-
-  private drawRoundedCard(
-    doc: PDFKit.PDFDocument,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    background: string,
-    border?: string,
-  ) {
-    doc.roundedRect(x, y, width, height, 7).fillAndStroke(background, border ?? background);
-  }
-
   private writeTitle(doc: PDFKit.PDFDocument, title: string, subtitle?: string) {
-    const layout = this.getPdfLayout(doc);
+    const left = doc.page.margins.left;
+    const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
-    doc
-      .fillColor(this.pdfColors.navy)
-      .fontSize(24)
-      .font('Helvetica-Bold')
-      .text(title, layout.left, doc.y, {
-        width: layout.width,
-        align: 'center',
-      });
+    doc.fontSize(21).fillColor('#172554').text(title, left, doc.y, {
+      width,
+      align: 'center',
+    });
 
     if (subtitle) {
-      doc.moveDown(0.45);
-
-      doc
-        .fillColor(this.pdfColors.textMuted)
-        .fontSize(10)
-        .font('Helvetica')
-        .text(subtitle, layout.left, doc.y, {
-          width: layout.width,
-          align: 'center',
-        });
+      doc.moveDown(0.35);
+      doc.fontSize(10).fillColor('#6b7280').text(subtitle, left, doc.y, {
+        width,
+        align: 'center',
+      });
     }
 
-    doc.moveDown(1);
+    doc.moveDown(1.2);
   }
 
-  private writeSection(doc: PDFKit.PDFDocument, title: string, number?: string) {
-    if (doc.y > 690) {
+  private ensureSpace(doc: PDFKit.PDFDocument, requiredHeight: number): boolean {
+    const bottom = doc.page.height - doc.page.margins.bottom - 20;
+
+    if (doc.y + requiredHeight > bottom) {
       doc.addPage();
+      return true;
     }
 
-    const layout = this.getPdfLayout(doc);
+    return false;
+  }
 
-    doc.moveDown(0.7);
+  private writeSection(doc: PDFKit.PDFDocument, title: string) {
+    this.ensureSpace(doc, 55);
 
+    const left = doc.page.margins.left;
+    const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+    doc.moveDown(0.6);
     const y = doc.y;
 
-    doc.roundedRect(layout.left, y, 5, 25, 2).fill(this.pdfColors.blue);
-
-    if (number) {
-      doc
-        .fillColor(this.pdfColors.blue)
-        .fontSize(9)
-        .font('Helvetica-Bold')
-        .text(number, layout.left + 16, y + 2);
-    }
-
+    doc.roundedRect(left, y + 1, 4, 22, 2).fill('#2563eb');
     doc
-      .fillColor(this.pdfColors.navy)
-      .fontSize(15)
+      .fontSize(14)
+      .fillColor('#172554')
       .font('Helvetica-Bold')
-      .text(title, layout.left + 16, y + 1, {
-        width: layout.width - 16,
+      .text(title, left + 14, y, {
+        width: width - 14,
+        align: 'left',
       });
-
-    doc.moveDown(0.8);
+    doc.moveDown(0.55);
   }
 
   private writeKeyValue(doc: PDFKit.PDFDocument, label: string, value: string | number | null) {
-    const layout = this.getPdfLayout(doc);
-
+    this.ensureSpace(doc, 22);
     const text = value === null || value === undefined || value === '' ? 'Non disponible' : value;
-
     doc
-      .fillColor(this.pdfColors.textMuted)
-      .fontSize(9)
+      .fontSize(10)
+      .fillColor('#6b7280')
       .font('Helvetica-Bold')
-      .text(`${label}:`, layout.left, doc.y, {
-        continued: true,
-      })
-      .fillColor(this.pdfColors.text)
+      .text(`${label}: `, doc.page.margins.left, doc.y, { continued: true })
+      .fillColor('#1f2937')
       .font('Helvetica')
-      .text(` ${String(text)}`);
-
-    doc.moveDown(0.15);
+      .text(String(text));
   }
 
   private writeParagraph(doc: PDFKit.PDFDocument, text: string) {
-    if (doc.y > 710) {
-      doc.addPage();
-    }
-
-    const layout = this.getPdfLayout(doc);
-
-    doc
-      .fontSize(9.5)
-      .font('Helvetica')
-      .fillColor(this.pdfColors.text)
-      .text(text, layout.left, doc.y, {
-        width: layout.width,
-        align: 'left',
-        lineGap: 3,
-      });
-
-    doc.moveDown(0.25);
+    this.ensureSpace(doc, 35);
+    doc.fontSize(10).fillColor('#374151').font('Helvetica').text(text, {
+      align: 'left',
+      lineGap: 3,
+    });
+    doc.moveDown(0.2);
   }
 
   private writeBullet(doc: PDFKit.PDFDocument, text: string, indent = 12) {
-    if (doc.y > 720) {
-      doc.addPage();
-    }
-
-    const layout = this.getPdfLayout(doc);
-
-    const bulletX = layout.left + indent;
-
-    doc.circle(bulletX, doc.y + 4, 2).fill(this.pdfColors.blue);
-
+    this.ensureSpace(doc, 25);
+    const left = doc.page.margins.left + indent;
+    doc.circle(left, doc.y + 5, 2).fill('#2563eb');
     doc
-      .fontSize(9)
+      .fontSize(9.5)
+      .fillColor('#374151')
       .font('Helvetica')
-      .fillColor(this.pdfColors.text)
-      .text(text, bulletX + 9, doc.y, {
-        width: layout.right - bulletX - 9,
+      .text(text, left + 9, doc.y, {
+        width: doc.page.width - doc.page.margins.right - left - 9,
         lineGap: 2,
       });
-
-    doc.moveDown(0.15);
-  }
-
-  private writeInfoCards(
-    doc: PDFKit.PDFDocument,
-    items: Array<{
-      label: string;
-      value: string;
-      accent?: string;
-    }>,
-  ) {
-    const layout = this.getPdfLayout(doc);
-
-    const gap = 10;
-
-    const cardWidth = (layout.width - gap * (items.length - 1)) / items.length;
-
-    const cardHeight = 65;
-
-    const startY = doc.y;
-
-    items.forEach((item, index) => {
-      const x = layout.left + index * (cardWidth + gap);
-
-      const accent = item.accent ?? this.pdfColors.blue;
-
-      this.drawRoundedCard(
-        doc,
-        x,
-        startY,
-        cardWidth,
-        cardHeight,
-        this.pdfColors.background,
-        this.pdfColors.border,
-      );
-
-      doc.rect(x, startY, 4, cardHeight).fill(accent);
-
-      doc
-        .fontSize(7.5)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.textMuted)
-        .text(item.label.toUpperCase(), x + 14, startY + 12, {
-          width: cardWidth - 24,
-        });
-
-      doc
-        .fontSize(12)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.navy)
-        .text(item.value, x + 14, startY + 30, {
-          width: cardWidth - 24,
-        });
-    });
-
-    doc.y = startY + cardHeight + 16;
-  }
-
-  private writeProfileHero(doc: PDFKit.PDFDocument, mapData: TreasureMapPayload) {
-    const layout = this.getPdfLayout(doc);
-
-    const topProfile = mapData.riasecSummary[0];
-
-    if (!topProfile) return;
-
-    const height = 105;
-    const y = doc.y;
-
-    this.drawRoundedCard(
-      doc,
-      layout.left,
-      y,
-      layout.width,
-      height,
-      this.pdfColors.blueLight,
-      this.pdfColors.blueSoft,
-    );
-
-    doc.circle(layout.left + 48, y + 52, 30).fill(this.pdfColors.blue);
-
-    doc
-      .fontSize(24)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.white)
-      .text(topProfile.code, layout.left + 33, y + 39, {
-        width: 30,
-        align: 'center',
-      });
-
-    doc
-      .fontSize(8)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.blueDark)
-      .text('PROFIL DOMINANT', layout.left + 95, y + 20);
-
-    doc
-      .fontSize(17)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.navy)
-      .text(topProfile.label, layout.left + 95, y + 36);
-
-    doc
-      .fontSize(9)
-      .font('Helvetica')
-      .fillColor(this.pdfColors.text)
-      .text(riasecDescriptions[topProfile.code], layout.left + 95, y + 60, {
-        width: layout.width - 120,
-        lineGap: 2,
-      });
-
-    doc.y = y + height + 18;
+    doc.moveDown(0.12);
   }
 
   private writeScoreTable(
     doc: PDFKit.PDFDocument,
-    scores: Array<{
-      code: RiasecType;
-      label?: string;
-      score: number;
-      rank: number;
-    }>,
+    scores: Array<{ code: RiasecType; label?: string; score: number; rank: number }>,
   ) {
-    const layout = this.getPdfLayout(doc);
-
-    const tableX = layout.left;
-
-    const rankWidth = 38;
-    const profileWidth = 145;
-    const scoreWidth = 45;
-
-    const xRank = tableX + 10;
-
-    const xProfile = tableX + rankWidth;
-
-    const xScore = xProfile + profileWidth;
-
-    const xBar = xScore + scoreWidth;
-
-    const barWidth = layout.right - xBar - 10;
-
-    const headerHeight = 25;
-    const rowHeight = 29;
-
-    const totalHeight = headerHeight + scores.length * rowHeight;
-
-    if (doc.y + totalHeight > 750) {
-      doc.addPage();
-    }
-
-    const tableTop = doc.y;
-
-    doc.roundedRect(tableX, tableTop, layout.width, headerHeight, 5).fill(this.pdfColors.navy);
-
-    doc
-      .fontSize(8)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.white)
-      .text('RANG', xRank, tableTop + 8)
-      .text('PROFIL', xProfile, tableTop + 8)
-      .text('SCORE', xScore, tableTop + 8)
-      .text('LECTURE', xBar, tableTop + 8);
-
-    for (let index = 0; index < scores.length; index++) {
-      const item = scores[index];
-
-      const y = tableTop + headerHeight + index * rowHeight;
-
-      if (index % 2 === 0) {
-        doc.rect(tableX, y, layout.width, rowHeight).fill(this.pdfColors.background);
-      }
-
-      const isTop = item!.rank === 1;
-
-      doc
-        .fontSize(8.5)
-        .font(isTop ? 'Helvetica-Bold' : 'Helvetica')
-        .fillColor(isTop ? this.pdfColors.blueDark : this.pdfColors.text)
-        .text(String(item!.rank), xRank, y + 9);
-
-      doc
-        .fontSize(8.5)
-        .font('Helvetica')
-        .fillColor(this.pdfColors.text)
-        .text(`${item!.code} - ${item!.label ?? riasecLabels[item!.code]}`, xProfile, y + 9, {
-          width: profileWidth - 10,
-        });
-
-      doc
-        .fontSize(9)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.navy)
-        .text(String(item!.score), xScore, y + 9);
-
-      const maxScore = Math.max(...scores.map((score) => score.score), 100);
-
-      const progress = item!.score / Math.max(maxScore, 1);
-
-      const progressWidth = Math.max(4, Math.round(progress * barWidth));
-
-      const barY = y + 10;
-
-      doc.roundedRect(xBar, barY, barWidth, 7, 3).fill(this.pdfColors.border);
-
-      doc
-        .roundedRect(xBar, barY, progressWidth, 7, 3)
-        .fill(isTop ? this.pdfColors.blueDark : this.pdfColors.blue);
-    }
-
-    doc.y = tableTop + totalHeight + 12;
-  }
-
-  private writeSectionSubtitle(doc: PDFKit.PDFDocument, title: string, code: string) {
-    if (doc.y > 690) {
-      doc.addPage();
-    }
-
-    const layout = this.getPdfLayout(doc);
-
-    const y = doc.y;
-
-    doc
-      .fillColor(this.pdfColors.navy)
-      .fontSize(11)
-      .font('Helvetica-Bold')
-      .text(title.toUpperCase(), layout.left, y);
-
-    doc.roundedRect(layout.left, y + 18, 100, 18, 8).fill(this.pdfColors.blueLight);
-
-    doc
-      .fontSize(7.5)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.blueDark)
-      .text(`CODE ${code || 'N/A'}`, layout.left + 10, y + 24);
-
-    doc.y = y + 50;
-  }
-
-  private writeRecommendationCard(doc: PDFKit.PDFDocument, rec: TreasureMapRecommendation) {
-    const layout = this.getPdfLayout(doc);
-
-    const topSpace = 420;
-
-    if (doc.y + topSpace > 750) {
-      doc.addPage();
-    }
-
-    const startY = doc.y;
-
-    const cardWidth = layout.width;
-
-    const headerHeight = 48;
-
-    this.drawRoundedCard(doc, layout.left, startY, cardWidth, 1, this.pdfColors.border);
-
-    doc.roundedRect(layout.left, startY, cardWidth, headerHeight, 7).fill(this.pdfColors.navy);
-
-    doc.circle(layout.left + 25, startY + 24, 14).fill(this.pdfColors.blue);
-
-    doc
-      .fontSize(9)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.white)
-      .text(String(rec.rankPosition), layout.left + 17, startY + 20, {
-        width: 16,
-        align: 'center',
-      });
-
-    doc
-      .fontSize(11)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.white)
-      .text(rec.career.name, layout.left + 50, startY + 13, {
-        width: cardWidth - 160,
-      });
-
-    doc
-      .fontSize(9)
-      .font('Helvetica-Bold')
-      .fillColor(this.pdfColors.white)
-      .text(`${rec.matchScore}%`, layout.right - 75, startY + 10, {
-        width: 55,
-        align: 'right',
-      });
-
-    doc
-      .fontSize(6.5)
-      .font('Helvetica')
-      .fillColor(this.pdfColors.blueSoft)
-      .text("D'ADEQUATION", layout.right - 75, startY + 29, {
-        width: 55,
-        align: 'right',
-      });
-
-    let y = startY + headerHeight + 12;
-
-    if (rec.career.summary || rec.career.description) {
-      doc
-        .fontSize(9)
-        .font('Helvetica')
-        .fillColor(this.pdfColors.text)
-        .text(rec.career.summary ?? rec.career.description, layout.left, y, {
-          width: cardWidth,
-          lineGap: 2,
-        });
-
-      y = doc.y + 8;
-    }
-
-    const infoItems = [
-      {
-        label: 'CODES RIASEC',
-        value: rec.career.riasecCodes.join(' · '),
-      },
-      {
-        label: 'DEMANDE LOCALE',
-        value: rec.career.localDemand ?? 'Non renseignee',
-      },
-      {
-        label: 'FORMATION',
-        value: rec.career.formationLevel ?? 'Non renseignee',
-      },
-      {
-        label: 'REMUNERATION',
-        value: this.formatCurrency(rec.career.salaryRangeMin, rec.career.salaryRangeMax),
-      },
-    ];
-
-    const infoGap = 8;
-
-    const infoWidth = (cardWidth - infoGap * 3) / 4;
-
-    const infoHeight = 52;
-
-    infoItems.forEach((item, index) => {
-      const x = layout.left + index * (infoWidth + infoGap);
-
-      this.drawRoundedCard(
-        doc,
-        x,
-        y,
-        infoWidth,
-        infoHeight,
-        this.pdfColors.background,
-        this.pdfColors.border,
-      );
-
-      doc
-        .fontSize(6.5)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.textMuted)
-        .text(item.label, x + 8, y + 9, {
-          width: infoWidth - 16,
-        });
-
-      doc
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.navy)
-        .text(String(item.value), x + 8, y + 25, {
-          width: infoWidth - 16,
-          lineGap: 1,
-        });
-    });
-
-    y += infoHeight + 12;
-
-    if (rec.career.careerPath) {
-      doc
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.navy)
-        .text('PARCOURS POSSIBLE', layout.left, y);
-
-      y += 14;
-
-      doc
-        .fontSize(8.5)
-        .font('Helvetica')
-        .fillColor(this.pdfColors.text)
-        .text(rec.career.careerPath, layout.left, y, {
-          width: cardWidth,
-        });
-
-      y = doc.y + 10;
-    }
-
-    if (rec.formations.length > 0) {
-      doc
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.navy)
-        .text('FORMATIONS ASSOCIEES', layout.left, y);
-
-      y += 14;
-
-      for (const formation of rec.formations.slice(0, 3)) {
-        const university = formation.university
-          ? `${formation.university.name}${
-              formation.university.city ? `, ${formation.university.city}` : ''
-            }`
-          : 'Universite non renseignee';
-
-        this.writeBullet(
-          doc,
-          `${formation.title} (${formation.degree}, ${formation.duration}) - ${university}`,
-        );
-
-        for (const scholarship of formation.scholarships.slice(0, 2)) {
-          const deadline = scholarship.applicationCloseAt
-            ? new Date(scholarship.applicationCloseAt).toLocaleDateString('fr-FR')
-            : 'date limite non renseignee';
-
-          this.writeBullet(
-            doc,
-            `Bourse: ${scholarship.title} - ${scholarship.provider} (${deadline})`,
-            24,
-          );
+    if (scores.length === 0) return;
+
+    const rowHeight = 24;
+    const headerHeight = 24;
+    const rowsPerPage = 22;
+    const maxScore = Math.max(...scores.map((item) => item.score), 100);
+    const left = doc.page.margins.left;
+    const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const xCode = left + 8;
+    const xLabel = left + 45;
+    const xScore = left + 185;
+    const xBar = left + 245;
+    const barWidth = Math.min(180, width - 255);
+
+    let index = 0;
+    while (index < scores.length) {
+      const remaining = scores.length - index;
+      const count = Math.min(remaining, rowsPerPage);
+      const requiredHeight = headerHeight + count * rowHeight + 12;
+
+      this.ensureSpace(doc, requiredHeight);
+
+      const tableTop = doc.y;
+      doc.roundedRect(left, tableTop, width, headerHeight, 4).fill('#172554');
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#ffffff');
+      doc.text('Rang', xCode, tableTop + 7);
+      doc.text('Profil', xLabel, tableTop + 7);
+      doc.text('Score', xScore, tableTop + 7);
+      doc.text('Lecture', xBar, tableTop + 7);
+
+      for (let row = 0; row < count; row++) {
+        const item = scores[index + row];
+        const y = tableTop + headerHeight + row * rowHeight;
+
+        if (row % 2 === 0) {
+          doc.rect(left, y, width, rowHeight).fill('#f8fafc');
+        }
+
+        const isTop = item!.rank === 1;
+        doc
+          .fontSize(8.5)
+          .font(isTop ? 'Helvetica-Bold' : 'Helvetica')
+          .fillColor(isTop ? '#1d4ed8' : '#374151');
+        doc.text(String(item!.rank), xCode, y + 8);
+        doc.text(`${item!.code} - ${item!.label ?? riasecLabels[item!.code]}`, xLabel, y + 8);
+        doc
+          .font('Helvetica-Bold')
+          .fillColor('#172554')
+          .text(String(item!.score), xScore, y + 8);
+
+        const progress = Math.max(0, Math.min(1, item!.score / Math.max(maxScore, 1)));
+        const progressWidth = Math.max(0, Math.round(progress * barWidth));
+        doc.roundedRect(xBar, y + 9, barWidth, 6, 3).fill('#e5e7eb');
+        if (progressWidth > 0) {
+          doc.roundedRect(xBar, y + 9, progressWidth, 6, 3).fill(isTop ? '#1d4ed8' : '#2563eb');
         }
       }
 
-      y = doc.y + 5;
-    }
+      doc.y = tableTop + headerHeight + count * rowHeight + 10;
+      index += count;
 
-    const finalHeight = Math.max(y - startY + 12, headerHeight + 30);
-
-    doc.roundedRect(layout.left, startY, cardWidth, finalHeight, 7).stroke(this.pdfColors.border);
-
-    doc.y = startY + finalHeight + 16;
-  }
-
-  private writeNextSteps(doc: PDFKit.PDFDocument, steps: string[]) {
-    const layout = this.getPdfLayout(doc);
-
-    for (let index = 0; index < steps.length; index++) {
-      const step = steps[index];
-
-      if (doc.y > 710) {
+      if (index < scores.length) {
         doc.addPage();
       }
-
-      const y = doc.y;
-
-      doc.circle(layout.left + 12, y + 11, 11).fill(this.pdfColors.blue);
-
-      doc
-        .fontSize(8)
-        .font('Helvetica-Bold')
-        .fillColor(this.pdfColors.white)
-        .text(String(index + 1), layout.left + 5, y + 7, {
-          width: 14,
-          align: 'center',
-        });
-
-      doc
-        .fontSize(9)
-        .font('Helvetica')
-        .fillColor(this.pdfColors.text)
-        .text(step!, layout.left + 35, y + 2, {
-          width: layout.width - 45,
-          lineGap: 2,
-        });
-
-      doc.moveDown(0.6);
     }
   }
 
   private async computeRecommendations(resultId: string, baseCode: string, limit = 6) {
     if (!baseCode) return [];
-
     const weights = this.buildWeights(baseCode);
-
     const careers = await this.prisma.career.findMany({
-      where: {
-        isActive: true,
-      },
+      where: { isActive: true },
     });
 
     const scored = careers
       .map((career) => {
         const codes = career.riasecCodes;
-
         let sum = 0;
         let matched = 0;
-
         for (const code of codes) {
           const w = weights[code] ?? 0;
-
           if (w > 0) {
             sum += w;
             matched += 1;
           }
         }
-
-        if (matched === 0) {
-          return {
-            career,
-            score: 0,
-          };
-        }
-
+        if (matched === 0) return { career, score: 0 };
         const baseScore = Math.round(sum / Math.max(codes.length, 1));
-
         const demandBoost = career.localDemand ? career.localDemand * 2 : 0;
-
-        return {
-          career,
-          score: baseScore + demandBoost,
-        };
+        return { career, score: baseScore + demandBoost };
       })
       .filter((c) => c.score > 0)
       .sort((a, b) => b.score - a.score)
@@ -1003,63 +482,26 @@ export class TreasureMapService {
     });
 
     const chunks: Buffer[] = [];
-
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-
-    // ============================================================
-    // PAGE DE GARDE / EN-TETE
-    // ============================================================
-
-    doc.rect(0, 0, doc.page.width, 8).fill(this.pdfColors.blue);
-
-    doc.y = 70;
 
     this.writeTitle(
       doc,
-      "Rapport d'orientation",
-      `Profil RIASEC  •  Généré le ${new Date(mapData.generatedAt).toLocaleDateString(
-        'fr-FR',
-      )}  •  Assessment ${mapData.assessment.id}`,
+      'Rapport d orientation RIASEC',
+      `Genere le ${new Date(mapData.generatedAt).toLocaleDateString('fr-FR')} - Assessment ${mapData.assessment.id}`,
     );
 
-    this.writeProfileHero(doc, mapData);
-
-    this.writeInfoCards(doc, [
-      {
-        label: 'Code général',
-        value: mapData.generalCode ?? 'N/A',
-      },
-      {
-        label: 'Code spécifique',
-        value: mapData.specificCode ?? 'N/A',
-      },
-      {
-        label: 'Force du profil',
-        value: mapData.profileStrengthLabel,
-        accent: this.pdfColors.green,
-      },
-      {
-        label: 'Cohérence',
-        value: mapData.consistencyLabel,
-        accent: this.pdfColors.orange,
-      },
-    ]);
-
-    // ============================================================
-    // 1. SYNTHESE DU PROFIL
-    // ============================================================
-
-    this.writeSection(doc, 'Synthese du profil', '01');
-
+    this.writeSection(doc, '1. Synthese du profil');
+    this.writeKeyValue(doc, 'Code dominant', mapData.dominantCode);
+    this.writeKeyValue(doc, 'Code générales', mapData.generalCode);
+    this.writeKeyValue(doc, 'Code catégorie', mapData.specificCode);
+    this.writeKeyValue(doc, 'Force du profil', mapData.profileStrengthLabel);
+    this.writeKeyValue(doc, 'Coherence générales / catégorie', mapData.consistencyLabel);
     this.writeKeyValue(doc, 'Type de test', this.formatEnum(mapData.assessment.type));
-
     this.writeKeyValue(doc, 'Progression', `${mapData.assessment.completionPercentage}%`);
 
     const topProfile = mapData.riasecSummary[0];
-
     if (topProfile) {
-      doc.moveDown(0.5);
-
+      doc.moveDown(0.6);
       this.writeParagraph(
         doc,
         `Votre profil principal est ${topProfile.code} - ${topProfile.label}. ${riasecDescriptions[topProfile.code]}`,
@@ -1068,34 +510,37 @@ export class TreasureMapService {
 
     if (mapData.riasecSummary.length > 1) {
       const second = mapData.riasecSummary[1];
-
       const third = mapData.riasecSummary[2];
-
       const complements = [second, third]
         .filter((item): item is TreasureMapPayload['riasecSummary'][number] => Boolean(item))
         .map((item) => `${item.code} - ${item.label}`)
         .join(', ');
-
-      this.writeParagraph(doc, `Profils complementaires : ${complements}.`);
+      this.writeParagraph(doc, `Profils complementaires: ${complements}.`);
     }
 
-    // ============================================================
-    // 2. SCORES RIASEC GLOBAUX
-    // ============================================================
-
-    this.writeSection(doc, 'Scores RIASEC globaux', '02');
-
+    this.writeSection(doc, '2. Scores RIASEC globaux');
     this.writeScoreTable(doc, mapData.riasecSummary);
 
-    // ============================================================
-    // 3. DETAIL PAR SECTION
-    // ============================================================
-
     if (mapData.sectionSummary.length > 0) {
-      this.writeSection(doc, 'Detail par section', '03');
+      this.writeSection(doc, '3. Detail par section');
 
       for (const section of mapData.sectionSummary) {
-        this.writeSectionSubtitle(doc, section.label, section.topCodes);
+        this.ensureSpace(doc, 180);
+        const left = doc.page.margins.left;
+        const width = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+        doc
+          .fontSize(11)
+          .fillColor('#172554')
+          .font('Helvetica-Bold')
+          .text(section.label.toUpperCase(), left, doc.y, { width, align: 'left' });
+        doc.moveDown(0.15);
+        doc
+          .fontSize(7.5)
+          .font('Helvetica-Bold')
+          .fillColor('#1d4ed8')
+          .text(`CODE ${section.topCodes || 'N/A'}`, left, doc.y);
+        doc.moveDown(0.45);
 
         this.writeScoreTable(
           doc,
@@ -1104,75 +549,118 @@ export class TreasureMapService {
             label: riasecLabels[score.code],
           })),
         );
-
-        doc.moveDown(0.4);
+        doc.moveDown(0.25);
       }
     }
 
-    // ============================================================
-    // 4. RECOMMANDATIONS METIERS
-    // ============================================================
-
-    this.writeSection(doc, 'Recommandations metiers', '04');
+    this.writeSection(doc, '4. Recommandations metiers');
 
     if (mapData.recommendations.length === 0) {
       this.writeParagraph(doc, 'Aucune recommandation metier disponible pour ce resultat.');
     }
 
     for (const rec of mapData.recommendations) {
-      this.writeRecommendationCard(doc, rec);
+      this.ensureSpace(doc, 105);
+
+      doc
+        .fontSize(12)
+        .fillColor('#172554')
+        .font('Helvetica-Bold')
+        .text(`${rec.rankPosition}. ${rec.career.name}`, doc.page.margins.left, doc.y);
+
+      doc
+        .fontSize(9)
+        .fillColor('#2563eb')
+        .font('Helvetica-Bold')
+        .text(`${rec.matchScore}% d adequation`, doc.page.margins.left, doc.y + 2);
+      doc.moveDown(0.35);
+
+      this.writeKeyValue(doc, 'Codes RIASEC metier', rec.career.riasecCodes.join(', '));
+      this.writeKeyValue(doc, 'Demande locale', rec.career.localDemand ?? 'Non renseignee');
+      this.writeKeyValue(doc, 'Niveau de formation', rec.career.formationLevel ?? 'Non renseigne');
+      this.writeKeyValue(
+        doc,
+        'Fourchette salariale',
+        this.formatCurrency(rec.career.salaryRangeMin, rec.career.salaryRangeMax),
+      );
+
+      if (rec.career.summary || rec.career.description) {
+        this.writeParagraph(doc, rec.career.summary ?? rec.career.description);
+      }
+
+      if (rec.career.careerPath) {
+        this.writeBullet(doc, `Parcours possible: ${rec.career.careerPath}`);
+      }
+
+      if (rec.formations.length > 0) {
+        this.ensureSpace(doc, 35);
+        doc
+          .fontSize(10)
+          .fillColor('#172554')
+          .font('Helvetica-Bold')
+          .text('Formations associees', doc.page.margins.left, doc.y);
+        doc.moveDown(0.2);
+
+        for (const formation of rec.formations.slice(0, 3)) {
+          const university = formation.university
+            ? `${formation.university.name}${formation.university.city ? `, ${formation.university.city}` : ''}`
+            : 'Universite non renseignee';
+
+          this.writeBullet(
+            doc,
+            `${formation.title} (${formation.degree}, ${formation.duration}) - ${university}`,
+          );
+
+          for (const scholarship of formation.scholarships.slice(0, 2)) {
+            const deadline = scholarship.applicationCloseAt
+              ? new Date(scholarship.applicationCloseAt).toLocaleDateString('fr-FR')
+              : 'date limite non renseignee';
+
+            this.writeBullet(
+              doc,
+              `Bourse: ${scholarship.title} - ${scholarship.provider} (${deadline})`,
+              24,
+            );
+          }
+        }
+      }
+
+      doc.moveDown(0.65);
     }
 
-    // ============================================================
-    // 5. PROCHAINES ACTIONS
-    // ============================================================
-
-    this.writeSection(doc, 'Prochaines actions', '05');
-
-    this.writeNextSteps(doc, mapData.nextSteps);
-
-    // ============================================================
-    // PIED DE PAGE
-    // ============================================================
+    this.writeSection(doc, '5. Prochaines actions');
+    for (const step of mapData.nextSteps) {
+      this.writeBullet(doc, step);
+    }
 
     const pageRange = doc.bufferedPageRange();
-
     for (let i = pageRange.start; i < pageRange.start + pageRange.count; i++) {
       doc.switchToPage(i);
-
-      const pageNumber = i + 1;
-
       const footerY = doc.page.height - 30;
 
       doc
         .moveTo(doc.page.margins.left, footerY - 8)
         .lineTo(doc.page.width - doc.page.margins.right, footerY - 8)
-        .strokeColor(this.pdfColors.border)
+        .strokeColor('#e5e7eb')
         .lineWidth(0.5)
         .stroke();
 
       doc
-        .fontSize(7.5)
+        .fontSize(8)
         .font('Helvetica')
-        .fillColor(this.pdfColors.textMuted)
-        .text("Rapport d'orientation RIASEC", doc.page.margins.left, footerY);
+        .fillColor('#6b7280')
+        .text('Rapport d orientation RIASEC', doc.page.margins.left, footerY);
 
-      doc.text(
-        `Document confidentiel  •  Page ${pageNumber} / ${pageRange.count}`,
-        doc.page.margins.left,
-        footerY,
-        {
-          width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
-          align: 'right',
-        },
-      );
+      doc.text(`Page ${i + 1} / ${pageRange.count}`, doc.page.margins.left, footerY, {
+        width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+        align: 'right',
+      });
     }
 
     doc.end();
 
     await new Promise<void>((resolve, reject) => {
       doc.on('end', () => resolve());
-
       doc.on('error', reject);
     });
 
@@ -1181,50 +669,30 @@ export class TreasureMapService {
 
   async generate(sessionToken: string, assessmentId?: string, generatePdf = false) {
     const session = await this.prisma.session.findUnique({
-      where: {
-        sessionToken: sessionToken,
-      },
-      select: {
-        id: true,
-      },
+      where: { sessionToken: sessionToken },
+      select: { id: true },
     });
-
-    if (!session) {
-      throw new NotFoundException('Session introuvable');
-    }
+    if (!session) throw new NotFoundException('Session introuvable');
 
     const assessment = assessmentId
       ? await this.prisma.assessment.findFirst({
-          where: {
-            id: assessmentId,
-            sessionId: session.id,
-          },
+          where: { id: assessmentId, sessionId: session.id },
         })
       : await this.prisma.assessment.findFirst({
-          where: {
-            sessionId: session.id,
-            status: TestStatus.COMPLETED,
-          },
-          orderBy: {
-            completedAt: 'desc',
-          },
+          where: { sessionId: session.id, status: TestStatus.COMPLETED },
+          orderBy: { completedAt: 'desc' },
         });
-
     if (!assessment) {
       throw new NotFoundException('Aucun test disponible pour cette session');
     }
 
     let result = await this.prisma.assessmentResult.findUnique({
-      where: {
-        assessmentId: assessment.id,
-      },
+      where: { assessmentId: assessment.id },
     });
-
     if (!result) {
       if (assessment.status !== TestStatus.COMPLETED) {
         throw new NotFoundException('Resultat indisponible, test non termine');
       }
-
       result = await this.resultsService.compute({
         sessionToken,
         assessmentId: assessment.id,
@@ -1232,20 +700,13 @@ export class TreasureMapService {
     }
 
     const existingRecs = await this.prisma.assessmentCareerRecommendation.findMany({
-      where: {
-        resultId: result.id,
-      },
-      include: {
-        career: true,
-      },
-      orderBy: {
-        rankPosition: 'asc',
-      },
+      where: { resultId: result.id },
+      include: { career: true },
+      orderBy: { rankPosition: 'asc' },
       take: 6,
     });
 
     const resultView = this.toResultView(result);
-
     const recs = existingRecs.length
       ? existingRecs.map((r) => ({
           rankPosition: r.rankPosition,
@@ -1255,23 +716,11 @@ export class TreasureMapService {
       : await this.computeRecommendations(result.id, resultView.dominantCode ?? '', 6);
 
     const recommendedCareerIds = recs.map((rec) => rec.career.id);
-
     const enrichedCareers = await this.prisma.career.findMany({
-      where: {
-        id: {
-          in: recommendedCareerIds,
-        },
-      },
+      where: { id: { in: recommendedCareerIds } },
       include: {
         institutions: {
-          orderBy: [
-            {
-              isPrimary: 'desc',
-            },
-            {
-              createdAt: 'asc',
-            },
-          ],
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
           include: {
             formation: {
               include: {
@@ -1290,7 +739,6 @@ export class TreasureMapService {
         },
       },
     });
-
     const enrichedCareerMap = new Map(enrichedCareers.map((career) => [career.id, career]));
 
     const baseScores =
@@ -1298,9 +746,7 @@ export class TreasureMapService {
       this.sortScores(this.extractScores(resultView.specificScores)).some((s) => s.score > 0)
         ? this.extractScores(resultView.specificScores)
         : this.extractScores(resultView.generalScores);
-
     const riasecSummary = this.sortScores(baseScores);
-
     const dominantCode =
       resultView.dominantCode ??
       riasecSummary
@@ -1310,7 +756,6 @@ export class TreasureMapService {
 
     const mapDataBase = {
       generatedAt: new Date().toISOString(),
-
       assessment: {
         id: assessment.id,
         type: assessment.type,
@@ -1319,38 +764,22 @@ export class TreasureMapService {
         completedAt: assessment.completedAt?.toISOString() ?? null,
         completionPercentage: assessment.completionPercentage,
       },
-
       generalCode: resultView.generalCode,
-
       specificCode: resultView.specificCode,
-
       dominantCode: dominantCode || null,
-
       riasecSummary,
-
       generalScores: resultView.generalScores,
-
       specificScores: resultView.specificScores,
-
       sectionScores: result.scoresByCategory,
-
       sectionSummary: this.buildSectionSummary(result.scoresByCategory),
-
       consistencyLevel: result.consistencyLevel,
-
       consistencyLabel: this.formatEnum(result.consistencyLevel),
-
       profileStrength: result.profileStrength,
-
       profileStrengthLabel: this.formatEnum(result.profileStrength),
-
       strengths: result.strengths,
-
       recommendations: recs.map((r) => ({
         rankPosition: r.rankPosition,
-
         matchScore: r.matchScore,
-
         career: {
           id: r.career.id,
           name: r.career.name,
@@ -1364,26 +793,17 @@ export class TreasureMapService {
           salaryRangeMax: r.career.salaryRangeMax,
           careerPath: r.career.careerPath,
         },
-
         formations: (
           enrichedCareerMap.get(r.career.id)?.institutions?.map((link) => {
             const formation = link.formation;
-
             const university = formation.university;
-
             const now = new Date();
-
             return {
               id: formation.id,
-
               title: formation.title,
-
               degree: formation.degree,
-
               duration: formation.duration,
-
               field: formation.field,
-
               university: university
                 ? {
                     id: university.id,
@@ -1393,15 +813,11 @@ export class TreasureMapService {
                     website: university.website,
                   }
                 : null,
-
               scholarships:
                 university?.scholarships
                   .map((item) => item.scholarship)
                   .filter((scholarship) => {
-                    if (!scholarship.isActive) {
-                      return false;
-                    }
-
+                    if (!scholarship.isActive) return false;
                     return !(
                       scholarship.applicationCloseAt && scholarship.applicationCloseAt < now
                     );
@@ -1429,29 +845,19 @@ export class TreasureMapService {
     } satisfies TreasureMapPayload;
 
     let pdfUrl: string | null = null;
-
     if (generatePdf) {
       const buffer = await this.generatePdfBuffer(mapData);
-
       pdfUrl = await this.storage.uploadBuffer(buffer, 'application/pdf');
     }
 
     const updateData: Prisma.TreasureMapUpdateInput = {
       mapData: mapData,
-      ...(generatePdf
-        ? {
-            pdfUrl,
-          }
-        : {}),
+      ...(generatePdf ? { pdfUrl } : {}),
     };
 
     const treasureMap = await this.prisma.treasureMap.upsert({
-      where: {
-        assessmentId: assessment.id,
-      },
-
+      where: { assessmentId: assessment.id },
       update: updateData,
-
       create: {
         assessmentId: assessment.id,
         mapData: mapData,
@@ -1467,62 +873,31 @@ export class TreasureMapService {
 
   async getByShareToken(shareToken: string) {
     const map = await this.prisma.treasureMap.findUnique({
-      where: {
-        shareToken: shareToken,
-      },
+      where: { shareToken: shareToken },
     });
-
-    if (!map) {
-      throw new NotFoundException('Carte introuvable');
-    }
-
+    if (!map) throw new NotFoundException('Carte introuvable');
     await this.prisma.treasureMap.update({
-      where: {
-        id: map.id,
-      },
-
+      where: { id: map.id },
       data: {
-        viewCount: {
-          increment: 1,
-        },
-
+        viewCount: { increment: 1 },
         lastViewedAt: new Date(),
       },
     });
-
     return map;
   }
 
   async getBySessionToken(sessionToken: string) {
     const session = await this.prisma.session.findUnique({
-      where: {
-        sessionToken,
-      },
-      select: {
-        id: true,
-      },
+      where: { sessionToken },
+      select: { id: true },
     });
-
-    if (!session) {
-      throw new NotFoundException('Session introuvable');
-    }
+    if (!session) throw new NotFoundException('Session introuvable');
 
     const map = await this.prisma.treasureMap.findFirst({
-      where: {
-        assessment: {
-          sessionId: session.id,
-        },
-      },
-
-      orderBy: {
-        createdAt: 'desc',
-      },
+      where: { assessment: { sessionId: session.id } },
+      orderBy: { createdAt: 'desc' },
     });
-
-    if (!map) {
-      throw new NotFoundException('Carte introuvable');
-    }
-
+    if (!map) throw new NotFoundException('Carte introuvable');
     return map;
   }
 }
