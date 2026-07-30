@@ -1557,13 +1557,9 @@ export class TreasureMapService {
       throw new NotFoundException('Carte introuvable');
     }
 
-    let pdfUrl = map.pdfUrl;
+    const buffer = await this.generatePdfBuffer(map.mapData as TreasureMapPayload);
 
-    if (!pdfUrl) {
-      const buffer = await this.generatePdfBuffer(map.mapData as TreasureMapPayload);
-
-      pdfUrl = await this.storage.uploadBuffer(buffer, 'application/pdf');
-    }
+    const pdfUrl = await this.storage.uploadBuffer(buffer, 'application/pdf');
 
     const updatedMap = await this.prisma.treasureMap.update({
       where: {
