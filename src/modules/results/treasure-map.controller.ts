@@ -58,7 +58,7 @@ export class TreasureMapController {
   @Throttle({ default: { limit: 10, ttl: 60 } })
   @Post()
   generate(@Body() dto: CreateTreasureMapDto) {
-    return this.service.generate(dto.sessionToken, dto.assessmentId, dto.generatePdf ?? false);
+    return this.service.generate(dto.sessionToken, dto.assessmentId);
   }
 
   @ApiOperation({
