@@ -1225,6 +1225,17 @@ export class TreasureMapService {
 
       const footerY = doc.page.height - 30;
 
+      // FIX PAGES BLANCHES (cause reelle) : footerY se trouve au-dela de la zone
+      // de marge basse habituelle (doc.page.height - doc.page.margins.bottom).
+      // PDFKit ajoute automatiquement une NOUVELLE page des qu'un .text() est
+      // ecrit au-dela de cette limite, meme avec un y explicite fourni. Chaque
+      // ligne de footer (x2 par page) declenchait donc l'ajout d'une page vide
+      // supplementaire. On neutralise temporairement la marge basse le temps
+      // d'ecrire le footer, puis on la restaure.
+      const originalBottomMargin = doc.page.margins.bottom;
+
+      doc.page.margins.bottom = 0;
+
       doc
         .moveTo(doc.page.margins.left, footerY - 8)
         .lineTo(doc.page.width - doc.page.margins.right, footerY - 8)
@@ -1247,6 +1258,8 @@ export class TreasureMapService {
           align: 'right',
         },
       );
+
+      doc.page.margins.bottom = originalBottomMargin;
     }
 
     doc.end();
