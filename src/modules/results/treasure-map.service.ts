@@ -315,6 +315,25 @@ export class TreasureMapService {
     };
   }
 
+  // ------------------------------------------------------------
+  // FIX PAGES BLANCHES : seuils de saut de page dynamiques,
+  // bases sur la vraie hauteur de page (et non des valeurs fixes
+  // comme 690/710/750 qui coupaient bien avant le bas reel de la
+  // page, ~794pt en A4 avec une marge de 48). Aucun changement de
+  // style, uniquement la logique de pagination.
+  // ------------------------------------------------------------
+  private getPageBottom(doc: PDFKit.PDFDocument): number {
+    return doc.page.height - doc.page.margins.bottom;
+  }
+
+  private ensureSpace(doc: PDFKit.PDFDocument, requiredHeight: number, buffer = 15) {
+    const bottom = this.getPageBottom(doc);
+
+    if (doc.y + requiredHeight > bottom - buffer) {
+      doc.addPage();
+    }
+  }
+
   private drawRoundedCard(
     doc: PDFKit.PDFDocument,
     x: number,
@@ -356,9 +375,8 @@ export class TreasureMapService {
   }
 
   private writeSection(doc: PDFKit.PDFDocument, title: string, number?: string) {
-    if (doc.y > 690) {
-      doc.addPage();
-    }
+    // Un titre de section prend environ 35-40pt (barre + libelle + marge).
+    this.ensureSpace(doc, 45);
 
     const layout = this.getPdfLayout(doc);
 
@@ -392,6 +410,8 @@ export class TreasureMapService {
 
     const text = value === null || value === undefined || value === '' ? 'Non disponible' : value;
 
+    this.ensureSpace(doc, 14);
+
     doc
       .fillColor(this.pdfColors.textMuted)
       .fontSize(9)
@@ -407,11 +427,16 @@ export class TreasureMapService {
   }
 
   private writeParagraph(doc: PDFKit.PDFDocument, text: string) {
-    if (doc.y > 710) {
-      doc.addPage();
-    }
-
     const layout = this.getPdfLayout(doc);
+
+    doc.fontSize(9.5).font('Helvetica');
+
+    const estimatedHeight = doc.heightOfString(text, {
+      width: layout.width,
+      lineGap: 3,
+    });
+
+    this.ensureSpace(doc, estimatedHeight);
 
     doc
       .fontSize(9.5)
@@ -427,13 +452,19 @@ export class TreasureMapService {
   }
 
   private writeBullet(doc: PDFKit.PDFDocument, text: string, indent = 12) {
-    if (doc.y > 720) {
-      doc.addPage();
-    }
-
     const layout = this.getPdfLayout(doc);
 
     const bulletX = layout.left + indent;
+    const textWidth = layout.right - bulletX - 9;
+
+    doc.fontSize(9).font('Helvetica');
+
+    const estimatedHeight = doc.heightOfString(text, {
+      width: textWidth,
+      lineGap: 2,
+    });
+
+    this.ensureSpace(doc, estimatedHeight + 4);
 
     doc.circle(bulletX, doc.y + 4, 2).fill(this.pdfColors.blue);
 
@@ -442,7 +473,7 @@ export class TreasureMapService {
       .font('Helvetica')
       .fillColor(this.pdfColors.text)
       .text(text, bulletX + 9, doc.y, {
-        width: layout.right - bulletX - 9,
+        width: textWidth,
         lineGap: 2,
       });
 
@@ -464,6 +495,8 @@ export class TreasureMapService {
     const cardWidth = (layout.width - gap * (items.length - 1)) / items.length;
 
     const cardHeight = 65;
+
+    this.ensureSpace(doc, cardHeight + 16);
 
     const startY = doc.y;
 
@@ -512,6 +545,9 @@ export class TreasureMapService {
     if (!topProfile) return;
 
     const height = 105;
+
+    this.ensureSpace(doc, height + 18);
+
     const y = doc.y;
 
     this.drawRoundedCard(
@@ -591,9 +627,7 @@ export class TreasureMapService {
 
     const totalHeight = headerHeight + scores.length * rowHeight;
 
-    if (doc.y + totalHeight > 750) {
-      doc.addPage();
-    }
+    this.ensureSpace(doc, totalHeight);
 
     const tableTop = doc.y;
 
@@ -658,9 +692,7 @@ export class TreasureMapService {
   }
 
   private writeSectionSubtitle(doc: PDFKit.PDFDocument, title: string, code: string) {
-    if (doc.y > 690) {
-      doc.addPage();
-    }
+    this.ensureSpace(doc, 55);
 
     const layout = this.getPdfLayout(doc);
 
@@ -683,14 +715,58 @@ export class TreasureMapService {
     doc.y = y + 50;
   }
 
+  // ------------------------------------------------------------
+  // FIX PAGES BLANCHES : l'ancienne version reservait un espace
+  // fixe de 420pt avant chaque carte de recommandation (bien plus
+  // que necessaire dans la majorite des cas), ce qui declenchait un
+  // saut de page quasi systematique et laissait des pages a moitie
+  // (ou quasi) vides. On calcule maintenant une estimation reelle
+  // de la hauteur de la carte a partir de son contenu.
+  // ------------------------------------------------------------
+  private estimateRecommendationCardHeight(
+    doc: PDFKit.PDFDocument,
+    rec: TreasureMapRecommendation,
+  ): number {
+    const layout = this.getPdfLayout(doc);
+    const cardWidth = layout.width;
+
+    let height = 48 + 12; // header + marge
+
+    const summaryText = rec.career.summary ?? rec.career.description;
+
+    if (summaryText) {
+      doc.fontSize(9).font('Helvetica');
+      height += doc.heightOfString(summaryText, { width: cardWidth, lineGap: 2 }) + 8;
+    }
+
+    height += 52 + 12; // ligne des 4 mini-cartes d'info
+
+    if (rec.career.careerPath) {
+      doc.fontSize(8.5).font('Helvetica');
+      height +=
+        14 + doc.heightOfString(rec.career.careerPath, { width: cardWidth, lineGap: 2 }) + 10;
+    }
+
+    if (rec.formations.length > 0) {
+      height += 14;
+
+      for (const formation of rec.formations.slice(0, 3)) {
+        height += 18;
+        height += Math.min(formation.scholarships.length, 2) * 18;
+      }
+
+      height += 5;
+    }
+
+    return height + 28; // bordure + marge finale de la carte
+  }
+
   private writeRecommendationCard(doc: PDFKit.PDFDocument, rec: TreasureMapRecommendation) {
     const layout = this.getPdfLayout(doc);
 
-    const topSpace = 420;
+    const estimatedHeight = this.estimateRecommendationCardHeight(doc, rec);
 
-    if (doc.y + topSpace > 750) {
-      doc.addPage();
-    }
+    this.ensureSpace(doc, estimatedHeight, 10);
 
     const startY = doc.y;
 
@@ -882,9 +958,14 @@ export class TreasureMapService {
     for (let index = 0; index < steps.length; index++) {
       const step = steps[index];
 
-      if (doc.y > 710) {
-        doc.addPage();
-      }
+      doc.fontSize(9).font('Helvetica');
+
+      const stepHeight = doc.heightOfString(step!, {
+        width: layout.width - 45,
+        lineGap: 2,
+      });
+
+      this.ensureSpace(doc, Math.max(stepHeight, 22));
 
       const y = doc.y;
 
